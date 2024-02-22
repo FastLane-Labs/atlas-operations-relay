@@ -5,10 +5,13 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 var (
@@ -17,6 +20,12 @@ var (
 	ErrInvalidParameter    = relayerror.NewError(1102, "invalid parameter")
 	ErrServerCorruptedData = relayerror.NewError(1103, "server corrupted data")
 	ErrInvalidUserOpHash   = relayerror.NewError(1104, "invalid user operation hash")
+
+	// Bundler signature errors
+	ErrInvalidBundlerAddress = relayerror.NewError(1200, "invalid bundler address")
+	ErrExpiredSignature      = relayerror.NewError(1201, "expired signature")
+	ErrBadSignature          = relayerror.NewError(1202, "bad signature (decode/recover error)")
+	ErrSignatureMismatch     = relayerror.NewError(1203, "signature mismatch")
 )
 
 type RetrieveRequest struct {
@@ -206,8 +215,47 @@ func (api *Api) WebsocketSolver(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) WebsocketBundler(w http.ResponseWriter, r *http.Request) {
-	// TODO: bundler authentication
-	var bundler common.Address
+	q := r.URL.Query()
+
+	address := q.Get("address")
+	if len(address) < 40 || len(address) > 42 || !common.IsHexAddress(address) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(ErrInvalidBundlerAddress.Marshal())
+		return
+	}
+	bundler := common.HexToAddress(address)
+
+	timestamp, err := strconv.ParseInt(q.Get("timestamp"), 10, 64)
+	// 60 seconds window past and future for timestamp
+	minTimestamp, maxTimestamp := time.Now().Unix()-60, time.Now().Unix()+60
+	if err != nil || timestamp < minTimestamp || timestamp > maxTimestamp {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(ErrExpiredSignature.Marshal())
+		return
+	}
+
+	signature, err := hexutil.Decode(q.Get("signature"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(ErrBadSignature.Marshal())
+		return
+	}
+
+	// Validate the signature
+	data := []byte(strconv.FormatInt(timestamp, 10))
+	dataHash := crypto.Keccak256Hash(data)
+	expectedPubKey, err := crypto.SigToPub(dataHash.Bytes(), signature)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(ErrBadSignature.Marshal())
+		return
+	}
+
+	if bundler != crypto.PubkeyToAddress(*expectedPubKey) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(ErrBadSignature.Marshal())
+		return
+	}
 
 	api.relay.server.ServeWsBundler(w, r, bundler)
 }
