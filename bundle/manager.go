@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
@@ -21,6 +22,7 @@ var (
 
 type Manager struct {
 	ethClient *ethclient.Client
+	config    *config.Config
 
 	// Indexed by userOpHash
 	bundles map[common.Hash]*Bundle
@@ -28,9 +30,10 @@ type Manager struct {
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config) *Manager {
 	return &Manager{
 		ethClient: ethClient,
+		config:    config,
 	}
 }
 
@@ -52,8 +55,7 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (*Bundle, *r
 		return nil, relayerror.ErrServerInternal
 	}
 
-	// TODO set proper "to" address to simulator contract
-	bData, err := bm.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &common.MaxAddress, Data: pData}, nil)
+	bData, err := bm.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &bm.config.Contracts.Simulator, Data: pData}, nil)
 	if err != nil {
 		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.String())
 		return nil, relayerror.ErrServerInternal

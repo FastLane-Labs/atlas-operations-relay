@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/bundle"
+	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,18 +20,20 @@ var (
 )
 
 type Relay struct {
+	config *config.Config
 	server *Server
 
 	auctionManager *auction.Manager
 	bundleManager  *bundle.Manager
 }
 
-func NewRelay(ethClient *ethclient.Client) *Relay {
-	auctionManager := auction.NewManager(ethClient)
+func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
+	auctionManager := auction.NewManager(ethClient, config)
 
 	relay := &Relay{
+		config:         config,
 		auctionManager: auctionManager,
-		bundleManager:  bundle.NewManager(ethClient),
+		bundleManager:  bundle.NewManager(ethClient, config),
 	}
 	relay.server = NewServer(NewRouter(NewApi(relay)), auctionManager.NewSolverOperation)
 	return relay

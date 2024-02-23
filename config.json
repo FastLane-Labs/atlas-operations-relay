@@ -1,0 +1,8 @@
+{
+  "network": {
+    "rpc_url": ""
+  },
+  "contracts": {
+    "simulator": "0x56eF55097199944f103fC15104268756998438C4"
+  }
+}
