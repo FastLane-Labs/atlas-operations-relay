@@ -3,6 +3,7 @@ package bundle
 import (
 	"sync"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
@@ -32,6 +33,7 @@ func NewManager(ethClient *ethclient.Client) *Manager {
 func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (*Bundle, *relayerror.Error) {
 	userOpHash, err := bundleOps.UserOperation.Hash()
 	if err != nil {
+		log.Info("failed to compute user operation hash", "err", err)
 		return nil, relayerror.ErrComputeUserOpHash.AddError(err)
 	}
 
@@ -44,7 +46,7 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (*Bundle, *r
 		return nil, ErrBundleAlreadySubmitted
 	}
 
-	bundle := NewBundle(bundleOps)
+	bundle := NewBundle(userOpHash, bundleOps)
 	bm.bundles[userOpHash] = bundle
 	return bundle, nil
 }
@@ -62,6 +64,7 @@ func (bm *Manager) GetBundleHash(userOpHash common.Hash, completionChan chan com
 
 	bundle, ok := bm.bundles[userOpHash]
 	if !ok {
+		log.Info("bundle not found", "userOpHash", userOpHash.String())
 		return common.Hash{}, ErrBundleNotFound
 	}
 

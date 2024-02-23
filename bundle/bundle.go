@@ -3,6 +3,7 @@ package bundle
 import (
 	"sync"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
@@ -14,6 +15,7 @@ var (
 )
 
 type Bundle struct {
+	userOpHash  common.Hash
 	ops         *operation.BundleOperations
 	atlasTxHash common.Hash
 
@@ -22,8 +24,9 @@ type Bundle struct {
 	mu sync.RWMutex
 }
 
-func NewBundle(bundleOps *operation.BundleOperations) *Bundle {
+func NewBundle(userOpHash common.Hash, bundleOps *operation.BundleOperations) *Bundle {
 	return &Bundle{
+		userOpHash:     userOpHash,
 		ops:            bundleOps,
 		completionSubs: make([]chan common.Hash, 0),
 	}
@@ -40,6 +43,7 @@ func (b *Bundle) SetAtlasTxHash(txHash common.Hash) *relayerror.Error {
 	defer b.mu.Unlock()
 
 	if b.atlasTxHash != (common.Hash{}) {
+		log.Info("bundle has already been bundled", "bundledTxHash", b.atlasTxHash.String(), "newTxHash", txHash.String())
 		return ErrAlreadyBundled
 	}
 
@@ -68,6 +72,7 @@ func (b *Bundle) getAtlasTxHash(completionChan chan common.Hash) (common.Hash, *
 	}
 
 	if !bundled {
+		log.Info("bundle has not been bundled yet", "userOpHash", b.userOpHash.String())
 		return common.Hash{}, ErrNotBundledYet
 	}
 

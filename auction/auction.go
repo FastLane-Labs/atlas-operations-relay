@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 )
@@ -63,6 +64,7 @@ func (a *Auction) addSolverOp(solverOp *operation.SolverOperation) *relayerror.E
 	defer a.mu.Unlock()
 
 	if !a.open {
+		log.Info("auction for this user operation has already ended", "userOpHash", solverOp.UserOpHash.String())
 		return ErrAuctionClosed
 	}
 
@@ -83,6 +85,8 @@ func (a *Auction) getSolverOps(completionChan chan []*operation.SolverOperation)
 	}
 
 	if open {
+		userOpHash, _ := a.userOp.Hash()
+		log.Info("auction for this user operation is ongoing", "userOpHash", userOpHash.String())
 		return nil, ErrAuctionOngoing
 	}
 

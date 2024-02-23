@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
@@ -35,15 +36,18 @@ func NewManager(ethClient *ethclient.Client) *Manager {
 func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Hash, *relayerror.Error) {
 	userOpHash, err := userOp.Hash()
 	if err != nil {
+		log.Info("failed to compute user operation hash", "err", err)
 		return common.Hash{}, relayerror.ErrComputeUserOpHash.AddError(err)
 	}
 
 	currentBlockNumber, err := am.ethClient.BlockNumber(context.Background())
 	if err != nil {
+		log.Info("failed to get current block number", "err", err, "userOpHash", userOpHash.String())
 		return common.Hash{}, ErrServerInternal
 	}
 
 	if userOp.Deadline.Uint64() < currentBlockNumber {
+		log.Info("user operation deadline exceeded", "userOpHash", userOpHash.String())
 		return common.Hash{}, ErrDeadlineExceeded
 	}
 
@@ -51,6 +55,7 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Has
 	defer am.mu.Unlock()
 
 	if _, alreadyStarted := am.auctions[userOpHash]; alreadyStarted {
+		log.Info("auction for this user operation has already started", "userOpHash", userOpHash.String())
 		return common.Hash{}, ErrAuctionAlreadyStarted
 	}
 
@@ -64,6 +69,7 @@ func (am *Manager) GetSolverOperations(userOpHash common.Hash, completionChan ch
 
 	auction, ok := am.auctions[userOpHash]
 	if !ok {
+		log.Info("auction not found", "userOpHash", userOpHash.String())
 		return nil, ErrAuctionNotFound
 	}
 
@@ -76,6 +82,7 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 
 	auction, ok := am.auctions[solverOp.UserOpHash]
 	if !ok {
+		log.Info("auction not found", "userOpHash", solverOp.UserOpHash.String())
 		return ErrAuctionNotFound
 	}
 

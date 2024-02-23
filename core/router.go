@@ -1,8 +1,11 @@
 package core
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/gorilla/mux"
 )
 
@@ -16,9 +19,11 @@ type Route struct {
 func NewRouter(api *Api) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 	for _, route := range buildRoutes(api) {
-		var handler http.Handler
-		handler = route.HandlerFunc
-		handler = Logger(handler, route.Name)
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			route.HandlerFunc.ServeHTTP(w, r)
+			log.Info(fmt.Sprintf("Served %s", route.Name), "method", r.Method, "url", r.RequestURI, "duration", time.Since(start))
+		})
 
 		router.
 			Methods(route.Method).
