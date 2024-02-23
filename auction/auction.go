@@ -7,6 +7,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -19,7 +20,8 @@ var (
 )
 
 type Auction struct {
-	open bool
+	open       bool
+	userOpHash common.Hash
 
 	userOp    *operation.UserOperation
 	solverOps []*operation.SolverOperation
@@ -29,9 +31,10 @@ type Auction struct {
 	mu sync.RWMutex
 }
 
-func NewAuction(userOp *operation.UserOperation) *Auction {
+func NewAuction(userOp *operation.UserOperation, userOpHash common.Hash) *Auction {
 	auction := &Auction{
 		open:           true,
+		userOpHash:     userOpHash,
 		userOp:         userOp,
 		solverOps:      make([]*operation.SolverOperation, 0),
 		completionSubs: make([]chan []*operation.SolverOperation, 0),
@@ -67,8 +70,6 @@ func (a *Auction) addSolverOp(solverOp *operation.SolverOperation) *relayerror.E
 		log.Info("auction for this user operation has already ended", "userOpHash", solverOp.UserOpHash.String())
 		return ErrAuctionClosed
 	}
-
-	// TODO: add checks here
 
 	a.solverOps = append(a.solverOps, solverOp)
 	return nil

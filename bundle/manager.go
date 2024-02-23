@@ -1,11 +1,14 @@
 package bundle
 
 import (
+	"context"
 	"sync"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/contract"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -13,6 +16,7 @@ import (
 var (
 	ErrBundleAlreadySubmitted = relayerror.NewError(3200, "bundle for this user operation has already been submitted")
 	ErrBundleNotFound         = relayerror.NewError(3201, "bundle not found")
+	ErrBundleFailedSimulation = relayerror.NewError(3202, "bundle failed simulation")
 )
 
 type Manager struct {
@@ -37,7 +41,34 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (*Bundle, *r
 		return nil, relayerror.ErrComputeUserOpHash.AddError(err)
 	}
 
-	// TODO: lots of checks here
+	solverOps := make([]operation.SolverOperation, 0, len(bundleOps.SolverOperations))
+	for _, solverOp := range bundleOps.SolverOperations {
+		solverOps = append(solverOps, *solverOp)
+	}
+
+	pData, err := contract.SimulatorAbi.Pack("simSolverCalls", *bundleOps.UserOperation, solverOps, *bundleOps.DAppOperation)
+	if err != nil {
+		log.Info("failed to pack bundle", "err", err, "userOpHash", userOpHash.String())
+		return nil, relayerror.ErrServerInternal
+	}
+
+	// TODO set proper "to" address to simulator contract
+	bData, err := bm.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &common.MaxAddress, Data: pData}, nil)
+	if err != nil {
+		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.String())
+		return nil, relayerror.ErrServerInternal
+	}
+
+	validOp, err := contract.SimulatorAbi.Unpack("simSolverCalls", bData)
+	if err != nil {
+		log.Info("failed to unpack simSolverCalls return data", "err", err, "userOpHash", userOpHash.String())
+		return nil, relayerror.ErrServerInternal
+	}
+
+	if !validOp[0].(bool) {
+		log.Info("bundle failed simulation", "userOpHash", userOpHash.String())
+		return nil, ErrBundleFailedSimulation
+	}
 
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
