@@ -7,6 +7,8 @@ RUN go mod download
 
 COPY . ./
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /relay
+RUN CGO_ENABLED=0 GOOS=linux go build -o /opsrelay
 
-CMD ["/relay"]
+EXPOSE 8080
+
+CMD ["/opsrelay"]
