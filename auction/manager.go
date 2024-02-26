@@ -83,24 +83,24 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Has
 
 	pData, err := contract.SimulatorAbi.Pack("simUserOperation", *userOp)
 	if err != nil {
-		log.Info("failed to pack user operation", "err", err, "userOpHash", userOpHash.String())
+		log.Info("failed to pack user operation", "err", err, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, relayerror.ErrServerInternal
 	}
 
 	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &am.config.Contracts.Simulator, Data: pData}, nil)
 	if err != nil {
-		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.String())
+		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, relayerror.ErrServerInternal
 	}
 
 	validOp, err := contract.SimulatorAbi.Unpack("simUserOperation", bData)
 	if err != nil {
-		log.Info("failed to unpack simUserOperation return data", "err", err, "userOpHash", userOpHash.String())
+		log.Info("failed to unpack simUserOperation return data", "err", err, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, relayerror.ErrServerInternal
 	}
 
 	if !validOp[0].(bool) {
-		log.Info("user operation failed simulation", "userOpHash", userOpHash.String())
+		log.Info("user operation failed simulation", "userOpHash", userOpHash.Hex())
 		return common.Hash{}, ErrUserOpFailedSimulation
 	}
 
@@ -108,7 +108,7 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Has
 	defer am.mu.Unlock()
 
 	if _, alreadyStarted := am.auctions[userOpHash]; alreadyStarted {
-		log.Info("auction for this user operation has already started", "userOpHash", userOpHash.String())
+		log.Info("auction for this user operation has already started", "userOpHash", userOpHash.Hex())
 		return common.Hash{}, ErrAuctionAlreadyStarted
 	}
 
@@ -122,7 +122,7 @@ func (am *Manager) GetSolverOperations(userOpHash common.Hash, completionChan ch
 
 	auction, ok := am.auctions[userOpHash]
 	if !ok {
-		log.Info("auction not found", "userOpHash", userOpHash.String())
+		log.Info("auction not found", "userOpHash", userOpHash.Hex())
 		return nil, ErrAuctionNotFound
 	}
 
@@ -135,7 +135,7 @@ func (am *Manager) getAuction(userOpHash common.Hash) *Auction {
 
 	auction, ok := am.auctions[userOpHash]
 	if !ok {
-		log.Info("auction not found", "userOpHash", userOpHash.String())
+		log.Info("auction not found", "userOpHash", userOpHash.Hex())
 		return nil
 	}
 
@@ -152,25 +152,24 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 
 	pData, err := contract.SimulatorAbi.Pack("simSolverCall", *auction.userOp, []operation.SolverOperation{*solverOp}, *dAppOp)
 	if err != nil {
-		log.Info("failed to pack solver operation", "err", err, "userOpHash", auction.userOpHash.String())
+		log.Info("failed to pack solver operation", "err", err, "userOpHash", auction.userOpHash.Hex())
 		return relayerror.ErrServerInternal
 	}
 
-	// TODO set proper "to" address to simulator contract
-	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &common.MaxAddress, Data: pData}, nil)
+	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &am.config.Contracts.Simulator, Data: pData}, nil)
 	if err != nil {
-		log.Info("failed to call simulator contract", "err", err, "userOpHash", auction.userOpHash.String())
+		log.Info("failed to call simulator contract", "err", err, "userOpHash", auction.userOpHash.Hex())
 		return relayerror.ErrServerInternal
 	}
 
 	validOp, err := contract.SimulatorAbi.Unpack("simSolverCall", bData)
 	if err != nil {
-		log.Info("failed to unpack simSolverCall return data", "err", err, "userOpHash", auction.userOpHash.String())
+		log.Info("failed to unpack simSolverCall return data", "err", err, "userOpHash", auction.userOpHash.Hex())
 		return relayerror.ErrServerInternal
 	}
 
 	if !validOp[0].(bool) {
-		log.Info("solver operation failed simulation", "userOpHash", auction.userOpHash.String())
+		log.Info("solver operation failed simulation", "userOpHash", auction.userOpHash.Hex())
 		return ErrSolverOpFailedSimulation
 	}
 
