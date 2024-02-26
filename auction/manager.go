@@ -2,6 +2,7 @@ package auction
 
 import (
 	"context"
+	"math/big"
 	"sync"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
@@ -20,7 +21,10 @@ var (
 	ErrAuctionNotFound          = relayerror.NewError(2203, "auction not found")
 	ErrUserOpFailedSimulation   = relayerror.NewError(2204, "user operation failed simulation")
 	ErrSolverOpFailedSimulation = relayerror.NewError(2205, "solver operation failed simulation")
+	ErrNotEnoughBondedBalance   = relayerror.NewError(2206, "not enough atlEth bonded balance")
 )
+
+type balanceOfBondedFn func(common.Address) (*big.Int, *relayerror.Error)
 
 type Manager struct {
 	ethClient *ethclient.Client
@@ -29,13 +33,17 @@ type Manager struct {
 	// Indexed by userOpHash
 	auctions map[common.Hash]*Auction
 
+	balanceOfBonded balanceOfBondedFn
+
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, balanceOfBonded balanceOfBondedFn) *Manager {
 	return &Manager{
-		ethClient: ethClient,
-		config:    config,
+		ethClient:       ethClient,
+		config:          config,
+		auctions:        make(map[common.Hash]*Auction),
+		balanceOfBonded: balanceOfBonded,
 	}
 }
 
@@ -111,6 +119,17 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 	auction := am.getAuction(solverOp.UserOpHash)
 	if auction == nil {
 		return ErrAuctionNotFound
+	}
+
+	bondedBalance, relayErr := am.balanceOfBonded(solverOp.From)
+	if relayErr != nil {
+		return relayErr
+	}
+
+	// Bonded balance must be >= gas * maxFeePerGas
+	if bondedBalance.Cmp(new(big.Int).Mul(solverOp.Gas, solverOp.MaxFeePerGas)) < 0 {
+		log.Info("not enough bonded balance", "userOpHash", solverOp.UserOpHash.Hex(), "from", solverOp.From.Hex())
+		return ErrNotEnoughBondedBalance
 	}
 
 	dAppOp := operation.GenerateSimulationDAppOperation(auction.userOp)

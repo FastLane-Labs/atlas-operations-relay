@@ -1,9 +1,12 @@
 package core
 
 import (
+	"math/big"
+
 	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/bundle"
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
@@ -16,7 +19,8 @@ const (
 )
 
 var (
-	ErrForwardBundle = relayerror.NewError(1200, "failed to forward bundle")
+	ErrForwardBundle        = relayerror.NewError(1200, "failed to forward bundle")
+	ErrCantGetBondedBalance = relayerror.NewError(1202, "failed to get atlEth bonded balance")
 )
 
 type Relay struct {
@@ -28,7 +32,20 @@ type Relay struct {
 }
 
 func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
-	auctionManager := auction.NewManager(ethClient, config)
+	atlETHContract, err := contract.NewAtlETH(config.Contracts.Atlas, ethClient)
+	if err != nil {
+		panic(err)
+	}
+
+	balanceOfBonded := func(account common.Address) (*big.Int, *relayerror.Error) {
+		balance, err := atlETHContract.BalanceOfBonded(nil, account)
+		if err != nil {
+			return nil, ErrCantGetBondedBalance.AddError(err)
+		}
+		return balance, nil
+	}
+
+	auctionManager := auction.NewManager(ethClient, config, balanceOfBonded)
 
 	relay := &Relay{
 		config:         config,
