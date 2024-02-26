@@ -31,6 +31,11 @@ func (e *Error) AddError(err error) *Error {
 	return e
 }
 
+func (e *Error) AddMessage(message string) *Error {
+	e.Message = fmt.Sprintf("%s: %s", e.Message, message)
+	return e
+}
+
 func (e *Error) Marshal() []byte {
 	b, _ := json.Marshal(e)
 	return b
