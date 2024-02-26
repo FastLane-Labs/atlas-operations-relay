@@ -17,6 +17,5 @@ func main() {
 		return
 	}
 
-	relay := core.NewRelay(ethClient, config)
-	relay.Run()
+	core.NewRelay(ethClient, config).Run()
 }

@@ -1,0 +1,13 @@
+[
+  {
+    "type": "function",
+    "name": "getDAppSignatories",
+    "inputs": [
+      { "name": "dAppControl", "type": "address", "internalType": "address" }
+    ],
+    "outputs": [
+      { "name": "", "type": "address[]", "internalType": "address[]" }
+    ],
+    "stateMutability": "view"
+  }
+]

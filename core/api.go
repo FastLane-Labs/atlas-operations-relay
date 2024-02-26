@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/bundle"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
@@ -129,7 +130,6 @@ func (api *Api) GetSolverOperations(w http.ResponseWriter, r *http.Request) {
 
 	if retrieveReq.Wait && solverOps == nil {
 		solverOps = <-completionChan
-		// TODO: add timeout?
 		close(completionChan)
 	}
 
@@ -162,9 +162,9 @@ func (api *Api) GetBundleHash(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var completionChan chan common.Hash
+	var completionChan chan *bundle.Bundle
 	if retrieveReq.Wait {
-		completionChan = make(chan common.Hash)
+		completionChan = make(chan *bundle.Bundle)
 	}
 
 	atlasTxHash, relayErr := api.relay.getBundleHash(retrieveReq.UserOpHash, completionChan)
@@ -175,8 +175,13 @@ func (api *Api) GetBundleHash(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if retrieveReq.Wait && atlasTxHash == (common.Hash{}) {
-		atlasTxHash = <-completionChan
-		// TODO: add timeout?
+		bundle := <-completionChan
+		atlasTxHash, relayErr = bundle.GetResult()
+		if relayErr != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write(relayErr.Marshal())
+			return
+		}
 		close(completionChan)
 	}
 

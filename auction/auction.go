@@ -51,7 +51,11 @@ func (a *Auction) close() {
 	a.open = false
 
 	for _, subChan := range a.completionSubs {
-		subChan <- a.solverOps
+		select {
+		case subChan <- a.solverOps:
+		default:
+			// Sub isn't listening, don't block
+		}
 	}
 }
 
@@ -67,7 +71,7 @@ func (a *Auction) addSolverOp(solverOp *operation.SolverOperation) *relayerror.E
 	defer a.mu.Unlock()
 
 	if !a.open {
-		log.Info("auction for this user operation has already ended", "userOpHash", solverOp.UserOpHash.String())
+		log.Info("auction for this user operation has already ended", "userOpHash", solverOp.UserOpHash.Hex())
 		return ErrAuctionClosed
 	}
 
@@ -87,7 +91,7 @@ func (a *Auction) getSolverOps(completionChan chan []*operation.SolverOperation)
 
 	if open {
 		userOpHash, _ := a.userOp.Hash()
-		log.Info("auction for this user operation is ongoing", "userOpHash", userOpHash.String())
+		log.Info("auction for this user operation is ongoing", "userOpHash", userOpHash.Hex())
 		return nil, ErrAuctionOngoing
 	}
 
