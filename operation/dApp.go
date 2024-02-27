@@ -20,3 +20,9 @@ type DAppOperation struct {
 	CallChainHash common.Hash    `json:"callChainHash"`
 	Signature     []byte         `json:"signature"`
 }
+
+func GenerateSimulationDAppOperation(userOp *UserOperation) *DAppOperation {
+	return &DAppOperation{
+		Control: userOp.Control,
+	}
+}

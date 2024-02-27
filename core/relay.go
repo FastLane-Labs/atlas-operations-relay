@@ -3,6 +3,8 @@ package core
 import (
 	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/bundle"
+	"github.com/FastLane-Labs/atlas-operations-relay/config"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,24 +17,41 @@ const (
 )
 
 var (
-	ErrForwardBundle = relayerror.NewError(1200, "failed to forward bundle")
+	ErrForwardBundle          = relayerror.NewError(1200, "failed to forward bundle")
+	ErrCantGetDAppSignatories = relayerror.NewError(1201, "failed to get dapp signatories")
 )
 
 type Relay struct {
+	config *config.Config
 	server *Server
 
 	auctionManager *auction.Manager
 	bundleManager  *bundle.Manager
 }
 
-func NewRelay(ethClient *ethclient.Client) *Relay {
-	auctionManager := auction.NewManager(ethClient)
+func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
+	auctionManager := auction.NewManager(ethClient, config)
+
+	atlasVerificationContract, err := contract.NewAtlasVerification(config.Contracts.AtlasVerification, ethClient)
+	if err != nil {
+		panic(err)
+	}
+
+	getDAppSignatories := func(dAppControl common.Address) ([]common.Address, *relayerror.Error) {
+		signatories, err := atlasVerificationContract.GetDAppSignatories(nil, dAppControl)
+		if err != nil {
+			return []common.Address{}, ErrCantGetDAppSignatories.AddError(err)
+		}
+		return signatories, nil
+	}
 
 	relay := &Relay{
+		config:         config,
 		auctionManager: auctionManager,
-		bundleManager:  bundle.NewManager(ethClient),
+		bundleManager:  bundle.NewManager(ethClient, config),
 	}
-	relay.server = NewServer(NewRouter(NewApi(relay)), auctionManager.NewSolverOperation)
+
+	relay.server = NewServer(NewRouter(NewApi(relay)), auctionManager.NewSolverOperation, getDAppSignatories)
 	return relay
 }
 
@@ -60,7 +79,7 @@ func (r *Relay) submitBundleOperations(bundleOps *operation.BundleOperations) (s
 		return "", relayErr
 	}
 
-	if err := r.server.ForwardBundle(bundleOps, bundle.SetAtlasTxHash); err != nil {
+	if err := r.server.ForwardBundle(bundleOps, bundle.SetAtlasTxHash, bundle.SetRelayError); err != nil {
 		userOphash, _ := bundleOps.UserOperation.Hash()
 		r.bundleManager.UnregisterBundle(userOphash)
 		return "", ErrForwardBundle.AddError(err)
@@ -69,7 +88,7 @@ func (r *Relay) submitBundleOperations(bundleOps *operation.BundleOperations) (s
 	return BundleSuccessfullySubmitted, nil
 }
 
-func (r *Relay) getBundleHash(userOpHash common.Hash, completionChan chan common.Hash) (common.Hash, *relayerror.Error) {
+func (r *Relay) getBundleHash(userOpHash common.Hash, completionChan chan *bundle.Bundle) (common.Hash, *relayerror.Error) {
 	return r.bundleManager.GetBundleHash(userOpHash, completionChan)
 }
 

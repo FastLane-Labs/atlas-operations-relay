@@ -3,11 +3,11 @@ package core
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,6 +17,8 @@ import (
 )
 
 const (
+	BundlerTimeout = 300 * time.Millisecond
+
 	// Channels
 	ChannelSolver  = "solver"
 	ChannelBundler = "bundler"
@@ -81,11 +83,15 @@ var (
 )
 
 var (
-	ErrBundlerOffline = relayerror.NewError(1300, "bundler is offline")
+	ErrBundlerOffline    = relayerror.NewError(1300, "bundler is offline")
+	ErrCloggedConnection = relayerror.NewError(1301, "clogged connection")
+	ErrBundlingFailure   = relayerror.NewError(1302, "bundling failure")
 )
 
-type NewSolverOperationFn func(*operation.SolverOperation) *relayerror.Error
+type newSolverOperationFn func(*operation.SolverOperation) *relayerror.Error
+type getDAppSignatoriesFn func(common.Address) ([]common.Address, *relayerror.Error)
 type setAtlasTxHashFn func(common.Hash) *relayerror.Error
+type setRelayErrorFn func(*relayerror.Error) *relayerror.Error
 
 type RequestParams struct {
 	Topic           string                      `json:"topic,omitempty"`
@@ -165,20 +171,35 @@ func NewConn(conn *websocket.Conn, channel string, bundler common.Address) *Conn
 	}
 }
 
-func (c *Conn) send(message Marshaler) {
-	c.sendBytes(message.Marshal())
+func (c *Conn) send(message Marshaler) *relayerror.Error {
+	return c.sendBytes(message.Marshal())
 }
 
-func (c *Conn) sendString(message string) {
-	c.sendBytes([]byte(message))
+func (c *Conn) sendString(message string) *relayerror.Error {
+	return c.sendBytes([]byte(message))
 }
 
-func (c *Conn) sendBytes(message []byte) {
-	c.sendChan <- message
+func (c *Conn) sendBytes(message []byte) *relayerror.Error {
+	select {
+	case c.sendChan <- message:
+	default:
+		// Channel is full, drop message
+		return ErrCloggedConnection
+	}
+
+	return nil
 }
 
 func (c *Conn) isBundler() bool {
 	return c.bundler != (common.Address{})
+}
+
+type bundlingRequest struct {
+	candidatesBundlers map[common.Address]*Conn
+	offlineBundlers    map[common.Address]bool
+	setAtlasTxHash     setAtlasTxHashFn
+	setRelayError      setRelayErrorFn
+	doneChan           chan struct{}
 }
 
 type Server struct {
@@ -191,30 +212,34 @@ type Server struct {
 	bundlers map[common.Address]*Conn
 
 	// Indexed by [id]
-	bundlingRequests map[string]setAtlasTxHashFn
+	bundlingRequests map[string]*bundlingRequest
 
-	newSolverOperation NewSolverOperationFn
+	newSolverOperation newSolverOperationFn
+	getDAppSignatories getDAppSignatoriesFn
 
 	mu sync.RWMutex
 }
 
-func NewServer(router *mux.Router, newSolverOperation NewSolverOperationFn) *Server {
+func NewServer(router *mux.Router, newSolverOperation newSolverOperationFn, getDAppSignatories getDAppSignatoriesFn) *Server {
 	return &Server{
 		router:             router,
 		subscriptions:      make(map[string]map[string]*Conn),
 		bundlers:           make(map[common.Address]*Conn),
-		bundlingRequests:   make(map[string]setAtlasTxHashFn),
+		bundlingRequests:   make(map[string]*bundlingRequest),
 		newSolverOperation: newSolverOperation,
+		getDAppSignatories: getDAppSignatories,
 	}
 }
 
 func (s *Server) ListenAndServe() {
-	log.Fatal(http.ListenAndServe(":8080", s.router))
+	err := http.ListenAndServe(":8080", s.router)
+	log.Info("server stopped", "err", err)
 }
 
 func (s *Server) ServeWs(w http.ResponseWriter, r *http.Request, channel string, bundler common.Address) (*Conn, error) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
+		log.Info("failed upgrading connection", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(fmt.Sprintf("%s: %s", ConnUpgradeFailed, err.Error())))
 		return nil, err
@@ -236,6 +261,7 @@ func (s *Server) ServeWsSolver(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ServeWsBundler(w http.ResponseWriter, r *http.Request, bundler common.Address) {
 	conn, err := s.ServeWs(w, r, ChannelBundler, bundler)
 	if err != nil {
+		log.Info("failed to serve ws bundler", "err", err)
 		return
 	}
 
@@ -248,6 +274,7 @@ func (s *Server) ServeWsBundler(w http.ResponseWriter, r *http.Request, bundler 
 
 func (s *Server) registerBundler(conn *Conn) {
 	if conn.channel != ChannelBundler || conn.bundler == (common.Address{}) {
+		log.Info("invalid bundler connection")
 		return
 	}
 
@@ -259,6 +286,7 @@ func (s *Server) registerBundler(conn *Conn) {
 
 func (s *Server) unregisterBundler(conn *Conn) {
 	if conn.bundler == (common.Address{}) {
+		log.Info("invalid bundler connection")
 		return
 	}
 
@@ -279,17 +307,52 @@ func (s *Server) BroadcastUserOperation(userOp *operation.UserOperation) {
 	s.publish(broadcast)
 }
 
-func (s *Server) ForwardBundle(bundleOps *operation.BundleOperations, setAtlasTxHash setAtlasTxHashFn) *relayerror.Error {
+func (s *Server) ForwardBundle(bundleOps *operation.BundleOperations, setAtlasTxHash setAtlasTxHashFn, setRelayError setRelayErrorFn) *relayerror.Error {
+	bundlingRequest := &bundlingRequest{
+		candidatesBundlers: make(map[common.Address]*Conn),
+		offlineBundlers:    make(map[common.Address]bool),
+		setAtlasTxHash:     setAtlasTxHash,
+		setRelayError:      setRelayError,
+		doneChan:           make(chan struct{}),
+	}
+
+	var firstCandidate *Conn
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	conn, exist := s.bundlers[bundleOps.DAppOperation.Bundler]
-	if !exist {
+	primaryBundler, primaryOnline := s.bundlers[bundleOps.DAppOperation.Bundler]
+	if primaryOnline {
+		firstCandidate = primaryBundler
+		bundlingRequest.candidatesBundlers[bundleOps.DAppOperation.Bundler] = primaryBundler
+	}
+
+	// Retrieve dApp signatories, which are allowed bundlers
+	signatories, relayErr := s.getDAppSignatories(bundleOps.DAppOperation.Control)
+	if relayErr != nil {
+		log.Info("failed to get dApp signatories", "control", bundleOps.DAppOperation.Control.Hex(), "err", relayErr.Message)
+		if !primaryOnline {
+			return ErrBundlerOffline
+		}
+	}
+
+	for _, signatory := range signatories {
+		conn, online := s.bundlers[signatory]
+		if online {
+			bundlingRequest.candidatesBundlers[signatory] = conn
+		}
+		if firstCandidate == nil {
+			firstCandidate = conn
+		}
+	}
+
+	if len(bundlingRequest.candidatesBundlers) == 0 {
+		log.Info("no online bundler", "control", bundleOps.DAppOperation.Control.Hex())
 		return ErrBundlerOffline
 	}
 
 	id := uuid.New().String()
-	s.bundlingRequests[id] = setAtlasTxHash
+	s.bundlingRequests[id] = bundlingRequest
 
 	bundleReq := &BundleRequest{
 		Id:     id,
@@ -297,13 +360,57 @@ func (s *Server) ForwardBundle(bundleOps *operation.BundleOperations, setAtlasTx
 		Bundle: bundleOps,
 	}
 
-	conn.send(bundleReq)
+	go s.runBundlingRequest(id, bundleReq, firstCandidate, bundlingRequest)
 	return nil
+}
+
+func (s *Server) runBundlingRequest(id string, bundleReq *BundleRequest, firstCandidate *Conn, bundlingRequest *bundlingRequest) {
+	nextCandidate := firstCandidate
+
+	getNextCandidate := func() *Conn {
+		for candidate, conn := range bundlingRequest.candidatesBundlers {
+			if bundlingRequest.offlineBundlers[candidate] {
+				continue
+			}
+			return conn
+		}
+		return nil
+	}
+
+	for {
+		if nextCandidate == nil {
+			// No more candidates
+			s.mu.Lock()
+			delete(s.bundlingRequests, id)
+			s.mu.Unlock()
+			bundlingRequest.setRelayError(ErrBundlerOffline)
+			return
+		}
+
+		if relayErr := nextCandidate.send(bundleReq); relayErr != nil {
+			log.Info("failed to send bundle request", "bundler", nextCandidate.bundler.Hex(), "err", relayErr.Message)
+			bundlingRequest.offlineBundlers[nextCandidate.bundler] = true
+			nextCandidate = getNextCandidate()
+			continue
+		}
+
+		select {
+		case <-time.After(BundlerTimeout):
+			log.Info("bundler timed out", "bundler", nextCandidate.bundler.Hex())
+			bundlingRequest.offlineBundlers[nextCandidate.bundler] = true
+			nextCandidate = getNextCandidate()
+
+		case <-bundlingRequest.doneChan:
+			// Got a response, exit
+			return
+		}
+	}
 }
 
 func (s *Server) processSolverMessage(conn *Conn, msg []byte) {
 	var req *Request
 	if err := json.Unmarshal(msg, &req); err != nil {
+		log.Info("failed to unmarshal solver message", "err", err)
 		conn.sendString(fmt.Sprintf("%s: %s", InvalidMessage, err.Error()))
 		return
 	}
@@ -341,26 +448,35 @@ func (s *Server) processSolverMessage(conn *Conn, msg []byte) {
 func (s *Server) processBundlerMessage(msg []byte) {
 	var resp *BundleResponse
 	if err := json.Unmarshal(msg, &resp); err != nil {
-		// todo: log
+		log.Info("failed to unmarshal bundler message", "err", err)
 		return
 	}
 
-	setAtlasTxHash, exist := s.bundlingRequests[resp.Id]
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	bundlingRequest, exist := s.bundlingRequests[resp.Id]
 	if !exist {
-		// todo: log
+		log.Info("bundler response not found", "id", resp.Id)
 		return
 	}
 
+	close(bundlingRequest.doneChan)
 	delete(s.bundlingRequests, resp.Id)
 
 	if len(resp.Error) > 0 {
-		// todo: log
+		log.Info("bundler response error", "err", resp.Error)
+		bundlingRequest.setRelayError(ErrBundlingFailure.AddMessage(resp.Error))
 		return
 	}
 
-	if err := setAtlasTxHash(resp.Result); err != nil {
-		// todo log
+	if resp.Result == (common.Hash{}) {
+		log.Info("bundler response invalid tx hash", "txHash", resp.Result.Hex())
+		bundlingRequest.setRelayError(ErrBundlingFailure)
+		return
 	}
+
+	bundlingRequest.setAtlasTxHash(resp.Result)
 }
 
 func (s *Server) publish(broadcast *Broadcast) {
@@ -368,7 +484,7 @@ func (s *Server) publish(broadcast *Broadcast) {
 	defer s.mu.RUnlock()
 
 	if _, exist := s.subscriptions[broadcast.Topic]; !exist {
-		// No subscribers for this topic
+		log.Info("no subscribers for this topic", "topic", broadcast.Topic)
 		return
 	}
 
@@ -379,6 +495,7 @@ func (s *Server) publish(broadcast *Broadcast) {
 
 func (s *Server) subscribe(conn *Conn, topic string, resp *Response) {
 	if _, valid := Topics[topic]; !valid {
+		log.Info("invalid topic", "topic", topic)
 		resp.Error = InvalidTopic
 		return
 	}
@@ -391,6 +508,7 @@ func (s *Server) subscribe(conn *Conn, topic string, resp *Response) {
 	}
 
 	if _, subbed := s.subscriptions[topic][conn.uuid]; subbed {
+		log.Info("already subscribed", "topic", topic, "uuid", conn.uuid)
 		resp.Error = AlreadySubscribed
 		return
 	}
@@ -401,6 +519,7 @@ func (s *Server) subscribe(conn *Conn, topic string, resp *Response) {
 
 func (s *Server) unsubscribe(conn *Conn, topic string, resp *Response) {
 	if _, valid := Topics[topic]; !valid {
+		log.Info("invalid topic", "topic", topic)
 		resp.Error = InvalidTopic
 		return
 	}
@@ -409,6 +528,7 @@ func (s *Server) unsubscribe(conn *Conn, topic string, resp *Response) {
 	defer s.mu.Unlock()
 
 	if _, exist := s.subscriptions[topic][conn.uuid]; !exist {
+		log.Info("not subscribed", "topic", topic, "uuid", conn.uuid)
 		resp.Error = NotSubscribed
 		return
 	}
@@ -428,12 +548,14 @@ func (s *Server) removeSubscriber(uuid string) {
 
 func (s *Server) processNewSolverOperation(conn *Conn, solverOp *operation.SolverOperation, resp *Response) {
 	if solverOp == nil {
+		log.Info("invalid solver operation")
 		resp.Error = InvalidSolverOperation
 		return
 	}
 
 	relayErr := s.newSolverOperation(solverOp)
 	if relayErr != nil {
+		log.Info("failed to submit solver operation", "err", relayErr.Error())
 		resp.Error = relayErr.Error()
 		return
 	}

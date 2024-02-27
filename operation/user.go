@@ -36,7 +36,7 @@ type UserOperation struct {
 	MaxFeePerGas *big.Int       `json:"maxFeePerGas"`
 	Nonce        *big.Int       `json:"nonce"`
 	Deadline     *big.Int       `json:"deadline"`
-	DApp         common.Address `json:"dapp"`
+	Dapp         common.Address `json:"dapp"`
 	Control      common.Address `json:"control"`
 	SessionKey   common.Address `json:"sessionKey"`
 	Data         []byte         `json:"data"`
