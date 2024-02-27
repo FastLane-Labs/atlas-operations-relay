@@ -27,21 +27,31 @@ type Manager struct {
 	// Indexed by userOpHash
 	bundles map[common.Hash]*Bundle
 
+	atlasDomainSeparator common.Hash
+
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash) *Manager {
 	return &Manager{
-		ethClient: ethClient,
-		config:    config,
+		ethClient:            ethClient,
+		config:               config,
+		bundles:              make(map[common.Hash]*Bundle),
+		atlasDomainSeparator: atlasDomainSeparator,
 	}
 }
 
 func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (*Bundle, *relayerror.Error) {
-	userOpHash, err := bundleOps.UserOperation.Hash()
-	if err != nil {
-		log.Info("failed to compute user operation hash", "err", err)
-		return nil, relayerror.ErrComputeUserOpHash.AddError(err)
+	userOpHash, relayErr := bundleOps.UserOperation.Hash()
+	if relayErr != nil {
+		log.Info("failed to compute user operation hash", "err", relayErr.Message)
+		return nil, relayErr
+	}
+
+	relayErr = bundleOps.Validate(bm.ethClient, userOpHash, bm.config.Contracts.Atlas, bm.atlasDomainSeparator)
+	if relayErr != nil {
+		log.Info("invalid dapp operation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
+		return nil, relayErr
 	}
 
 	solverOps := make([]operation.SolverOperation, 0, len(bundleOps.SolverOperations))

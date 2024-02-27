@@ -2,7 +2,6 @@ package auction
 
 import (
 	"context"
-	"math/big"
 	"sync"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
@@ -16,17 +15,10 @@ import (
 )
 
 var (
-	ErrToFieldMustBeAtlas       = relayerror.NewError(2200, "'to' field must be atlas contract address")
-	ErrDeadlineExceeded         = relayerror.NewError(2201, "deadline exceeded")
 	ErrAuctionAlreadyStarted    = relayerror.NewError(2202, "auction for this user operation has already started")
 	ErrAuctionNotFound          = relayerror.NewError(2203, "auction not found")
 	ErrUserOpFailedSimulation   = relayerror.NewError(2204, "user operation failed simulation")
 	ErrSolverOpFailedSimulation = relayerror.NewError(2205, "solver operation failed simulation")
-	ErrInvalidSignature         = relayerror.NewError(2206, "invalid signature")
-)
-
-var (
-	solverGasLimit = big.NewInt(1000000)
 )
 
 type Manager struct {
@@ -36,47 +28,28 @@ type Manager struct {
 	// Indexed by userOpHash
 	auctions map[common.Hash]*Auction
 
+	atlasDomainSeparator common.Hash
+
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash) *Manager {
 	return &Manager{
-		ethClient: ethClient,
-		config:    config,
+		ethClient:            ethClient,
+		config:               config,
+		auctions:             make(map[common.Hash]*Auction),
+		atlasDomainSeparator: atlasDomainSeparator,
 	}
-}
-
-func (am *Manager) checkUserOperation(userOp *operation.UserOperation) *relayerror.Error {
-	if userOp.To != am.config.Contracts.Atlas {
-		return ErrToFieldMustBeAtlas
-	}
-
-	// gas limit check?
-
-	currentBlock, err := am.ethClient.BlockNumber(context.Background())
-	if err != nil {
-		log.Info("failed to get current block number", "err", err)
-		return relayerror.ErrServerInternal
-	}
-
-	if userOp.Deadline.Uint64() <= currentBlock {
-		return ErrDeadlineExceeded
-	}
-
-	// signature check
-	
-
-	return nil
 }
 
 func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Hash, *relayerror.Error) {
-	userOpHash, err := userOp.Hash()
-	if err != nil {
-		log.Info("failed to compute user operation hash", "err", err)
-		return common.Hash{}, relayerror.ErrComputeUserOpHash.AddError(err)
+	userOpHash, relayErr := userOp.Hash()
+	if relayErr != nil {
+		log.Info("failed to compute user operation hash", "err", relayErr.Message)
+		return common.Hash{}, relayErr
 	}
 
-	if relayErr := am.checkUserOperation(userOp); relayErr != nil {
+	if relayErr := userOp.Validate(am.ethClient, am.config.Contracts.Atlas, am.atlasDomainSeparator); relayErr != nil {
 		log.Info("invalid user operation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, relayErr
 	}
@@ -146,6 +119,12 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 	auction := am.getAuction(solverOp.UserOpHash)
 	if auction == nil {
 		return ErrAuctionNotFound
+	}
+
+	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator)
+	if relayErr != nil {
+		log.Info("invalid solver operation", "err", relayErr.Message, "userOpHash", auction.userOpHash.Hex())
+		return relayErr
 	}
 
 	dAppOp := operation.GenerateSimulationDAppOperation(auction.userOp)

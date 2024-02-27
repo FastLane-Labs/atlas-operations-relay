@@ -1,11 +1,25 @@
 package operation
 
 import (
+	"context"
 	"math/big"
 
+	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
+	"github.com/FastLane-Labs/atlas-operations-relay/log"
+	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+var (
+	ErrUserOpInvalidSignature = relayerror.NewError(5001, "user operation has invalid signature")
+	ErrUserOpInvalidToField   = relayerror.NewError(5002, "user operation's 'to' field must be atlas contract address")
+	ErrUserOpDeadlineExceeded = relayerror.NewError(5003, "user operation's deadline exceeded")
+	ErrUserOpComputeHash      = relayerror.NewError(5004, "failed to compute user operation hash")
+	ErrUserOpComputeProofHash = relayerror.NewError(5005, "failed to compute user proof hash")
+	ErrUserOpSignatureInvalid = relayerror.NewError(5006, "user operation has invalid signature")
 )
 
 var (
@@ -28,7 +42,7 @@ var (
 		{Name: "signature", Type: "bytes", InternalType: "bytes"},
 	})
 
-	proofHashSolType, _ = abi.NewType("tuple", "struct ProofHash", []abi.ArgumentMarshaling{
+	userProofHashSolType, _ = abi.NewType("tuple", "struct UserProofHash", []abi.ArgumentMarshaling{
 		{Name: "userTypeHash", Type: "bytes32", InternalType: "bytes32"},
 		{Name: "from", Type: "address", InternalType: "address"},
 		{Name: "to", Type: "address", InternalType: "address"},
@@ -47,8 +61,8 @@ var (
 		{Type: userOpSolType, Name: "userOperation"},
 	}
 
-	proofHashArgs = abi.Arguments{
-		{Type: proofHashSolType, Name: "proofHash"},
+	userProofHashArgs = abi.Arguments{
+		{Type: userProofHashSolType, Name: "proofHash"},
 	}
 )
 
@@ -67,15 +81,44 @@ type UserOperation struct {
 	Signature    []byte         `json:"signature"`
 }
 
-func (u *UserOperation) Hash() (common.Hash, error) {
-	packed, err := userOpArgs.Pack(&u)
-	if err != nil {
-		return common.Hash{}, err
+func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Address, atlasDomainSeparator common.Hash) *relayerror.Error {
+	if u.To != atlas {
+		return ErrUserOpInvalidToField
 	}
-	return common.BytesToHash(packed), nil
+
+	// gas limit check?
+
+	currentBlock, err := ethClient.BlockNumber(context.Background())
+	if err != nil {
+		log.Info("failed to get current block number", "err", err)
+		return relayerror.ErrServerInternal
+	}
+
+	if u.Deadline.Uint64() <= currentBlock {
+		return ErrUserOpDeadlineExceeded
+	}
+
+	relayErr := u.checkSignature(atlasDomainSeparator)
+	if relayErr != nil {
+		return relayErr
+	}
+
+	return nil
 }
 
-func (u *UserOperation) ProofHash() (common.Hash, error) {
+func (u *UserOperation) Hash() (common.Hash, *relayerror.Error) {
+	packed, err := u.abiEncode()
+	if err != nil {
+		return common.Hash{}, ErrUserOpComputeHash.AddError(err)
+	}
+	return crypto.Keccak256Hash(packed), nil
+}
+
+func (u *UserOperation) abiEncode() ([]byte, error) {
+	return userOpArgs.Pack(&u)
+}
+
+func (u *UserOperation) proofHash() (common.Hash, error) {
 	proofHash := struct {
 		UserTypeHash common.Hash
 		From         common.Address
@@ -104,9 +147,30 @@ func (u *UserOperation) ProofHash() (common.Hash, error) {
 		crypto.Keccak256Hash(u.Data),
 	}
 
-	packed, err := proofHashArgs.Pack(&proofHash)
+	packed, err := userProofHashArgs.Pack(&proofHash)
 	if err != nil {
 		return common.Hash{}, err
 	}
 	return crypto.Keccak256Hash(packed), nil
+}
+
+func (u *UserOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
+	proofHash, err := u.proofHash()
+	if err != nil {
+		log.Info("failed to compute user proof hash", "err", err)
+		return ErrUserOpComputeProofHash.AddError(err)
+	}
+
+	signer, err := relayCrypto.GetSigner(domainSeparator, proofHash, u.Signature)
+	if err != nil {
+		log.Info("failed to recover user public key", "err", err)
+		return ErrUserOpSignatureInvalid.AddError(err)
+	}
+
+	if signer != u.From {
+		log.Info("invalid user operation signature", "signer", signer.Hex(), "from", u.From.Hex())
+		return ErrUserOpInvalidSignature
+	}
+
+	return nil
 }
