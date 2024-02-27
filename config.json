@@ -1,6 +1,6 @@
 {
   "network": {
-    "rpc_url": ""
+    "rpc_url": "https://eth.llamarpc.com"
   },
   "contracts": {
     "atlasVerification": "0x6Fa1a569a3CbF16B703962e5420aA4c755aD01BD",
