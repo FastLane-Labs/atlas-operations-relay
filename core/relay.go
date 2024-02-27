@@ -1,9 +1,12 @@
 package core
 
 import (
+	"math/big"
+
 	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/bundle"
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlETH"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlasVerification"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
@@ -19,6 +22,7 @@ const (
 var (
 	ErrForwardBundle          = relayerror.NewError(1200, "failed to forward bundle")
 	ErrCantGetDAppSignatories = relayerror.NewError(1201, "failed to get dapp signatories")
+	ErrCantGetBondedBalance   = relayerror.NewError(1202, "failed to get atlEth bonded balance")
 )
 
 type Relay struct {
@@ -30,12 +34,20 @@ type Relay struct {
 }
 
 func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
-	atlasVerificationContract, err := atlasVerification.NewAtlasVerification(config.Contracts.AtlasVerification, ethClient)
+	atlETHContract, err := atlETH.NewAtlETH(config.Contracts.Atlas, ethClient)
 	if err != nil {
 		panic(err)
 	}
 
-	atlasDomainSeparator, err := atlasVerificationContract.GetDomainSeparator(nil)
+	balanceOfBonded := func(account common.Address) (*big.Int, *relayerror.Error) {
+		balance, err := atlETHContract.BalanceOfBonded(nil, account)
+		if err != nil {
+			return nil, ErrCantGetBondedBalance.AddError(err)
+		}
+		return balance, nil
+	}
+
+	atlasVerificationContract, err := atlasVerification.NewAtlasVerification(config.Contracts.AtlasVerification, ethClient)
 	if err != nil {
 		panic(err)
 	}
@@ -48,7 +60,12 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 		return signatories, nil
 	}
 
-	auctionManager := auction.NewManager(ethClient, config, atlasDomainSeparator)
+	atlasDomainSeparator, err := atlasVerificationContract.GetDomainSeparator(nil)
+	if err != nil {
+		panic(err)
+	}
+
+	auctionManager := auction.NewManager(ethClient, config, atlasDomainSeparator, balanceOfBonded)
 
 	relay := &Relay{
 		config:         config,
