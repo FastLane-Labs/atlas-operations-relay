@@ -1,5 +1,11 @@
 package contract
 
+import (
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/simulator"
+)
+
 var (
-	SimulatorAbi, _ = SimulatorMetaData.GetAbi()
+	DappControlAbi, _ = dAppControl.DAppControlMetaData.GetAbi()
+	SimulatorAbi, _   = simulator.SimulatorMetaData.GetAbi()
 )

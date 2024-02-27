@@ -3,6 +3,7 @@
     "rpc_url": ""
   },
   "contracts": {
+    "atlas": "0x590cBb439Bfb3C37ad6CcE12C92427B0358cB4Dd",
     "atlasVerification": "0x6Fa1a569a3CbF16B703962e5420aA4c755aD01BD",
     "simulator": "0x56eF55097199944f103fC15104268756998438C4"
   }

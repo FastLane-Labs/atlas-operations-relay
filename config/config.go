@@ -13,6 +13,7 @@ type Config struct {
 	} `json:"network"`
 
 	Contracts *struct {
+		Atlas             common.Address `json:"atlas"`
 		AtlasVerification common.Address `json:"atlasVerification"`
 		Simulator         common.Address `json:"simulator"`
 	} `json:"contracts"`

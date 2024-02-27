@@ -1,7 +1,7 @@
 // Code generated - DO NOT EDIT.
 // This file is a generated binding and any manual changes will be lost.
 
-package contract
+package atlasVerification
 
 import (
 	"errors"
@@ -30,7 +30,7 @@ var (
 
 // AtlasVerificationMetaData contains all meta data concerning the AtlasVerification contract.
 var AtlasVerificationMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"getDAppSignatories\",\"inputs\":[{\"name\":\"dAppControl\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"getDomainSeparator\",\"inputs\":[],\"outputs\":[{\"name\":\"domainSeparator\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDAppSignatories\",\"inputs\":[{\"name\":\"dAppControl\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"}]",
 }
 
 // AtlasVerificationABI is the input ABI used to generate the binding from.
@@ -208,4 +208,35 @@ func (_AtlasVerification *AtlasVerificationSession) GetDAppSignatories(dAppContr
 // Solidity: function getDAppSignatories(address dAppControl) view returns(address[])
 func (_AtlasVerification *AtlasVerificationCallerSession) GetDAppSignatories(dAppControl common.Address) ([]common.Address, error) {
 	return _AtlasVerification.Contract.GetDAppSignatories(&_AtlasVerification.CallOpts, dAppControl)
+}
+
+// GetDomainSeparator is a free data retrieval call binding the contract method 0xed24911d.
+//
+// Solidity: function getDomainSeparator() view returns(bytes32 domainSeparator)
+func (_AtlasVerification *AtlasVerificationCaller) GetDomainSeparator(opts *bind.CallOpts) ([32]byte, error) {
+	var out []interface{}
+	err := _AtlasVerification.contract.Call(opts, &out, "getDomainSeparator")
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// GetDomainSeparator is a free data retrieval call binding the contract method 0xed24911d.
+//
+// Solidity: function getDomainSeparator() view returns(bytes32 domainSeparator)
+func (_AtlasVerification *AtlasVerificationSession) GetDomainSeparator() ([32]byte, error) {
+	return _AtlasVerification.Contract.GetDomainSeparator(&_AtlasVerification.CallOpts)
+}
+
+// GetDomainSeparator is a free data retrieval call binding the contract method 0xed24911d.
+//
+// Solidity: function getDomainSeparator() view returns(bytes32 domainSeparator)
+func (_AtlasVerification *AtlasVerificationCallerSession) GetDomainSeparator() ([32]byte, error) {
+	return _AtlasVerification.Contract.GetDomainSeparator(&_AtlasVerification.CallOpts)
 }

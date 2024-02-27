@@ -15,7 +15,6 @@ import (
 )
 
 var (
-	ErrDeadlineExceeded         = relayerror.NewError(2201, "deadline exceeded")
 	ErrAuctionAlreadyStarted    = relayerror.NewError(2202, "auction for this user operation has already started")
 	ErrAuctionNotFound          = relayerror.NewError(2203, "auction not found")
 	ErrUserOpFailedSimulation   = relayerror.NewError(2204, "user operation failed simulation")
@@ -29,21 +28,30 @@ type Manager struct {
 	// Indexed by userOpHash
 	auctions map[common.Hash]*Auction
 
+	atlasDomainSeparator common.Hash
+
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash) *Manager {
 	return &Manager{
-		ethClient: ethClient,
-		config:    config,
+		ethClient:            ethClient,
+		config:               config,
+		auctions:             make(map[common.Hash]*Auction),
+		atlasDomainSeparator: atlasDomainSeparator,
 	}
 }
 
 func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Hash, *relayerror.Error) {
-	userOpHash, err := userOp.Hash()
-	if err != nil {
-		log.Info("failed to compute user operation hash", "err", err)
-		return common.Hash{}, relayerror.ErrComputeUserOpHash.AddError(err)
+	userOpHash, relayErr := userOp.Hash()
+	if relayErr != nil {
+		log.Info("failed to compute user operation hash", "err", relayErr.Message)
+		return common.Hash{}, relayErr
+	}
+
+	if relayErr := userOp.Validate(am.ethClient, am.config.Contracts.Atlas, am.atlasDomainSeparator); relayErr != nil {
+		log.Info("invalid user operation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
+		return common.Hash{}, relayErr
 	}
 
 	pData, err := contract.SimulatorAbi.Pack("simUserOperation", *userOp)
@@ -111,6 +119,12 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 	auction := am.getAuction(solverOp.UserOpHash)
 	if auction == nil {
 		return ErrAuctionNotFound
+	}
+
+	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator)
+	if relayErr != nil {
+		log.Info("invalid solver operation", "err", relayErr.Message, "userOpHash", auction.userOpHash.Hex())
+		return relayErr
 	}
 
 	dAppOp := operation.GenerateSimulationDAppOperation(auction.userOp)
