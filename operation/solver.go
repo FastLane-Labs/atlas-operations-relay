@@ -23,7 +23,7 @@ var (
 
 var (
 	solverGasLimit   = big.NewInt(1000000)
-	SOLVER_TYPE_HASH = crypto.Keccak256Hash([]byte("UserOperation(address from,address to,uint256 value,uint256 gas,uint256 maxFeePerGas,uint256 nonce,uint256 deadline,address dapp,address control,address sessionKey,bytes32 data)"))
+	SOLVER_TYPE_HASH = crypto.Keccak256Hash([]byte("SolverOperation(address from,address to,uint256 value,uint256 gas,uint256 maxFeePerGas,uint256 deadline,address dapp,address control,bytes32 userOpHash,address bidToken,uint256 bidAmount,bytes32 data)"))
 )
 
 var (
@@ -133,7 +133,7 @@ func (s *SolverOperation) proofHash() (common.Hash, error) {
 		BidAmount      *big.Int
 		Data           common.Hash
 	}{
-		USER_TYPE_HASH,
+		SOLVER_TYPE_HASH,
 		s.From,
 		s.To,
 		s.Value,
