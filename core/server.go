@@ -17,6 +17,8 @@ import (
 )
 
 const (
+	BundlerTimeout = 300 * time.Millisecond
+
 	// Channels
 	ChannelSolver  = "solver"
 	ChannelBundler = "bundler"
@@ -81,11 +83,15 @@ var (
 )
 
 var (
-	ErrBundlerOffline = relayerror.NewError(1300, "bundler is offline")
+	ErrBundlerOffline    = relayerror.NewError(1300, "bundler is offline")
+	ErrCloggedConnection = relayerror.NewError(1301, "clogged connection")
+	ErrBundlingFailure   = relayerror.NewError(1302, "bundling failure")
 )
 
-type NewSolverOperationFn func(*operation.SolverOperation) *relayerror.Error
+type newSolverOperationFn func(*operation.SolverOperation) *relayerror.Error
+type getDAppSignatoriesFn func(common.Address) ([]common.Address, *relayerror.Error)
 type setAtlasTxHashFn func(common.Hash) *relayerror.Error
+type setRelayErrorFn func(*relayerror.Error) *relayerror.Error
 
 type RequestParams struct {
 	Topic           string                      `json:"topic,omitempty"`
@@ -165,20 +171,35 @@ func NewConn(conn *websocket.Conn, channel string, bundler common.Address) *Conn
 	}
 }
 
-func (c *Conn) send(message Marshaler) {
-	c.sendBytes(message.Marshal())
+func (c *Conn) send(message Marshaler) *relayerror.Error {
+	return c.sendBytes(message.Marshal())
 }
 
-func (c *Conn) sendString(message string) {
-	c.sendBytes([]byte(message))
+func (c *Conn) sendString(message string) *relayerror.Error {
+	return c.sendBytes([]byte(message))
 }
 
-func (c *Conn) sendBytes(message []byte) {
-	c.sendChan <- message
+func (c *Conn) sendBytes(message []byte) *relayerror.Error {
+	select {
+	case c.sendChan <- message:
+	default:
+		// Channel is full, drop message
+		return ErrCloggedConnection
+	}
+
+	return nil
 }
 
 func (c *Conn) isBundler() bool {
 	return c.bundler != (common.Address{})
+}
+
+type bundlingRequest struct {
+	candidatesBundlers map[common.Address]*Conn
+	offlineBundlers    map[common.Address]bool
+	setAtlasTxHash     setAtlasTxHashFn
+	setRelayError      setRelayErrorFn
+	doneChan           chan struct{}
 }
 
 type Server struct {
@@ -191,20 +212,22 @@ type Server struct {
 	bundlers map[common.Address]*Conn
 
 	// Indexed by [id]
-	bundlingRequests map[string]setAtlasTxHashFn
+	bundlingRequests map[string]*bundlingRequest
 
-	newSolverOperation NewSolverOperationFn
+	newSolverOperation newSolverOperationFn
+	getDAppSignatories getDAppSignatoriesFn
 
 	mu sync.RWMutex
 }
 
-func NewServer(router *mux.Router, newSolverOperation NewSolverOperationFn) *Server {
+func NewServer(router *mux.Router, newSolverOperation newSolverOperationFn, getDAppSignatories getDAppSignatoriesFn) *Server {
 	return &Server{
 		router:             router,
 		subscriptions:      make(map[string]map[string]*Conn),
 		bundlers:           make(map[common.Address]*Conn),
-		bundlingRequests:   make(map[string]setAtlasTxHashFn),
+		bundlingRequests:   make(map[string]*bundlingRequest),
 		newSolverOperation: newSolverOperation,
+		getDAppSignatories: getDAppSignatories,
 	}
 }
 
@@ -284,18 +307,52 @@ func (s *Server) BroadcastUserOperation(userOp *operation.UserOperation) {
 	s.publish(broadcast)
 }
 
-func (s *Server) ForwardBundle(bundleOps *operation.BundleOperations, setAtlasTxHash setAtlasTxHashFn) *relayerror.Error {
+func (s *Server) ForwardBundle(bundleOps *operation.BundleOperations, setAtlasTxHash setAtlasTxHashFn, setRelayError setRelayErrorFn) *relayerror.Error {
+	bundlingRequest := &bundlingRequest{
+		candidatesBundlers: make(map[common.Address]*Conn),
+		offlineBundlers:    make(map[common.Address]bool),
+		setAtlasTxHash:     setAtlasTxHash,
+		setRelayError:      setRelayError,
+		doneChan:           make(chan struct{}),
+	}
+
+	var firstCandidate *Conn
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	conn, exist := s.bundlers[bundleOps.DAppOperation.Bundler]
-	if !exist {
-		log.Info("bundler is offline")
+	primaryBundler, primaryOnline := s.bundlers[bundleOps.DAppOperation.Bundler]
+	if primaryOnline {
+		firstCandidate = primaryBundler
+		bundlingRequest.candidatesBundlers[bundleOps.DAppOperation.Bundler] = primaryBundler
+	}
+
+	// Retrieve dApp signatories, which are allowed bundlers
+	signatories, relayErr := s.getDAppSignatories(bundleOps.DAppOperation.Control)
+	if relayErr != nil {
+		log.Info("failed to get dApp signatories", "control", bundleOps.DAppOperation.Control.Hex(), "err", relayErr.Message)
+		if !primaryOnline {
+			return ErrBundlerOffline
+		}
+	}
+
+	for _, signatory := range signatories {
+		conn, online := s.bundlers[signatory]
+		if online {
+			bundlingRequest.candidatesBundlers[signatory] = conn
+		}
+		if firstCandidate == nil {
+			firstCandidate = conn
+		}
+	}
+
+	if len(bundlingRequest.candidatesBundlers) == 0 {
+		log.Info("no online bundler", "control", bundleOps.DAppOperation.Control.Hex())
 		return ErrBundlerOffline
 	}
 
 	id := uuid.New().String()
-	s.bundlingRequests[id] = setAtlasTxHash
+	s.bundlingRequests[id] = bundlingRequest
 
 	bundleReq := &BundleRequest{
 		Id:     id,
@@ -303,8 +360,51 @@ func (s *Server) ForwardBundle(bundleOps *operation.BundleOperations, setAtlasTx
 		Bundle: bundleOps,
 	}
 
-	conn.send(bundleReq)
+	go s.runBundlingRequest(id, bundleReq, firstCandidate, bundlingRequest)
 	return nil
+}
+
+func (s *Server) runBundlingRequest(id string, bundleReq *BundleRequest, firstCandidate *Conn, bundlingRequest *bundlingRequest) {
+	nextCandidate := firstCandidate
+
+	getNextCandidate := func() *Conn {
+		for candidate, conn := range bundlingRequest.candidatesBundlers {
+			if bundlingRequest.offlineBundlers[candidate] {
+				continue
+			}
+			return conn
+		}
+		return nil
+	}
+
+	for {
+		if nextCandidate == nil {
+			// No more candidates
+			s.mu.Lock()
+			delete(s.bundlingRequests, id)
+			s.mu.Unlock()
+			bundlingRequest.setRelayError(ErrBundlerOffline)
+			return
+		}
+
+		if relayErr := nextCandidate.send(bundleReq); relayErr != nil {
+			log.Info("failed to send bundle request", "bundler", nextCandidate.bundler.Hex(), "err", relayErr.Message)
+			bundlingRequest.offlineBundlers[nextCandidate.bundler] = true
+			nextCandidate = getNextCandidate()
+			continue
+		}
+
+		select {
+		case <-time.After(BundlerTimeout):
+			log.Info("bundler timed out", "bundler", nextCandidate.bundler.Hex())
+			bundlingRequest.offlineBundlers[nextCandidate.bundler] = true
+			nextCandidate = getNextCandidate()
+
+		case <-bundlingRequest.doneChan:
+			// Got a response, exit
+			return
+		}
+	}
 }
 
 func (s *Server) processSolverMessage(conn *Conn, msg []byte) {
@@ -352,22 +452,31 @@ func (s *Server) processBundlerMessage(msg []byte) {
 		return
 	}
 
-	setAtlasTxHash, exist := s.bundlingRequests[resp.Id]
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	bundlingRequest, exist := s.bundlingRequests[resp.Id]
 	if !exist {
 		log.Info("bundler response not found", "id", resp.Id)
 		return
 	}
 
+	close(bundlingRequest.doneChan)
 	delete(s.bundlingRequests, resp.Id)
 
 	if len(resp.Error) > 0 {
 		log.Info("bundler response error", "err", resp.Error)
+		bundlingRequest.setRelayError(ErrBundlingFailure.AddMessage(resp.Error))
 		return
 	}
 
-	if err := setAtlasTxHash(resp.Result); err != nil {
-		log.Info("failed to set atlas tx hash", "err", err)
+	if resp.Result == (common.Hash{}) {
+		log.Info("bundler response invalid tx hash", "txHash", resp.Result.Hex())
+		bundlingRequest.setRelayError(ErrBundlingFailure)
+		return
 	}
+
+	bundlingRequest.setAtlasTxHash(resp.Result)
 }
 
 func (s *Server) publish(broadcast *Broadcast) {

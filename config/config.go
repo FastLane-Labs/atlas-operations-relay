@@ -13,8 +13,9 @@ type Config struct {
 	} `json:"network"`
 
 	Contracts *struct {
-		Atlas     common.Address `json:"atlas"`
-		Simulator common.Address `json:"simulator"`
+		Atlas             common.Address `json:"atlas"`
+		AtlasVerification common.Address `json:"atlasVerification"`
+		Simulator         common.Address `json:"simulator"`
 	} `json:"contracts"`
 }
 
@@ -28,8 +29,7 @@ func Load() *Config {
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&config)
-	if err != nil {
+	if err := decoder.Decode(&config); err != nil {
 		panic(err)
 	}
 
