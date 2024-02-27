@@ -104,7 +104,7 @@ func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, 
 	return nil
 }
 
-func (d *DAppOperation) ProofHash() (common.Hash, error) {
+func (d *DAppOperation) proofHash() (common.Hash, error) {
 	proofHash := struct {
 		DAppTypeHash  common.Hash
 		From          common.Address
@@ -139,7 +139,7 @@ func (d *DAppOperation) ProofHash() (common.Hash, error) {
 }
 
 func (d *DAppOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
-	proofHash, err := d.ProofHash()
+	proofHash, err := d.proofHash()
 	if err != nil {
 		log.Info("failed to compute dApp proof hash", "err", err)
 		return ErrDAppOpComputeProofHash.AddError(err)
