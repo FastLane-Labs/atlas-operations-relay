@@ -1,7 +1,6 @@
 package log
 
 import (
-	// "os"
 	"os"
 
 	"github.com/ethereum/go-ethereum/log"
