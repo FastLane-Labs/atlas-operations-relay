@@ -1,6 +1,6 @@
 {
   "network": {
-    "rpc_url": "https://eth.llamarpc.com"
+    "rpc_url": "https://ethereum-sepolia-rpc.publicnode.com"
   },
   "contracts": {
     "atlas": "0x590cBb439Bfb3C37ad6CcE12C92427B0358cB4Dd",

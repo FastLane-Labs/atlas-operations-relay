@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -258,7 +259,8 @@ func (api *Api) WebsocketBundler(w http.ResponseWriter, r *http.Request) {
 	if signature[crypto.RecoveryIDOffset] == 27 || signature[crypto.RecoveryIDOffset] == 28 {
 		signature[crypto.RecoveryIDOffset] -= 27 // Transform yellow paper V from 27/28 to 0/1
 	}
-	data := []byte(strconv.FormatInt(timestamp, 10))
+	signatureContent := fmt.Sprintf("%s:%d", bundler, timestamp)
+	data := []byte(signatureContent)
 	dataHash := accounts.TextHash(data)
 	expectedPubKey, err := crypto.SigToPub(dataHash, signature)
 	if err != nil {
