@@ -23,6 +23,10 @@ var (
 	ErrNotEnoughBondedBalance   = relayerror.NewError(2206, "not enough atlEth bonded balance")
 )
 
+var (
+	ATLETH_BONDED_BALANCE_MULTI_REQ = big.NewInt(3)
+)
+
 type balanceOfBondedFn func(common.Address) (*big.Int, *relayerror.Error)
 
 type Manager struct {
@@ -139,9 +143,10 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 		return relayErr
 	}
 
-	// Bonded balance must be >= gas * maxFeePerGas
-	if bondedBalance.Cmp(new(big.Int).Mul(solverOp.Gas, solverOp.MaxFeePerGas)) < 0 {
-		log.Info("not enough bonded balance", "userOpHash", solverOp.UserOpHash.Hex(), "from", solverOp.From.Hex())
+	// Bonded balance must be >= ATLETH_BONDED_BALANCE_MULTI_REQ * (gas * maxFeePerGas)
+	atlEthRequired := new(big.Int).Mul(ATLETH_BONDED_BALANCE_MULTI_REQ, new(big.Int).Mul(solverOp.Gas, solverOp.MaxFeePerGas))
+	if bondedBalance.Cmp(atlEthRequired) < 0 {
+		log.Info("not enough bonded balance", "userOpHash", solverOp.UserOpHash.Hex(), "from", solverOp.From.Hex(), "bondedBalance", bondedBalance.String(), "atlEthRequired", atlEthRequired.String())
 		return ErrNotEnoughBondedBalance
 	}
 
