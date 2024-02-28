@@ -18,12 +18,17 @@ type Route struct {
 
 func NewRouter(api *Api) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
-	for _, route := range buildRoutes(api) {
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	logger := func(inner http.Handler, name string) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
-			route.HandlerFunc.ServeHTTP(w, r)
-			log.Info(fmt.Sprintf("Served %s", route.Name), "method", r.Method, "url", r.RequestURI, "duration", time.Since(start))
+			inner.ServeHTTP(w, r)
+			log.Info(fmt.Sprintf("served %s", name), "method", r.Method, "url", r.RequestURI, "duration", time.Since(start))
 		})
+	}
+
+	for _, route := range buildRoutes(api) {
+		var handler http.Handler = route.HandlerFunc
+		handler = logger(handler, route.Name)
 
 		router.
 			Methods(route.Method).
