@@ -20,9 +20,11 @@ var (
 	ErrUserOpComputeHash      = relayerror.NewError(5004, "failed to compute user operation hash")
 	ErrUserOpComputeProofHash = relayerror.NewError(5005, "failed to compute user proof hash")
 	ErrUserOpSignatureInvalid = relayerror.NewError(5006, "user operation has invalid signature")
+	ErrUserOpGasLimitExceeded = relayerror.NewError(5007, "user operation's gas limit exceeded")
 )
 
 var (
+	userGasLimit   = big.NewInt(1000000)
 	USER_TYPE_HASH = crypto.Keccak256Hash([]byte("UserOperation(address from,address to,uint256 value,uint256 gas,uint256 maxFeePerGas,uint256 nonce,uint256 deadline,address dapp,address control,address sessionKey,bytes32 data)"))
 )
 
@@ -81,12 +83,19 @@ type UserOperation struct {
 	Signature    []byte         `json:"signature"`
 }
 
-func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Address, atlasDomainSeparator common.Hash) *relayerror.Error {
+func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
 	if u.To != atlas {
 		return ErrUserOpInvalidToField
 	}
 
-	// gas limit check?
+	enforcedGasLimit := new(big.Int).Set(userGasLimit)
+	if gasLimit != nil && gasLimit.Cmp(common.Big0) > 0 {
+		enforcedGasLimit = gasLimit
+	}
+
+	if u.Gas.Cmp(enforcedGasLimit) > 0 {
+		return ErrUserOpGasLimitExceeded
+	}
 
 	currentBlock, err := ethClient.BlockNumber(context.Background())
 	if err != nil {

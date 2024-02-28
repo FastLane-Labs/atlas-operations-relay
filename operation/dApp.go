@@ -20,9 +20,11 @@ var (
 	ErrDAppOpInvalidCallChainHash       = relayerror.NewError(3208, "dApp operation's call chain hash is invalid")
 	ErrDAppOpComputeProofHash           = relayerror.NewError(3209, "failed to compute dApp proof hash")
 	ErrDappOpSignatureInvalid           = relayerror.NewError(3210, "dApp operation has invalid signature")
+	ErrDAppOpGasLimitExceeded           = relayerror.NewError(3211, "dApp operation's gas limit exceeded")
 )
 
 var (
+	dAppGasLimit   = big.NewInt(1000000)
 	DAPP_TYPE_HASH = crypto.Keccak256Hash([]byte("DAppApproval(address from,address to,uint256 value,uint256 gas,uint256 nonce,uint256 deadline,address control,address bundler,bytes32 userOpHash,bytes32 callChainHash)"))
 )
 
@@ -65,7 +67,7 @@ func GenerateSimulationDAppOperation(userOp *UserOperation) *DAppOperation {
 	}
 }
 
-func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, callChainHash common.Hash, atlas common.Address, atlasDomainSeparator common.Hash) *relayerror.Error {
+func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, callChainHash common.Hash, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
 	if userOp.SessionKey != (common.Address{}) && d.From != userOp.SessionKey {
 		return ErrDAppOpFromDoesNotMatchSessionKey
 	}
@@ -74,9 +76,14 @@ func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, 
 		return ErrDAppOpInvalidToField
 	}
 
-	// gas limit check?
+	enforcedGasLimit := new(big.Int).Set(dAppGasLimit)
+	if gasLimit != nil && gasLimit.Cmp(common.Big0) > 0 {
+		enforcedGasLimit = gasLimit
+	}
 
-	// maxFeePerGas check?
+	if d.Gas.Cmp(enforcedGasLimit) > 0 {
+		return ErrDAppOpGasLimitExceeded
+	}
 
 	if d.Deadline.Cmp(userOp.Deadline) < 0 {
 		return ErrDAppOpDeadlineTooLow

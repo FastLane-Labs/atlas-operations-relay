@@ -60,7 +60,7 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Has
 		return common.Hash{}, relayErr
 	}
 
-	if relayErr := userOp.Validate(am.ethClient, am.config.Contracts.Atlas, am.atlasDomainSeparator); relayErr != nil {
+	if relayErr := userOp.Validate(am.ethClient, am.config.Contracts.Atlas, am.atlasDomainSeparator, am.config.Relay.Gas.MaxPerUserOperation); relayErr != nil {
 		log.Info("invalid user operation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, relayErr
 	}
@@ -132,7 +132,7 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 		return ErrAuctionNotFound
 	}
 
-	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator)
+	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator, am.config.Relay.Gas.MaxPerSolverOperation)
 	if relayErr != nil {
 		log.Info("invalid solver operation", "err", relayErr.Message, "userOpHash", auction.userOpHash.Hex())
 		return relayErr
