@@ -23,7 +23,7 @@ var (
 )
 
 var (
-	DAPP_TYPE_HASH = crypto.Keccak256Hash([]byte("DAppApproval(address from,address to,uint256 value,uint256 gas,uint256 maxFeePerGas,uint256 nonce,uint256 deadline,address control,address bundler,bytes32 userOpHash,bytes32 callChainHash)"))
+	DAPP_TYPE_HASH = crypto.Keccak256Hash([]byte("DAppApproval(address from,address to,uint256 value,uint256 gas,uint256 nonce,uint256 deadline,address control,address bundler,bytes32 userOpHash,bytes32 callChainHash)"))
 )
 
 var (
@@ -33,7 +33,6 @@ var (
 		{Name: "to", Type: "address", InternalType: "address"},
 		{Name: "value", Type: "uint256", InternalType: "uint256"},
 		{Name: "gas", Type: "uint256", InternalType: "uint256"},
-		{Name: "maxFeePerGas", Type: "uint256", InternalType: "uint256"},
 		{Name: "nonce", Type: "uint256", InternalType: "uint256"},
 		{Name: "deadline", Type: "uint256", InternalType: "uint256"},
 		{Name: "control", Type: "address", InternalType: "address"},
@@ -51,7 +50,6 @@ type DAppOperation struct {
 	To            common.Address `json:"to"`
 	Value         *big.Int       `json:"value"`
 	Gas           *big.Int       `json:"gas"`
-	MaxFeePerGas  *big.Int       `json:"maxFeePerGas"`
 	Nonce         *big.Int       `json:"nonce"`
 	Deadline      *big.Int       `json:"deadline"`
 	Control       common.Address `json:"control"`
@@ -111,7 +109,6 @@ func (d *DAppOperation) proofHash() (common.Hash, error) {
 		To            common.Address
 		Value         *big.Int
 		Gas           *big.Int
-		MaxFeePerGas  *big.Int
 		Nonce         *big.Int
 		Deadline      *big.Int
 		Control       common.Address
@@ -123,7 +120,6 @@ func (d *DAppOperation) proofHash() (common.Hash, error) {
 		d.To,
 		d.Value,
 		d.Gas,
-		d.MaxFeePerGas,
 		d.Nonce,
 		d.Deadline,
 		d.Control,

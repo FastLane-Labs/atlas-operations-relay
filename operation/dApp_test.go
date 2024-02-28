@@ -13,9 +13,8 @@ func generateDAppOperation() *DAppOperation {
 		To:            common.HexToAddress("0x2"),
 		Value:         big.NewInt(100),
 		Gas:           big.NewInt(200),
-		MaxFeePerGas:  big.NewInt(300),
-		Nonce:         big.NewInt(400),
-		Deadline:      big.NewInt(500),
+		Nonce:         big.NewInt(300),
+		Deadline:      big.NewInt(400),
 		Control:       common.HexToAddress("0x3"),
 		Bundler:       common.HexToAddress("0x4"),
 		UserOpHash:    common.HexToHash("0x9999999999999999999999999999999999999999999999999999999999999999"),
@@ -28,7 +27,7 @@ func TestDAppOperationProofHash(t *testing.T) {
 	t.Parallel()
 
 	dAppOp := generateDAppOperation()
-	want := common.HexToHash("0xf9b9b34f358309d76ec72f2d9be0af79c824c36999896c7a10c41949f5ff070a")
+	want := common.HexToHash("0x408d435740d89283a7971ca84aa32bf4c2e134d8b50dde7693ea3c6359bec74a")
 
 	result, err := dAppOp.proofHash()
 	if err != nil {
@@ -45,7 +44,7 @@ func TestDAppOperationCheckSignature(t *testing.T) {
 
 	dAppOp := generateDAppOperation()
 	dAppOp.From = common.HexToAddress("0x4af08B2fA648F2f2B0A6805f37516050353d83dc")
-	dAppOp.Signature = common.FromHex("0xb05222fcd6215c9f7b3880f74a813146bb4e1ef7476b8c4e8000d5ece49d6055098b79f9900703d0bf1bed633ac79f9a4197bddf24a152fd4a40b43d7a3b29461c")
+	dAppOp.Signature = common.FromHex("0x0ee6e7b9c532f1091efcac2b08fe7e631c22ba718bc4bf26bda5e6316461e9633c3f4fa50c8be1feec30a184b7844718ac957a10fe33fa8323e81eb7d9dfcf5e1c")
 	domainSeparator := common.HexToHash("0x82b5c47bb09eca2c93143f36f8fde6567050d39f3611535aab530d4f15fa5d0f")
 
 	relayErr := dAppOp.checkSignature(domainSeparator)
