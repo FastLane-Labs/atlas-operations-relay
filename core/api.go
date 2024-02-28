@@ -25,9 +25,10 @@ var (
 
 	// Bundler signature errors
 	ErrInvalidBundlerAddress = relayerror.NewError(1200, "invalid bundler address")
-	ErrExpiredSignature      = relayerror.NewError(1201, "expired signature")
-	ErrBadSignature          = relayerror.NewError(1202, "bad signature (decode/recover error)")
-	ErrSignatureMismatch     = relayerror.NewError(1203, "signature mismatch")
+	ErrInvalidTimestamp      = relayerror.NewError(1201, "invalid timestamp")
+	ErrExpiredSignature      = relayerror.NewError(1202, "expired signature")
+	ErrBadSignature          = relayerror.NewError(1203, "bad signature (decode/recover error)")
+	ErrSignatureMismatch     = relayerror.NewError(1204, "signature mismatch")
 )
 
 type RetrieveRequest struct {
@@ -224,7 +225,7 @@ func (api *Api) WebsocketBundler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
 	address := q.Get("address")
-	if len(address) < 40 || len(address) > 42 || !common.IsHexAddress(address) {
+	if !common.IsHexAddress(address) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(ErrInvalidBundlerAddress.Marshal())
 		return
@@ -232,9 +233,15 @@ func (api *Api) WebsocketBundler(w http.ResponseWriter, r *http.Request) {
 	bundler := common.HexToAddress(address)
 
 	timestamp, err := strconv.ParseInt(q.Get("timestamp"), 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(ErrInvalidTimestamp.Marshal())
+		return
+	}
+
 	// 60 seconds window past and future for timestamp
 	minTimestamp, maxTimestamp := time.Now().Unix()-60, time.Now().Unix()+60
-	if err != nil || timestamp < minTimestamp || timestamp > maxTimestamp {
+	if timestamp < minTimestamp || timestamp > maxTimestamp {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(ErrExpiredSignature.Marshal())
 		return
