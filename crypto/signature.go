@@ -7,19 +7,17 @@ import (
 )
 
 func GetSigner(domainSeparator common.Hash, structHash common.Hash, signature []byte) (common.Address, error) {
-	// add prefix \x19\x01 ?
-	hash := crypto.Keccak256(domainSeparator.Bytes(), structHash.Bytes())
-	compressedPublicKey, err := crypto.Ecrecover(hash, signature)
+	hash := crypto.Keccak256([]byte("\x19\x01"), domainSeparator.Bytes(), structHash.Bytes())
+
+	if signature[crypto.RecoveryIDOffset] == 27 || signature[crypto.RecoveryIDOffset] == 28 {
+		signature[crypto.RecoveryIDOffset] -= 27 // Transform yellow paper V from 27/28 to 0/1
+	}
+
+	recovered, err := crypto.SigToPub(hash, signature)
 	if err != nil {
 		log.Info("failed to recover public key", "err", err)
 		return common.Address{}, err
 	}
 
-	publicKey, err := crypto.DecompressPubkey(compressedPublicKey)
-	if err != nil {
-		log.Info("failed to decompress public key", "err", err)
-		return common.Address{}, err
-	}
-
-	return crypto.PubkeyToAddress(*publicKey), nil
+	return crypto.PubkeyToAddress(*recovered), nil
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -64,7 +65,7 @@ func (b *BundleOperations) callChainHash(callConfig uint32, dAppControl common.A
 			callSequenceHash.Bytes(),
 			dAppControl.Bytes(),
 			preOpsEncoded,
-			counter.Bytes(),
+			math.U256Bytes(counter),
 		)
 
 		counter.Add(counter, common.Big1)
@@ -78,7 +79,7 @@ func (b *BundleOperations) callChainHash(callConfig uint32, dAppControl common.A
 	callSequenceHash = crypto.Keccak256Hash(
 		callSequenceHash.Bytes(),
 		userOpAbiEncoded,
-		counter.Bytes(),
+		math.U256Bytes(counter),
 	)
 
 	counter.Add(counter, common.Big1)
@@ -92,7 +93,7 @@ func (b *BundleOperations) callChainHash(callConfig uint32, dAppControl common.A
 		callSequenceHash = crypto.Keccak256Hash(
 			callSequenceHash.Bytes(),
 			solverOpAbiEncoded,
-			counter.Bytes(),
+			math.U256Bytes(counter),
 		)
 
 		counter.Add(counter, common.Big1)
