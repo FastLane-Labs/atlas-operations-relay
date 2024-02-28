@@ -2,6 +2,7 @@ package auction
 
 import (
 	"context"
+	"math/big"
 	"sync"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
@@ -15,12 +16,14 @@ import (
 )
 
 var (
-	ErrDeadlineExceeded         = relayerror.NewError(2201, "deadline exceeded")
 	ErrAuctionAlreadyStarted    = relayerror.NewError(2202, "auction for this user operation has already started")
 	ErrAuctionNotFound          = relayerror.NewError(2203, "auction not found")
 	ErrUserOpFailedSimulation   = relayerror.NewError(2204, "user operation failed simulation")
 	ErrSolverOpFailedSimulation = relayerror.NewError(2205, "solver operation failed simulation")
+	ErrNotEnoughBondedBalance   = relayerror.NewError(2206, "not enough atlEth bonded balance")
 )
+
+type balanceOfBondedFn func(common.Address) (*big.Int, *relayerror.Error)
 
 type Manager struct {
 	ethClient *ethclient.Client
@@ -29,21 +32,33 @@ type Manager struct {
 	// Indexed by userOpHash
 	auctions map[common.Hash]*Auction
 
+	atlasDomainSeparator common.Hash
+
+	balanceOfBonded balanceOfBondedFn
+
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, balanceOfBonded balanceOfBondedFn) *Manager {
 	return &Manager{
-		ethClient: ethClient,
-		config:    config,
+		ethClient:            ethClient,
+		config:               config,
+		auctions:             make(map[common.Hash]*Auction),
+		atlasDomainSeparator: atlasDomainSeparator,
+		balanceOfBonded:      balanceOfBonded,
 	}
 }
 
 func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Hash, *relayerror.Error) {
-	userOpHash, err := userOp.Hash()
-	if err != nil {
-		log.Info("failed to compute user operation hash", "err", err)
-		return common.Hash{}, relayerror.ErrComputeUserOpHash.AddError(err)
+	userOpHash, relayErr := userOp.Hash()
+	if relayErr != nil {
+		log.Info("failed to compute user operation hash", "err", relayErr.Message)
+		return common.Hash{}, relayErr
+	}
+
+	if relayErr := userOp.Validate(am.ethClient, am.config.Contracts.Atlas, am.atlasDomainSeparator); relayErr != nil {
+		log.Info("invalid user operation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
+		return common.Hash{}, relayErr
 	}
 
 	pData, err := contract.SimulatorAbi.Pack("simUserOperation", *userOp)
@@ -111,6 +126,23 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 	auction := am.getAuction(solverOp.UserOpHash)
 	if auction == nil {
 		return ErrAuctionNotFound
+	}
+
+	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator)
+	if relayErr != nil {
+		log.Info("invalid solver operation", "err", relayErr.Message, "userOpHash", auction.userOpHash.Hex())
+		return relayErr
+	}
+
+	bondedBalance, relayErr := am.balanceOfBonded(solverOp.From)
+	if relayErr != nil {
+		return relayErr
+	}
+
+	// Bonded balance must be >= gas * maxFeePerGas
+	if bondedBalance.Cmp(new(big.Int).Mul(solverOp.Gas, solverOp.MaxFeePerGas)) < 0 {
+		log.Info("not enough bonded balance", "userOpHash", solverOp.UserOpHash.Hex(), "from", solverOp.From.Hex())
+		return ErrNotEnoughBondedBalance
 	}
 
 	dAppOp := operation.GenerateSimulationDAppOperation(auction.userOp)
