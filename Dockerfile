@@ -1,14 +1,14 @@
-FROM golang:1.21
+FROM golang:latest
 
 WORKDIR /app
-COPY go.mod go.sum ./
 
+RUN apt-get update
+
+COPY ./go.mod ./go.sum ./
 RUN go mod download
-
 COPY . ./
-
 RUN CGO_ENABLED=0 GOOS=linux go build -o /opsrelay
 
 EXPOSE 8080
 
-CMD ["/opsrelay"]
+ENTRYPOINT ["/opsrelay"]
