@@ -1,46 +1,28 @@
 package log
 
 import (
-	// "fmt"
-	"log/slog"
 	// "os"
+	"os"
+
+	"github.com/ethereum/go-ethereum/log"
 )
 
 func InitLogger() {
-	// TODO
-
-	// opts := &slog.HandlerOptions{
-	// 	Level: slog.LevelInfo,
-	// 	ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-	// 		if a.Key == slog.TimeKey {
-	// 			t := a.Value.Time()
-	// 			format := fmt.Sprintf(
-	// 				"[%s|%s]",
-	// 				t.Format("01-02"),
-	// 				t.Format("15:04:05.000"),
-	// 			)
-	// 			a.Value = slog.StringValue(format)
-	// 		}
-	// 		return a
-	// 	},
-	// }
-
-	// logger := slog.NewTextHandler(os.Stderr, opts)
-	// slog.SetDefault(logger)
+	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stdout, log.LevelInfo, true)))
 }
 
 func Debug(format string, v ...interface{}) {
-	slog.Debug(format, v...)
+	log.Debug(format, v...)
 }
 
 func Info(format string, v ...interface{}) {
-	slog.Info(format, v...)
+	log.Info(format, v...)
 }
 
 func Warn(format string, v ...interface{}) {
-	slog.Warn(format, v...)
+	log.Warn(format, v...)
 }
 
 func Error(format string, v ...interface{}) {
-	slog.Error(format, v...)
+	log.Error(format, v...)
 }
