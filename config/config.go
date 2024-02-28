@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"math/big"
 	"os"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -13,8 +14,18 @@ type Config struct {
 	} `json:"network"`
 
 	Contracts *struct {
-		Simulator common.Address `json:"simulator"`
+		Atlas             common.Address `json:"atlas"`
+		AtlasVerification common.Address `json:"atlasVerification"`
+		Simulator         common.Address `json:"simulator"`
 	} `json:"contracts"`
+
+	Relay *struct {
+		Gas *struct {
+			MaxPerUserOperation   *big.Int `json:"max_per_user_operation,omitempty"`
+			MaxPerSolverOperation *big.Int `json:"max_per_solver_operation,omitempty"`
+			MaxPerDAppOperation   *big.Int `json:"max_per_dApp_operation,omitempty"`
+		} `json:"gas"`
+	} `json:"relay"`
 }
 
 func Load() *Config {
@@ -27,8 +38,7 @@ func Load() *Config {
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&config)
-	if err != nil {
+	if err := decoder.Decode(&config); err != nil {
 		panic(err)
 	}
 

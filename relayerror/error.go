@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	ErrComputeUserOpHash = NewError(3000, "can't compute user operation hash")
-	ErrServerInternal    = NewError(3001, "server internal error")
+	// Errors used across different packages
+	ErrServerInternal = NewError(3001, "server internal error")
 )
 
 type Error struct {
@@ -28,6 +28,11 @@ func (e *Error) Error() string {
 
 func (e *Error) AddError(err error) *Error {
 	e.Message = fmt.Sprintf("%s: %s", e.Message, err.Error())
+	return e
+}
+
+func (e *Error) AddMessage(message string) *Error {
+	e.Message = fmt.Sprintf("%s: %s", e.Message, message)
 	return e
 }
 

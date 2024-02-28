@@ -2,6 +2,7 @@ package auction
 
 import (
 	"context"
+	"math/big"
 	"sync"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
@@ -15,12 +16,18 @@ import (
 )
 
 var (
-	ErrDeadlineExceeded         = relayerror.NewError(2201, "deadline exceeded")
 	ErrAuctionAlreadyStarted    = relayerror.NewError(2202, "auction for this user operation has already started")
 	ErrAuctionNotFound          = relayerror.NewError(2203, "auction not found")
 	ErrUserOpFailedSimulation   = relayerror.NewError(2204, "user operation failed simulation")
 	ErrSolverOpFailedSimulation = relayerror.NewError(2205, "solver operation failed simulation")
+	ErrNotEnoughBondedBalance   = relayerror.NewError(2206, "not enough atlEth bonded balance")
 )
+
+var (
+	ATLETH_BONDED_BALANCE_MULTI_REQ = big.NewInt(3)
+)
+
+type balanceOfBondedFn func(common.Address) (*big.Int, *relayerror.Error)
 
 type Manager struct {
 	ethClient *ethclient.Client
@@ -29,43 +36,55 @@ type Manager struct {
 	// Indexed by userOpHash
 	auctions map[common.Hash]*Auction
 
+	atlasDomainSeparator common.Hash
+
+	balanceOfBonded balanceOfBondedFn
+
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, balanceOfBonded balanceOfBondedFn) *Manager {
 	return &Manager{
-		ethClient: ethClient,
-		config:    config,
+		ethClient:            ethClient,
+		config:               config,
+		auctions:             make(map[common.Hash]*Auction),
+		atlasDomainSeparator: atlasDomainSeparator,
+		balanceOfBonded:      balanceOfBonded,
 	}
 }
 
 func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Hash, *relayerror.Error) {
-	userOpHash, err := userOp.Hash()
-	if err != nil {
-		log.Info("failed to compute user operation hash", "err", err)
-		return common.Hash{}, relayerror.ErrComputeUserOpHash.AddError(err)
+	userOpHash, relayErr := userOp.Hash()
+	if relayErr != nil {
+		log.Info("failed to compute user operation hash", "err", relayErr.Message)
+		return common.Hash{}, relayErr
+	}
+
+	if relayErr := userOp.Validate(am.ethClient, am.config.Contracts.Atlas, am.atlasDomainSeparator, am.config.Relay.Gas.MaxPerUserOperation); relayErr != nil {
+		log.Info("invalid user operation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
+		return common.Hash{}, relayErr
 	}
 
 	pData, err := contract.SimulatorAbi.Pack("simUserOperation", *userOp)
 	if err != nil {
-		log.Info("failed to pack user operation", "err", err, "userOpHash", userOpHash.String())
+		log.Info("failed to pack user operation", "err", err, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, relayerror.ErrServerInternal
 	}
 
 	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &am.config.Contracts.Simulator, Data: pData}, nil)
 	if err != nil {
-		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.String())
+		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, relayerror.ErrServerInternal
 	}
 
 	validOp, err := contract.SimulatorAbi.Unpack("simUserOperation", bData)
 	if err != nil {
-		log.Info("failed to unpack simUserOperation return data", "err", err, "userOpHash", userOpHash.String())
+		log.Info("failed to unpack simUserOperation return data", "err", err, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, relayerror.ErrServerInternal
 	}
 
 	if !validOp[0].(bool) {
-		log.Info("user operation failed simulation", "userOpHash", userOpHash.String())
+		log.Info("user operation failed simulation", "userOpHash", userOpHash.Hex())
 		return common.Hash{}, ErrUserOpFailedSimulation
 	}
 
@@ -73,7 +92,7 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Has
 	defer am.mu.Unlock()
 
 	if _, alreadyStarted := am.auctions[userOpHash]; alreadyStarted {
-		log.Info("auction for this user operation has already started", "userOpHash", userOpHash.String())
+		log.Info("auction for this user operation has already started", "userOpHash", userOpHash.Hex())
 		return common.Hash{}, ErrAuctionAlreadyStarted
 	}
 
@@ -87,7 +106,7 @@ func (am *Manager) GetSolverOperations(userOpHash common.Hash, completionChan ch
 
 	auction, ok := am.auctions[userOpHash]
 	if !ok {
-		log.Info("auction not found", "userOpHash", userOpHash.String())
+		log.Info("auction not found", "userOpHash", userOpHash.Hex())
 		return nil, ErrAuctionNotFound
 	}
 
@@ -100,7 +119,7 @@ func (am *Manager) getAuction(userOpHash common.Hash) *Auction {
 
 	auction, ok := am.auctions[userOpHash]
 	if !ok {
-		log.Info("auction not found", "userOpHash", userOpHash.String())
+		log.Info("auction not found", "userOpHash", userOpHash.Hex())
 		return nil
 	}
 
@@ -113,29 +132,46 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 		return ErrAuctionNotFound
 	}
 
+	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator, am.config.Relay.Gas.MaxPerSolverOperation)
+	if relayErr != nil {
+		log.Info("invalid solver operation", "err", relayErr.Message, "userOpHash", auction.userOpHash.Hex())
+		return relayErr
+	}
+
+	bondedBalance, relayErr := am.balanceOfBonded(solverOp.From)
+	if relayErr != nil {
+		return relayErr
+	}
+
+	// Bonded balance must be >= ATLETH_BONDED_BALANCE_MULTI_REQ * (gas * maxFeePerGas)
+	atlEthRequired := new(big.Int).Mul(ATLETH_BONDED_BALANCE_MULTI_REQ, new(big.Int).Mul(solverOp.Gas, solverOp.MaxFeePerGas))
+	if bondedBalance.Cmp(atlEthRequired) < 0 {
+		log.Info("not enough bonded balance", "userOpHash", solverOp.UserOpHash.Hex(), "from", solverOp.From.Hex(), "bondedBalance", bondedBalance.String(), "atlEthRequired", atlEthRequired.String())
+		return ErrNotEnoughBondedBalance
+	}
+
 	dAppOp := operation.GenerateSimulationDAppOperation(auction.userOp)
 
 	pData, err := contract.SimulatorAbi.Pack("simSolverCall", *auction.userOp, []operation.SolverOperation{*solverOp}, *dAppOp)
 	if err != nil {
-		log.Info("failed to pack solver operation", "err", err, "userOpHash", auction.userOpHash.String())
+		log.Info("failed to pack solver operation", "err", err, "userOpHash", auction.userOpHash.Hex())
 		return relayerror.ErrServerInternal
 	}
 
-	// TODO set proper "to" address to simulator contract
-	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &common.MaxAddress, Data: pData}, nil)
+	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &am.config.Contracts.Simulator, Data: pData}, nil)
 	if err != nil {
-		log.Info("failed to call simulator contract", "err", err, "userOpHash", auction.userOpHash.String())
+		log.Info("failed to call simulator contract", "err", err, "userOpHash", auction.userOpHash.Hex())
 		return relayerror.ErrServerInternal
 	}
 
 	validOp, err := contract.SimulatorAbi.Unpack("simSolverCall", bData)
 	if err != nil {
-		log.Info("failed to unpack simSolverCall return data", "err", err, "userOpHash", auction.userOpHash.String())
+		log.Info("failed to unpack simSolverCall return data", "err", err, "userOpHash", auction.userOpHash.Hex())
 		return relayerror.ErrServerInternal
 	}
 
 	if !validOp[0].(bool) {
-		log.Info("solver operation failed simulation", "userOpHash", auction.userOpHash.String())
+		log.Info("solver operation failed simulation", "userOpHash", auction.userOpHash.Hex())
 		return ErrSolverOpFailedSimulation
 	}
 
