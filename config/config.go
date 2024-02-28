@@ -9,28 +9,60 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type Config struct {
-	Network *struct {
+type configJson struct {
+	Network struct {
 		RpcUrl string `json:"rpc_url"`
 	} `json:"network"`
 
-	Contracts *struct {
-		Atlas             common.Address `json:"atlas,omitempty"`
-		AtlasVerification common.Address `json:"atlasVerification,omitempty"`
-		Simulator         common.Address `json:"simulator,omitempty"`
+	Contracts struct {
+		Atlas             string `json:"atlas"`
+		AtlasVerification string `json:"atlasVerification"`
+		Simulator         string `json:"simulator"`
 	} `json:"contracts"`
 
-	Relay *struct {
-		Gas *struct {
-			MaxPerUserOperation   *big.Int `json:"max_per_user_operation,omitempty"`
-			MaxPerSolverOperation *big.Int `json:"max_per_solver_operation,omitempty"`
-			MaxPerDAppOperation   *big.Int `json:"max_per_dApp_operation,omitempty"`
+	Relay struct {
+		Gas struct {
+			MaxPerUserOperation   uint64 `json:"max_per_user_operation"`
+			MaxPerSolverOperation uint64 `json:"max_per_solver_operation"`
+			MaxPerDAppOperation   uint64 `json:"max_per_dApp_operation"`
+		} `json:"gas"`
+	} `json:"relay"`
+}
+
+type Config struct {
+	Network struct {
+		RpcUrl string `json:"rpc_url"`
+	} `json:"network"`
+
+	Contracts struct {
+		Atlas             common.Address `json:"atlas"`
+		AtlasVerification common.Address `json:"atlasVerification"`
+		Simulator         common.Address `json:"simulator"`
+	} `json:"contracts"`
+
+	Relay struct {
+		Gas struct {
+			MaxPerUserOperation   *big.Int `json:"max_per_user_operation"`
+			MaxPerSolverOperation *big.Int `json:"max_per_solver_operation"`
+			MaxPerDAppOperation   *big.Int `json:"max_per_dApp_operation"`
 		} `json:"gas"`
 	} `json:"relay"`
 }
 
 func Load() *Config {
-	var config Config
+	config := &Config{}
+	config.parseConfigFile()
+	config.parseFlags()
+
+	if envRpcUrl, set := os.LookupEnv("ETH_RPC_URL"); set && len(envRpcUrl) > 0 {
+		config.Network.RpcUrl = envRpcUrl
+	}
+
+	return config
+}
+
+func (c *Config) parseConfigFile() {
+	var configJson configJson
 
 	file, err := os.Open("config.json")
 	if err != nil {
@@ -39,17 +71,29 @@ func Load() *Config {
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&config); err != nil {
+	if err := decoder.Decode(&configJson); err != nil {
 		panic(err)
 	}
 
-	config.parseFlags()
-
-	if envRpcUrl, set := os.LookupEnv("ETH_RPC_URL"); set && len(envRpcUrl) > 0 {
-		config.Network.RpcUrl = envRpcUrl
+	if len(configJson.Network.RpcUrl) > 0 {
+		c.Network.RpcUrl = configJson.Network.RpcUrl
 	}
 
-	return &config
+	if len(configJson.Contracts.Atlas) > 0 {
+		c.Contracts.Atlas = common.HexToAddress(configJson.Contracts.Atlas)
+	}
+
+	if len(configJson.Contracts.AtlasVerification) > 0 {
+		c.Contracts.AtlasVerification = common.HexToAddress(configJson.Contracts.AtlasVerification)
+	}
+
+	if len(configJson.Contracts.Simulator) > 0 {
+		c.Contracts.Simulator = common.HexToAddress(configJson.Contracts.Simulator)
+	}
+
+	c.Relay.Gas.MaxPerUserOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerUserOperation)
+	c.Relay.Gas.MaxPerSolverOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerSolverOperation)
+	c.Relay.Gas.MaxPerDAppOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerDAppOperation)
 }
 
 func (c *Config) parseFlags() {
