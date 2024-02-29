@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"sync"
+	"time"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
@@ -24,6 +25,8 @@ type Bundle struct {
 
 	completionSubs []chan *Bundle
 
+	createdAt time.Time
+
 	mu sync.RWMutex
 }
 
@@ -32,6 +35,7 @@ func NewBundle(userOpHash common.Hash, bundleOps *operation.BundleOperations) *B
 		userOpHash:     userOpHash,
 		ops:            bundleOps,
 		completionSubs: make([]chan *Bundle, 0),
+		createdAt:      time.Now(),
 	}
 }
 

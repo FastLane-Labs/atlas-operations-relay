@@ -3,6 +3,7 @@ package bundle
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract"
@@ -33,11 +34,26 @@ type Manager struct {
 }
 
 func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash) *Manager {
-	return &Manager{
+	bm := &Manager{
 		ethClient:            ethClient,
 		config:               config,
 		bundles:              make(map[common.Hash]*Bundle),
 		atlasDomainSeparator: atlasDomainSeparator,
+	}
+
+	go bm.bundlesCleaner()
+	return bm
+}
+
+func (bm *Manager) bundlesCleaner() {
+	for range time.Tick(10 * time.Minute) {
+		bm.mu.Lock()
+		for userOpHash, bundle := range bm.bundles {
+			if (bundle.atlasTxHash != (common.Hash{}) || bundle.relayErr != nil) && time.Since(bundle.createdAt) > time.Hour {
+				delete(bm.bundles, userOpHash)
+			}
+		}
+		bm.mu.Unlock()
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract"
@@ -44,12 +45,27 @@ type Manager struct {
 }
 
 func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, balanceOfBonded balanceOfBondedFn) *Manager {
-	return &Manager{
+	am := &Manager{
 		ethClient:            ethClient,
 		config:               config,
 		auctions:             make(map[common.Hash]*Auction),
 		atlasDomainSeparator: atlasDomainSeparator,
 		balanceOfBonded:      balanceOfBonded,
+	}
+
+	go am.auctionsCleaner()
+	return am
+}
+
+func (am *Manager) auctionsCleaner() {
+	for range time.Tick(10 * time.Minute) {
+		am.mu.Lock()
+		for userOpHash, auction := range am.auctions {
+			if !auction.open && time.Since(auction.createdAt) > time.Hour {
+				delete(am.auctions, userOpHash)
+			}
+		}
+		am.mu.Unlock()
 	}
 }
 
