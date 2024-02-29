@@ -20,10 +20,12 @@ var (
 	ErrDAppOpInvalidCallChainHash       = relayerror.NewError(3208, "dApp operation's call chain hash is invalid")
 	ErrDAppOpComputeProofHash           = relayerror.NewError(3209, "failed to compute dApp proof hash")
 	ErrDappOpSignatureInvalid           = relayerror.NewError(3210, "dApp operation has invalid signature")
+	ErrDAppOpGasLimitExceeded           = relayerror.NewError(3211, "dApp operation's gas limit exceeded")
 )
 
 var (
-	DAPP_TYPE_HASH = crypto.Keccak256Hash([]byte("DAppApproval(address from,address to,uint256 value,uint256 gas,uint256 maxFeePerGas,uint256 nonce,uint256 deadline,address control,address bundler,bytes32 userOpHash,bytes32 callChainHash)"))
+	dAppGasLimit   = big.NewInt(1000000)
+	DAPP_TYPE_HASH = crypto.Keccak256Hash([]byte("DAppApproval(address from,address to,uint256 value,uint256 gas,uint256 nonce,uint256 deadline,address control,address bundler,bytes32 userOpHash,bytes32 callChainHash)"))
 )
 
 var (
@@ -33,7 +35,6 @@ var (
 		{Name: "to", Type: "address", InternalType: "address"},
 		{Name: "value", Type: "uint256", InternalType: "uint256"},
 		{Name: "gas", Type: "uint256", InternalType: "uint256"},
-		{Name: "maxFeePerGas", Type: "uint256", InternalType: "uint256"},
 		{Name: "nonce", Type: "uint256", InternalType: "uint256"},
 		{Name: "deadline", Type: "uint256", InternalType: "uint256"},
 		{Name: "control", Type: "address", InternalType: "address"},
@@ -51,7 +52,6 @@ type DAppOperation struct {
 	To            common.Address `json:"to"`
 	Value         *big.Int       `json:"value"`
 	Gas           *big.Int       `json:"gas"`
-	MaxFeePerGas  *big.Int       `json:"maxFeePerGas"`
 	Nonce         *big.Int       `json:"nonce"`
 	Deadline      *big.Int       `json:"deadline"`
 	Control       common.Address `json:"control"`
@@ -67,7 +67,7 @@ func GenerateSimulationDAppOperation(userOp *UserOperation) *DAppOperation {
 	}
 }
 
-func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, callChainHash common.Hash, atlas common.Address, atlasDomainSeparator common.Hash) *relayerror.Error {
+func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, callChainHash common.Hash, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
 	if userOp.SessionKey != (common.Address{}) && d.From != userOp.SessionKey {
 		return ErrDAppOpFromDoesNotMatchSessionKey
 	}
@@ -76,9 +76,14 @@ func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, 
 		return ErrDAppOpInvalidToField
 	}
 
-	// gas limit check?
+	enforcedGasLimit := new(big.Int).Set(dAppGasLimit)
+	if gasLimit != nil && gasLimit.Cmp(common.Big0) > 0 {
+		enforcedGasLimit = gasLimit
+	}
 
-	// maxFeePerGas check?
+	if d.Gas.Cmp(enforcedGasLimit) > 0 {
+		return ErrDAppOpGasLimitExceeded
+	}
 
 	if d.Deadline.Cmp(userOp.Deadline) < 0 {
 		return ErrDAppOpDeadlineTooLow
@@ -111,7 +116,6 @@ func (d *DAppOperation) proofHash() (common.Hash, error) {
 		To            common.Address
 		Value         *big.Int
 		Gas           *big.Int
-		MaxFeePerGas  *big.Int
 		Nonce         *big.Int
 		Deadline      *big.Int
 		Control       common.Address
@@ -123,7 +127,6 @@ func (d *DAppOperation) proofHash() (common.Hash, error) {
 		d.To,
 		d.Value,
 		d.Gas,
-		d.MaxFeePerGas,
 		d.Nonce,
 		d.Deadline,
 		d.Control,

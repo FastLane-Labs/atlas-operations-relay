@@ -84,12 +84,17 @@ type SolverOperation struct {
 	Signature    []byte         `json:"signature"`
 }
 
-func (s *SolverOperation) Validate(userOp *UserOperation, atlas common.Address, atlasDomainSeparator common.Hash) *relayerror.Error {
+func (s *SolverOperation) Validate(userOp *UserOperation, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
 	if s.To != atlas {
 		return ErrSolverOpInvalidToField
 	}
 
-	if s.Gas.Cmp(solverGasLimit) > 0 {
+	enforcedGasLimit := new(big.Int).Set(solverGasLimit)
+	if gasLimit != nil && gasLimit.Cmp(common.Big0) > 0 {
+		enforcedGasLimit = gasLimit
+	}
+
+	if s.Gas.Cmp(enforcedGasLimit) > 0 {
 		return ErrSolverOpGasLimitExceeded
 	}
 

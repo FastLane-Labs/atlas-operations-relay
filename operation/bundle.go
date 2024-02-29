@@ -19,9 +19,9 @@ type BundleOperations struct {
 	DAppOperation    *DAppOperation     `json:"dAppOperation"`
 }
 
-func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash common.Hash, atlas common.Address, atlasDomainSeparator common.Hash) *relayerror.Error {
+func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash common.Hash, atlas common.Address, atlasDomainSeparator common.Hash, userOpGasLimit *big.Int, dAppOpGasLimit *big.Int) *relayerror.Error {
 	// Re-validate user operation
-	if relayErr := b.UserOperation.Validate(ethClient, atlas, atlasDomainSeparator); relayErr != nil {
+	if relayErr := b.UserOperation.Validate(ethClient, atlas, atlasDomainSeparator, userOpGasLimit); relayErr != nil {
 		return relayErr
 	}
 
@@ -43,7 +43,7 @@ func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash comm
 		return relayerror.ErrServerInternal
 	}
 
-	if relayErr := b.DAppOperation.Validate(userOpHash, b.UserOperation, callChainHash, atlas, atlasDomainSeparator); relayErr != nil {
+	if relayErr := b.DAppOperation.Validate(userOpHash, b.UserOperation, callChainHash, atlas, atlasDomainSeparator, dAppOpGasLimit); relayErr != nil {
 		return relayErr
 	}
 
