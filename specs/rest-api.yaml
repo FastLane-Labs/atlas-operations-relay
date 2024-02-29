@@ -427,10 +427,6 @@ components:
           type: string
           description: Solidity type uint256
           pattern: '^0x[0-9a-f]{1,64}$'
-        maxFeePerGas:
-          type: string
-          description: Solidity type uint256
-          pattern: '^0x[0-9a-f]{1,64}$'
         nonce:
           type: string
           description: Solidity type uint256
@@ -464,7 +460,6 @@ components:
         - to
         - value
         - gas
-        - maxFeePerGas
         - nonce
         - deadline
         - control
