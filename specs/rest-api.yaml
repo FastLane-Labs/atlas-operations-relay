@@ -1,0 +1,487 @@
+openapi: 3.1.0
+info:
+  title: Atlas Operations Relay REST API
+  description: |-
+    The REST API implementation for an Atlas Operations Relay, based on the OpenAPI 3.1 specification.
+
+  contact:
+    email: technical-support@fastlane.finance
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+
+externalDocs:
+  description: See an Atlas Operation Relay implementation example
+  url: https://github.com/FastLane-Labs/atlas-operations-relay
+
+tags:
+  - name: dApp
+    description: Endpoints used by dApps
+  - name: solver
+    description: Endpoints used by solvers
+
+paths:
+  /userOperation:
+    post:
+      tags:
+        - dApp
+      summary: Submit a user operation to the relay
+      description: Submit a user operation to the relay
+      operationId: submitUserOperation
+      requestBody:
+        description: The user operation
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserOperation'
+      responses:
+        '200':
+          description: The hash of the user operation
+          content:
+            application/json:
+              schema:
+                type: string
+                description: Solidity type bytes32
+                pattern: '^0x[0-9a-f]{64}$'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                examples:
+                  - code: 2201
+                    message: deadline exceeded
+        '500':
+          description: Relay exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                examples:
+                  - code: 3001
+                    message: server internal error
+  
+  /solverOperations:
+    get:
+      tags:
+        - dApp
+      summary: Get solver operations for a user operation previously submitted
+      description: Get solver operations for a user operation previously submitted
+      operationId: solverOperations
+      parameters:
+        - name: userOpHash
+          in: query
+          description: The hash of the user operation
+          required: true
+          schema:
+            type: string
+            description: Solidity type bytes32
+            pattern: '^0x[0-9a-f]{64}$'
+        - name: wait
+          in: query
+          description: Hold the request until having a response
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Solver operations successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolverOperations'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                examples:
+                  - code: 2101
+                    message: auction for this user operation is ongoing
+        '500':
+          description: Relay exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                examples:
+                  - code: 3001
+                    message: server internal serror
+
+  /bundleOperations:
+    post:
+      tags:
+        - dApp
+      summary: Submit a bundle of user/solvers/dApp operations to the relay
+      description: Submit user/solvers/dApp operations to the relay for bundling
+      operationId: submitAllOperations
+      requestBody:
+        description: The user/solvers/dApp operations to be bundled
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Bundle'
+      responses:
+        '200':
+          description: The hash of the user operation
+          content:
+            application/json:
+              schema:
+                type: string
+                description: Solidity type bytes32
+                pattern: '^0x[0-9a-f]{64}$'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                examples:
+                  - code: 2105
+                    message: dAppOperation.callChainHash is invalid
+        '500':
+          description: Relay exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                examples:
+                  - code: 4300
+                    message: bundler is offline
+  
+  /bundleHash:
+    get:
+      tags:
+        - dApp
+      summary: Get the Atlas transaction hash from a previously submitted bundle
+      description: Get the Atlas transaction hash from a previously submitted bundle
+      operationId: getBundleHash
+      parameters:
+        - name: userOpHash
+          in: query
+          description: The hash of the user operation
+          required: true
+          schema:
+            type: string
+            description: Solidity type bytes32
+            pattern: '^0x[0-9a-f]{64}$'
+        - name: wait
+          in: query
+          description: Hold the request until having a response
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Atlas transaction hash successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: string
+                description: Solidity type bytes32
+                pattern: '^0x[0-9a-f]{64}$'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                examples:
+                  - code: 3201
+                    message: bundle not found
+        '500':
+          description: Relay exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                examples:
+                  - code: 4300
+                    message: bundler is offline
+
+  /solverOperation:
+    post:
+      tags:
+        - solver
+      summary: Submit a solver operation
+      description: Submit a solver operation for a specific user operation, identified by its userOpHash
+      operationId: submitSolverOperation
+      requestBody:
+        description: The solver operation
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolverOperation'
+      responses:
+        '200':
+          description: Solver operation successfully submitted and included in the auction
+          content:
+            application/json:
+              schema:
+                type: string
+                description: Result message
+                examples: ["Solver operation successfully submitted"]
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                examples:
+                  - code: 2105
+                    message: control does not match userOperation.control
+        '500':
+          description: Relay exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                examples:
+                  - code: 3001
+                    message: server internal error
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+      required:
+        - code
+        - message
+      xml:
+        name: Error
+
+    UserOperation:
+      type: object
+      properties:
+        from:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        to:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        value:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        gas:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        maxFeePerGas:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        nonce:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        deadline:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        dapp:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        control:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        sessionKey:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        data:
+          type: string
+          description: Solidity type bytes
+          pattern: '^0x([0-9a-f][0-9a-f])*$'
+        signature:
+          type: string
+          description: Solidity type bytes
+          pattern: '^0x([0-9a-f][0-9a-f])*$'
+      required:
+        - from
+        - to
+        - value
+        - gas
+        - maxFeePerGas
+        - nonce
+        - deadline
+        - dapp
+        - control
+        - sessionKey
+        - data
+        - signature
+      xml:
+        name: UserOperation
+    
+    SolverOperation:
+      type: object
+      properties:
+        from:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        to:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        value:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        gas:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        maxFeePerGas:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        deadline:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        solver:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        control:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        userOpHash:
+          type: string
+          description: Solidity type bytes32
+          pattern: '^0x[0-9a-f]{64}$'
+        bidToken:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        bidAmount:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        data:
+          type: string
+          description: Solidity type bytes
+          pattern: '^0x([0-9a-f][0-9a-f])*$'
+        signature:
+          type: string
+          description: Solidity type bytes
+          pattern: '^0x([0-9a-f][0-9a-f])*$'
+      required:
+        - from
+        - to
+        - value
+        - gas
+        - maxFeePerGas
+        - deadline
+        - solver
+        - control
+        - userOpHash
+        - bidToken
+        - bidAmount
+        - data
+        - signature
+      xml:
+        name: SolverOperation
+    
+    SolverOperations:
+      type: array
+      items:
+        $ref: '#/components/schemas/SolverOperation'
+      xml:
+        name: SolverOperations
+        wrapped: true
+
+    DAppOperation:
+      type: object
+      properties:
+        from:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        to:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        value:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        gas:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        nonce:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        deadline:
+          type: string
+          description: Solidity type uint256
+          pattern: '^0x[0-9a-f]{1,64}$'
+        control:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        bundler:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        userOpHash:
+          type: string
+          description: Solidity type bytes32
+          pattern: '^0x[0-9a-f]{64}$'
+        callChainHash:
+          type: string
+          description: Solidity type bytes32
+          pattern: '^0x[0-9a-f]{64}$'
+        signature:
+          type: string
+          description: Solidity type bytes
+          pattern: '^0x([0-9a-f][0-9a-f])*$'
+      required:
+        - from
+        - to
+        - value
+        - gas
+        - nonce
+        - deadline
+        - control
+        - bundler
+        - userOpHash
+        - callChainHash
+        - signature
+      xml:
+        name: DAppOperation
+
+    Bundle:
+      type: object
+      properties:
+        userOperation:
+          $ref: '#/components/schemas/UserOperation'
+        solverOperations:
+          $ref: '#/components/schemas/SolverOperations'
+        dAppOperation:
+          $ref: '#/components/schemas/DAppOperation'
+      required:
+        - userOperation
+        - solverOperations
+        - dAppOperation
+      xml:
+        name: Bundle
