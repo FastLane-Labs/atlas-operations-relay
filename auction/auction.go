@@ -28,6 +28,8 @@ type Auction struct {
 
 	completionSubs []chan []*operation.SolverOperation
 
+	createdAt time.Time
+
 	mu sync.RWMutex
 }
 
@@ -38,6 +40,7 @@ func NewAuction(userOp *operation.UserOperation, userOpHash common.Hash) *Auctio
 		userOp:         userOp,
 		solverOps:      make([]*operation.SolverOperation, 0),
 		completionSubs: make([]chan []*operation.SolverOperation, 0),
+		createdAt:      time.Now(),
 	}
 
 	time.AfterFunc(AuctionDuration, auction.close)
