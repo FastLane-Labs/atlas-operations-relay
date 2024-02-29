@@ -34,7 +34,7 @@ func TestDAppOperationProofHash(t *testing.T) {
 		t.Errorf("DAppOperation.proofHash() error = %v", err)
 	}
 
-	if result != want || true {
+	if result != want {
 		t.Errorf("DAppOperation.proofHash() = %v, want %v", result, want)
 	}
 }
