@@ -9,12 +9,11 @@ import (
 	"time"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/bundle"
+	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 var (
@@ -256,20 +255,15 @@ func (api *Api) WebsocketBundler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate the signature
-	if signature[crypto.RecoveryIDOffset] == 27 || signature[crypto.RecoveryIDOffset] == 28 {
-		signature[crypto.RecoveryIDOffset] -= 27 // Transform yellow paper V from 27/28 to 0/1
-	}
 	signatureContent := fmt.Sprintf("%s:%d", bundler, timestamp)
-	data := []byte(signatureContent)
-	dataHash := accounts.TextHash(data)
-	expectedPubKey, err := crypto.SigToPub(dataHash, signature)
+	signer, err := relayCrypto.RecoverEthereumSigner(signatureContent, signature)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(ErrBadSignature.Marshal())
 		return
 	}
 
-	if bundler != crypto.PubkeyToAddress(*expectedPubKey) {
+	if bundler != signer {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(ErrSignatureMismatch.Marshal())
 		return
