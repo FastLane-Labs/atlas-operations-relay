@@ -232,6 +232,7 @@ func NewServer(router *mux.Router, newSolverOperation newSolverOperationFn, getD
 }
 
 func (s *Server) ListenAndServe() {
+	log.Info("server started")
 	err := http.ListenAndServe(":8080", s.router)
 	log.Info("server stopped", "err", err)
 }
