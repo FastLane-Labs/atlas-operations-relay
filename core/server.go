@@ -437,7 +437,7 @@ func (s *Server) processSolverMessage(conn *Conn, msg []byte) {
 		s.unsubscribe(conn, req.Params.Topic, resp)
 
 	case MethodSubmitSolverOperation:
-		s.processNewSolverOperation(conn, req.Params.SolverOperation, resp)
+		s.processNewSolverOperation(req.Params.SolverOperation, resp)
 
 	default:
 		resp.Error = InvalidMethod
@@ -547,7 +547,7 @@ func (s *Server) removeSubscriber(uuid string) {
 	}
 }
 
-func (s *Server) processNewSolverOperation(conn *Conn, solverOp *operation.SolverOperation, resp *Response) {
+func (s *Server) processNewSolverOperation(solverOp *operation.SolverOperation, resp *Response) {
 	if solverOp == nil {
 		log.Info("invalid solver operation")
 		resp.Error = InvalidSolverOperation

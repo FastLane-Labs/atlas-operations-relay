@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func TestUserOperationHash(t *testing.T) {
+func TestRecoverEip712Signer(t *testing.T) {
 	t.Parallel()
 
 	domainSeparator := common.HexToHash("0x82b5c47bb09eca2c93143f36f8fde6567050d39f3611535aab530d4f15fa5d0f")
@@ -27,7 +27,7 @@ func TestUserOperationHash(t *testing.T) {
 
 	want := crypto.PubkeyToAddress(privateKey.PublicKey)
 
-	signer, err := GetSigner(domainSeparator, randomData, signature)
+	signer, err := RecoverEip712Signer(domainSeparator, randomData, signature)
 	if err != nil {
 		t.Errorf("GetSigner() error = %v", err)
 	}
@@ -37,7 +37,7 @@ func TestUserOperationHash(t *testing.T) {
 	}
 }
 
-func TestBundlerAuthentication(t *testing.T) {
+func TestRecoverEthereumSigner(t *testing.T) {
 	t.Parallel()
 
 	privateKey, err := crypto.GenerateKey()
@@ -53,6 +53,7 @@ func TestBundlerAuthentication(t *testing.T) {
 	}
 
 	want := crypto.PubkeyToAddress(privateKey.PublicKey)
+
 	signer, err := RecoverEthereumSigner(content, signature)
 	if err != nil {
 		t.Errorf("RecoverEthereumSigner() error = %v", err)

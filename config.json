@@ -1,6 +1,6 @@
 {
   "network": {
-    "rpc_url": "https://ethereum-sepolia-rpc.publicnode.com"
+    "rpc_url": ""
   },
   "contracts": {
     "atlas": "",

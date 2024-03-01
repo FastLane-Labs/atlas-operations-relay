@@ -53,7 +53,7 @@ func NewApi(relay *Relay) *Api {
 	}
 }
 
-func getRetrieveRequestData(w http.ResponseWriter, r *http.Request) (*RetrieveRequest, *relayerror.Error) {
+func getRetrieveRequestData(r *http.Request) (*RetrieveRequest, *relayerror.Error) {
 	q := r.URL.Query()
 
 	userOpHashStr := q.Get("userOpHash")
@@ -75,7 +75,7 @@ func getRetrieveRequestData(w http.ResponseWriter, r *http.Request) (*RetrieveRe
 	return NewRetrieveRequest(userOpHash, wait), nil
 }
 
-func getPostRequestData(w http.ResponseWriter, r *http.Request, v interface{}) *relayerror.Error {
+func getPostRequestData(r *http.Request, v interface{}) *relayerror.Error {
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
@@ -103,7 +103,7 @@ func writeResponseData(w http.ResponseWriter, data interface{}) {
 
 func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
 	var userpOp *operation.UserOperation
-	if relayErr := getPostRequestData(w, r, userpOp); relayErr != nil {
+	if relayErr := getPostRequestData(r, userpOp); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
@@ -120,7 +120,7 @@ func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) GetSolverOperations(w http.ResponseWriter, r *http.Request) {
-	retrieveReq, relayErr := getRetrieveRequestData(w, r)
+	retrieveReq, relayErr := getRetrieveRequestData(r)
 	if relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
@@ -149,7 +149,7 @@ func (api *Api) GetSolverOperations(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) SubmitBundleOperations(w http.ResponseWriter, r *http.Request) {
 	var bundleOps *operation.BundleOperations
-	if relayErr := getPostRequestData(w, r, bundleOps); relayErr != nil {
+	if relayErr := getPostRequestData(r, bundleOps); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
@@ -166,7 +166,7 @@ func (api *Api) SubmitBundleOperations(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) GetBundleHash(w http.ResponseWriter, r *http.Request) {
-	retrieveReq, relayErr := getRetrieveRequestData(w, r)
+	retrieveReq, relayErr := getRetrieveRequestData(r)
 	if relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
@@ -201,7 +201,7 @@ func (api *Api) GetBundleHash(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) SubmitSolverOperation(w http.ResponseWriter, r *http.Request) {
 	var solverOp *operation.SolverOperation
-	if relayErr := getPostRequestData(w, r, solverOp); relayErr != nil {
+	if relayErr := getPostRequestData(r, solverOp); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return

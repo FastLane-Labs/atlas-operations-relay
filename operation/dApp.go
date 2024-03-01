@@ -148,7 +148,7 @@ func (d *DAppOperation) checkSignature(domainSeparator common.Hash) *relayerror.
 		return ErrDAppOpComputeProofHash.AddError(err)
 	}
 
-	signer, err := relayCrypto.GetSigner(domainSeparator, proofHash, d.Signature)
+	signer, err := relayCrypto.RecoverEip712Signer(domainSeparator, proofHash, d.Signature)
 	if err != nil {
 		log.Info("failed to recover dApp public key", "err", err)
 		return ErrDappOpSignatureInvalid.AddError(err)

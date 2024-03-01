@@ -170,7 +170,7 @@ func (u *UserOperation) checkSignature(domainSeparator common.Hash) *relayerror.
 		return ErrUserOpComputeProofHash.AddError(err)
 	}
 
-	signer, err := relayCrypto.GetSigner(domainSeparator, proofHash, u.Signature)
+	signer, err := relayCrypto.RecoverEip712Signer(domainSeparator, proofHash, u.Signature)
 	if err != nil {
 		log.Info("failed to recover user public key", "err", err)
 		return ErrUserOpSignatureInvalid.AddError(err)

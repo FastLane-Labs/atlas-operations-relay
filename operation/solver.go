@@ -167,7 +167,7 @@ func (s *SolverOperation) checkSignature(domainSeparator common.Hash) *relayerro
 		return ErrSolverOpComputeProofHash.AddError(err)
 	}
 
-	signer, err := relayCrypto.GetSigner(domainSeparator, proofHash, s.Signature)
+	signer, err := relayCrypto.RecoverEip712Signer(domainSeparator, proofHash, s.Signature)
 	if err != nil {
 		log.Info("failed to recover solver public key", "err", err)
 		return ErrSolverOpSignatureInvalid.AddError(err)
