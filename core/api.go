@@ -2,14 +2,18 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/bundle"
+	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 var (
@@ -18,6 +22,13 @@ var (
 	ErrInvalidParameter    = relayerror.NewError(1102, "invalid parameter")
 	ErrServerCorruptedData = relayerror.NewError(1103, "server corrupted data")
 	ErrInvalidUserOpHash   = relayerror.NewError(1104, "invalid user operation hash")
+
+	// Bundler signature errors
+	ErrInvalidBundlerAddress = relayerror.NewError(1200, "invalid bundler address")
+	ErrInvalidTimestamp      = relayerror.NewError(1201, "invalid timestamp")
+	ErrExpiredSignature      = relayerror.NewError(1202, "expired signature")
+	ErrBadSignature          = relayerror.NewError(1203, "bad signature (decode/recover error)")
+	ErrSignatureMismatch     = relayerror.NewError(1204, "signature mismatch")
 )
 
 type RetrieveRequest struct {
@@ -42,7 +53,7 @@ func NewApi(relay *Relay) *Api {
 	}
 }
 
-func getRetrieveRequestData(w http.ResponseWriter, r *http.Request) (*RetrieveRequest, *relayerror.Error) {
+func getRetrieveRequestData(r *http.Request) (*RetrieveRequest, *relayerror.Error) {
 	q := r.URL.Query()
 
 	userOpHashStr := q.Get("userOpHash")
@@ -64,7 +75,7 @@ func getRetrieveRequestData(w http.ResponseWriter, r *http.Request) (*RetrieveRe
 	return NewRetrieveRequest(userOpHash, wait), nil
 }
 
-func getPostRequestData(w http.ResponseWriter, r *http.Request, v interface{}) *relayerror.Error {
+func getPostRequestData(r *http.Request, v interface{}) *relayerror.Error {
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
@@ -92,7 +103,7 @@ func writeResponseData(w http.ResponseWriter, data interface{}) {
 
 func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
 	var userpOp *operation.UserOperation
-	if relayErr := getPostRequestData(w, r, userpOp); relayErr != nil {
+	if relayErr := getPostRequestData(r, userpOp); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
@@ -109,7 +120,7 @@ func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) GetSolverOperations(w http.ResponseWriter, r *http.Request) {
-	retrieveReq, relayErr := getRetrieveRequestData(w, r)
+	retrieveReq, relayErr := getRetrieveRequestData(r)
 	if relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
@@ -138,7 +149,7 @@ func (api *Api) GetSolverOperations(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) SubmitBundleOperations(w http.ResponseWriter, r *http.Request) {
 	var bundleOps *operation.BundleOperations
-	if relayErr := getPostRequestData(w, r, bundleOps); relayErr != nil {
+	if relayErr := getPostRequestData(r, bundleOps); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
@@ -155,7 +166,7 @@ func (api *Api) SubmitBundleOperations(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) GetBundleHash(w http.ResponseWriter, r *http.Request) {
-	retrieveReq, relayErr := getRetrieveRequestData(w, r)
+	retrieveReq, relayErr := getRetrieveRequestData(r)
 	if relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
@@ -190,7 +201,7 @@ func (api *Api) GetBundleHash(w http.ResponseWriter, r *http.Request) {
 
 func (api *Api) SubmitSolverOperation(w http.ResponseWriter, r *http.Request) {
 	var solverOp *operation.SolverOperation
-	if relayErr := getPostRequestData(w, r, solverOp); relayErr != nil {
+	if relayErr := getPostRequestData(r, solverOp); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
@@ -211,8 +222,52 @@ func (api *Api) WebsocketSolver(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) WebsocketBundler(w http.ResponseWriter, r *http.Request) {
-	// TODO: bundler authentication
-	var bundler common.Address
+	q := r.URL.Query()
+
+	address := q.Get("address")
+	if !common.IsHexAddress(address) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(ErrInvalidBundlerAddress.Marshal())
+		return
+	}
+	bundler := common.HexToAddress(address)
+
+	timestamp, err := strconv.ParseInt(q.Get("timestamp"), 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(ErrInvalidTimestamp.Marshal())
+		return
+	}
+
+	// 60 seconds window past and future for timestamp
+	minTimestamp, maxTimestamp := time.Now().Unix()-60, time.Now().Unix()+60
+	if timestamp < minTimestamp || timestamp > maxTimestamp {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(ErrExpiredSignature.Marshal())
+		return
+	}
+
+	signature, err := hexutil.Decode(q.Get("signature"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(ErrBadSignature.Marshal())
+		return
+	}
+
+	// Validate the signature
+	signatureContent := fmt.Sprintf("%s:%d", bundler, timestamp)
+	signer, err := relayCrypto.RecoverEthereumSigner(signatureContent, signature)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(ErrBadSignature.Marshal())
+		return
+	}
+
+	if bundler != signer {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(ErrSignatureMismatch.Marshal())
+		return
+	}
 
 	api.relay.server.ServeWsBundler(w, r, bundler)
 }
