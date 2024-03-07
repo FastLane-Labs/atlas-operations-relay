@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -231,9 +232,19 @@ func NewServer(router *mux.Router, newSolverOperation newSolverOperationFn, getD
 	}
 }
 
-func (s *Server) ListenAndServe() {
+func (s *Server) ListenAndServe(serverReadyChan chan struct{}) {
+	httpServer := &http.Server{Addr: ":8080", Handler: s.router}
+	ln, err := net.Listen("tcp", httpServer.Addr)
+	if err != nil {
+		panic(err)
+	}
+
 	log.Info("server started")
-	err := http.ListenAndServe(":8080", s.router)
+	if serverReadyChan != nil {
+		close(serverReadyChan)
+	}
+
+	err = httpServer.Serve(ln)
 	log.Info("server stopped", "err", err)
 }
 

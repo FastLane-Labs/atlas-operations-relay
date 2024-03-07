@@ -77,8 +77,8 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 	return relay
 }
 
-func (r *Relay) Run() {
-	r.server.ListenAndServe()
+func (r *Relay) Run(serverReadyChan chan struct{}) {
+	r.server.ListenAndServe(serverReadyChan)
 }
 
 func (r *Relay) submitUserOperation(userOp *operation.UserOperation) (common.Hash, *relayerror.Error) {

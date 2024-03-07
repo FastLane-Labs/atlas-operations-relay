@@ -40,4 +40,4 @@ jobs:
         run: CGO_ENABLED=0 GOOS=linux go build -o ./opsrelay
 
       - name: Test
-        run: GODEBUG=cgocheck=0 go test --timeout 15m -cover -short -coverprofile=cover.out -covermode=atomic ./...
+        run: make test

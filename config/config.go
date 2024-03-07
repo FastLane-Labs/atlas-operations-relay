@@ -29,24 +29,30 @@ type configJson struct {
 	} `json:"relay"`
 }
 
+type Network struct {
+	RpcUrl string `json:"rpc_url"`
+}
+
+type Contracts struct {
+	Atlas             common.Address `json:"atlas"`
+	AtlasVerification common.Address `json:"atlasVerification"`
+	Simulator         common.Address `json:"simulator"`
+}
+
+type Gas struct {
+	MaxPerUserOperation   *big.Int `json:"max_per_user_operation"`
+	MaxPerSolverOperation *big.Int `json:"max_per_solver_operation"`
+	MaxPerDAppOperation   *big.Int `json:"max_per_dApp_operation"`
+}
+
+type Relay struct {
+	Gas Gas `json:"gas"`
+}
+
 type Config struct {
-	Network struct {
-		RpcUrl string `json:"rpc_url"`
-	} `json:"network"`
-
-	Contracts struct {
-		Atlas             common.Address `json:"atlas"`
-		AtlasVerification common.Address `json:"atlasVerification"`
-		Simulator         common.Address `json:"simulator"`
-	} `json:"contracts"`
-
-	Relay struct {
-		Gas struct {
-			MaxPerUserOperation   *big.Int `json:"max_per_user_operation"`
-			MaxPerSolverOperation *big.Int `json:"max_per_solver_operation"`
-			MaxPerDAppOperation   *big.Int `json:"max_per_dApp_operation"`
-		} `json:"gas"`
-	} `json:"relay"`
+	Network   Network
+	Contracts Contracts
+	Relay     Relay
 }
 
 func Load() *Config {
