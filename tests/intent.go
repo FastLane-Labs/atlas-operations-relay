@@ -48,18 +48,6 @@ type SwapIntent struct {
 	Conditions             []Condition
 }
 
-func NewDemoSwapIntent() *SwapIntent {
-	return &SwapIntent{
-		TokenUserBuys:          common.HexToAddress("0x7439E9Bb6D8a84dd3A23fe621A30F95403F87fB9"),
-		AmountUserBuys:         big.NewInt(200e12),
-		TokenUserSells:         common.HexToAddress("0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9"),
-		AmountUserSells:        big.NewInt(1e12),
-		AuctionBaseCurrency:    common.HexToAddress("0x0"),
-		SolverMustReimburseGas: false,
-		Conditions:             nil,
-	}
-}
-
 func (i *SwapIntent) abiEncode() ([]byte, error) {
 	return swapIntentArgs.Pack(&i)
 }

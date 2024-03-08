@@ -81,7 +81,7 @@ func TestUserOpToSolverFLow(t *testing.T) {
 		t.Error("not subscribed to newUserOperations topic")
 	}
 
-	userOp := generateDemoValidUserOp(ethClient, conf)
+	userOp := NewDemoUserOperation()
 	userOpJSON, err := json.Marshal(userOp)
 	if err != nil {
 		panic(err)
