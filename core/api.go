@@ -116,8 +116,6 @@ func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("User operation hash:", userOpHash.Hex())
-
 	writeResponseData(w, userOpHash)
 }
 
