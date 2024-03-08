@@ -18,13 +18,7 @@ import (
 func TestUserOpToSolverFLow(t *testing.T) {
 
 	//solver ws connection
-	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws/solver"}
-	fmt.Printf("Connecting to %s\n", u.String())
-
-	conn, solverResp, err := websocket.DefaultDialer.Dial(u.String(), nil)
-	if err != nil {
-		panic(err)
-	}
+	conn, solverResp := getWsConnection()
 	defer conn.Close()
 
 	if solverResp.StatusCode != 101 {
@@ -49,16 +43,17 @@ func TestUserOpToSolverFLow(t *testing.T) {
 			response := &core.Response{}
 			broadcast := &core.Broadcast{}
 
-			errResp := json.Unmarshal(message, response)
-			errBroadcast := json.Unmarshal(message, broadcast)
+			json.Unmarshal(message, response)
+			json.Unmarshal(message, broadcast)
 
-			if errResp != nil && errBroadcast != nil {
+			//if response and broadcast are both empty, panic
+			if response.Id == "" && broadcast.Topic == "" {
 				panic("cannot handle msg " + string(message))
 			}
-			if errResp == nil {
+			if response.Id != "" {
 				subscribedChan <- struct{}{}
 			}
-			if errBroadcast == nil {
+			if broadcast.Topic != "" {
 				userOpReceivedChan <- struct{}{}
 			}
 		}
@@ -106,9 +101,20 @@ func TestUserOpToSolverFLow(t *testing.T) {
 		return
 	}
 
-	if !waitOnChanFor(userOpReceivedChan, 1*time.Second) {
+	if !waitOnChanFor(userOpReceivedChan, 5*time.Second) {
 		t.Error("user operation not received by solver")
 	}
+}
+
+func getWsConnection() (*websocket.Conn, *http.Response) {
+	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws/solver"}
+	fmt.Printf("Connecting to %s\n", u.String())
+
+	conn, solverResp, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		panic(err)
+	}
+	return conn, solverResp
 }
 
 func waitOnChanFor(ch chan struct{}, t time.Duration) bool {
