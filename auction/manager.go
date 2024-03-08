@@ -81,7 +81,11 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Has
 		return common.Hash{}, relayErr
 	}
 
-	pData, err := contract.SimulatorAbi.Pack("simUserOperation", *userOp)
+	userOpWithoutSig := new(operation.UserOperation)
+	*userOpWithoutSig = *userOp
+	userOpWithoutSig.Signature = nil
+
+	pData, err := contract.SimulatorAbi.Pack("simUserOperation", *userOpWithoutSig)
 	if err != nil {
 		log.Info("failed to pack user operation", "err", err, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, relayerror.ErrServerInternal

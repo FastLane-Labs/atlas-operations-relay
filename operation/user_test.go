@@ -62,7 +62,7 @@ func TestUserOperationProofHash(t *testing.T) {
 	userOp := generateUserOperation()
 	want := common.HexToHash("0x53db56ff45b29fe0f2f24afb71f70a5f0cc09089d6ef3cbc6dc4c3479492a92f")
 
-	result, err := userOp.proofHash()
+	result, err := userOp.ProofHash()
 	if err != nil {
 		t.Errorf("UserOperation.proofHash() error = %v", err)
 	}

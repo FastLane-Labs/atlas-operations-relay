@@ -127,7 +127,7 @@ func (u *UserOperation) abiEncode() ([]byte, error) {
 	return userOpArgs.Pack(&u)
 }
 
-func (u *UserOperation) proofHash() (common.Hash, error) {
+func (u *UserOperation) ProofHash() (common.Hash, error) {
 	proofHash := struct {
 		UserTypeHash common.Hash
 		From         common.Address
@@ -164,7 +164,7 @@ func (u *UserOperation) proofHash() (common.Hash, error) {
 }
 
 func (u *UserOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
-	proofHash, err := u.proofHash()
+	proofHash, err := u.ProofHash()
 	if err != nil {
 		log.Info("failed to compute user proof hash", "err", err)
 		return ErrUserOpComputeProofHash.AddError(err)

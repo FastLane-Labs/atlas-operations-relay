@@ -102,19 +102,21 @@ func writeResponseData(w http.ResponseWriter, data interface{}) {
 }
 
 func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
-	var userpOp *operation.UserOperation
-	if relayErr := getPostRequestData(r, userpOp); relayErr != nil {
+	userOp := &operation.UserOperation{}
+	if relayErr := getPostRequestData(r, userOp); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
 	}
 
-	userOpHash, relayErr := api.relay.submitUserOperation(userpOp)
+	userOpHash, relayErr := api.relay.submitUserOperation(userOp)
 	if relayErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())
 		return
 	}
+
+	fmt.Println("User operation hash:", userOpHash.Hex())
 
 	writeResponseData(w, userOpHash)
 }
