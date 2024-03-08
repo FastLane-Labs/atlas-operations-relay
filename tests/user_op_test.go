@@ -14,7 +14,6 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlasVerification"
-	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -22,14 +21,13 @@ import (
 )
 
 func TestUserOpFlow(t *testing.T) {
-	ethClient, err := ethclient.Dial(conf.Network.RpcUrl)
-	if err != nil {
-		log.Error("failed to connect to the Ethereum client", "err", err)
-		return
+	userOp := generateDemoValidUserOp(ethClient, conf)
+
+	userOpHash, relayErr := userOp.Hash()
+	if relayErr != nil {
+		panic(relayErr)
 	}
 
-	userOp := generateDemoValidUserOp(ethClient, conf)
-	userOpHash, err := userOp.Hash()
 	userOpJSON, err := json.Marshal(userOp)
 	if err != nil {
 		panic(err)

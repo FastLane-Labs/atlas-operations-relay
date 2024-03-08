@@ -11,7 +11,6 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gorilla/websocket"
 )
 
@@ -80,13 +79,6 @@ func TestUserOpToSolverFLow(t *testing.T) {
 	//dont proceed until subscribled
 	if !waitOnChanFor(subscribedChan, 1*time.Second) {
 		t.Error("not subscribed to newUserOperations topic")
-	}
-
-	//eth client connection
-	ethClient, err := ethclient.Dial(conf.Network.RpcUrl)
-	if err != nil {
-		log.Error("failed to connect to the Ethereum client", "err", err)
-		return
 	}
 
 	userOp := generateDemoValidUserOp(ethClient, conf)

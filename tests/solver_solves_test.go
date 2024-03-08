@@ -21,12 +21,6 @@ import (
 )
 
 func TestSolverSolves(t *testing.T) {
-	ethClient, err := ethclient.Dial(conf.Network.RpcUrl)
-	if err != nil {
-		log.Error("failed to connect to the Ethereum client", "err", err)
-		return
-	}
-
 	doneChan := make(chan struct{})
 
 	go runSolver(ethClient, doneChan)
@@ -37,7 +31,6 @@ func TestSolverSolves(t *testing.T) {
 }
 
 func runUser(ethClient *ethclient.Client) {
-
 	userOp := generateDemoValidUserOp(ethClient, conf)
 	userOpHash, _ := userOp.Hash()
 	userOpJSON, err := json.Marshal(userOp)
