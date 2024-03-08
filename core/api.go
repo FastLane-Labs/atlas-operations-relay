@@ -200,7 +200,7 @@ func (api *Api) GetBundleHash(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) SubmitSolverOperation(w http.ResponseWriter, r *http.Request) {
-	var solverOp *operation.SolverOperation
+	solverOp := &operation.SolverOperation{}
 	if relayErr := getPostRequestData(r, solverOp); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
@@ -209,6 +209,7 @@ func (api *Api) SubmitSolverOperation(w http.ResponseWriter, r *http.Request) {
 
 	result, relayErr := api.relay.submitSolverOperation(solverOp)
 	if relayErr != nil {
+		fmt.Println("relayErr", relayErr)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())
 		return

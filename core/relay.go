@@ -41,6 +41,7 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 
 	balanceOfBonded := func(account common.Address) (*big.Int, *relayerror.Error) {
 		balance, err := atlETHContract.BalanceOfBonded(nil, account)
+
 		if err != nil {
 			return nil, ErrCantGetBondedBalance.AddError(err)
 		}

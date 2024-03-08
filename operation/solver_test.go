@@ -47,7 +47,7 @@ func TestSolverOperationProofHash(t *testing.T) {
 	solverOp := generateSolverOperation()
 	want := common.HexToHash("0xf50a1c5bfaa8fbe671ccd340a43661b90c70cdbde9ea42254f7a0606ef39ab79")
 
-	result, err := solverOp.proofHash()
+	result, err := solverOp.ProofHash()
 	if err != nil {
 		t.Errorf("SolverOperation.proofHash() error = %v", err)
 	}

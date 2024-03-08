@@ -122,7 +122,7 @@ func (s *SolverOperation) abiEncode() ([]byte, error) {
 	return solverOpArgs.Pack(&s)
 }
 
-func (s *SolverOperation) proofHash() (common.Hash, error) {
+func (s *SolverOperation) ProofHash() (common.Hash, error) {
 	proofHash := struct {
 		SolverTypeHash common.Hash
 		From           common.Address
@@ -161,7 +161,7 @@ func (s *SolverOperation) proofHash() (common.Hash, error) {
 }
 
 func (s *SolverOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
-	proofHash, err := s.proofHash()
+	proofHash, err := s.ProofHash()
 	if err != nil {
 		log.Info("failed to compute solver proof hash", "err", err)
 		return ErrSolverOpComputeProofHash.AddError(err)
