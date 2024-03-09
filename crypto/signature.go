@@ -39,9 +39,9 @@ func recoverSigner(messageHash []byte, signature []byte) (common.Address, error)
 	return crypto.PubkeyToAddress(*pubKey), nil
 }
 
-func SignEip712(domainSeparator common.Hash, proofHash common.Hash, solverPk *ecdsa.PrivateKey) []byte {
+func SignEip712(domainSeparator common.Hash, proofHash common.Hash, pk *ecdsa.PrivateKey) []byte {
 	payload := crypto.Keccak256Hash([]byte("\x19\x01"), domainSeparator.Bytes(), proofHash.Bytes())
-	signature, err := crypto.Sign(payload.Bytes(), solverPk)
+	signature, err := crypto.Sign(payload.Bytes(), pk)
 	if err != nil {
 		panic(err)
 	}
