@@ -83,6 +83,23 @@ type UserOperation struct {
 	Signature    []byte         `json:"signature"`
 }
 
+func (u *UserOperation) Copy() *UserOperation {
+	return &UserOperation{
+		From:         u.From,
+		To:           u.To,
+		Value:        new(big.Int).Set(u.Value),
+		Gas:          new(big.Int).Set(u.Gas),
+		MaxFeePerGas: new(big.Int).Set(u.MaxFeePerGas),
+		Nonce:        new(big.Int).Set(u.Nonce),
+		Deadline:     new(big.Int).Set(u.Deadline),
+		Dapp:         u.Dapp,
+		Control:      u.Control,
+		SessionKey:   u.SessionKey,
+		Data:         append([]byte(nil), u.Data...),
+		Signature:    append([]byte(nil), u.Signature...),
+	}
+}
+
 func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
 	if u.To != atlas {
 		return ErrUserOpInvalidToField

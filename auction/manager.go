@@ -81,8 +81,7 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Has
 		return common.Hash{}, relayErr
 	}
 
-	userOpWithoutSig := new(operation.UserOperation)
-	*userOpWithoutSig = *userOp
+	userOpWithoutSig := userOp.Copy()
 	userOpWithoutSig.Signature = nil
 
 	pData, err := contract.SimulatorAbi.Pack("simUserOperation", *userOpWithoutSig)
