@@ -61,3 +61,90 @@ Note that all simulations referenced here can be easily done by calling view fun
 - When the relay receives a userOp, it should also generate a mock dapp operation that is associated with it.
 - The relay must individually simulate each solver operation it receives using the associated mock dapp operation. The relay must read the bonded atlETH (escrowed gas) balance of the solver from the Atlas contract, and verify that the solver has 3x more atlETH than the simulated gas cost in ETH.
 - When a bundle is submitted, it should be simulated before forwarding it to the appointed bundler.
+
+## Error codes
+
+### 1xxx (Relay's internal error)
+
+**10xx** **(Relay's internal error):**
+- 1000: server internal error
+
+### 2xxx (Operation related error)
+
+**20xx** **(User operation error):**
+- 2001: user operation has invalid signature
+- 2002: user operation's 'to' field must be atlas contract address
+- 2003: user operation's deadline exceeded
+- 2004: failed to compute user operation hash
+- 2005: failed to compute user proof hash
+- 2006: user operation has invalid signature
+- 2007: user operation's gas limit exceeded
+
+**21xx** **(Solver operation error):**
+- 2100: solver operation's 'to' field must be atlas contract address
+- 2101: solver operation's gas limit exceeded
+- 2102: solver operation's maxFeePerGas must be equal or higher the user operation
+- 2103: solver operation's deadline exceeded or lower than user operation's
+- 2104: solver operation's dApp control does not match the user operation's
+- 2105: failed to compute solver proof hash
+- 2106: solver operation has invalid signature
+
+**22xx** **(DApp operation error):**
+- 2200: dApp operation's 'from' field does not match user operation's session key
+- 2201: dApp operation's 'to' field must be atlas contract address
+- 2202: dApp operation's deadline exceeded or lower than user operation's
+- 2203: dApp operation's dApp control does not match the user operation's
+- 2204: dApp operation's user operation hash does not match the user operation's
+- 2205: dApp operation's call chain hash is invalid
+- 2206: failed to compute dApp proof hash
+- 2207: dApp operation has invalid signature
+- 2208: dApp operation's gas limit exceeded
+
+### 3xxx (API and server related errors)
+
+**30xx** **(API error):**
+- 3000: malformed request
+- 3001: malformed json
+- 3002: invalid parameter
+- 3003: server corrupted data
+- 3004: invalid user operation hash
+- 3005: invalid bundler address
+- 3006: invalid timestamp
+- 3007: expired signature
+- 3008: bad signature (decode/recover error)
+- 3009: signature mismatch
+
+**31xx** **(Relay error):**
+- 3100: failed to forward bundle
+- 3101: failed to get dapp signatories
+- 3102: failed to get atlEth bonded balance
+
+**32xx** **(Server error):**
+- 3200: bundler is offline
+- 3201: clogged connection
+- 3202: bundling failure
+
+### 4xxx (Auction related error)
+
+**40xx** **(Auction validation error):**
+- 4000: auction for this user operation has already started
+- 4001: auction not found
+- 4002: user operation failed simulation
+- 4003: solver operation failed simulation
+- 4004: not enough atlEth bonded balance
+
+**41xx** **(Auction other error):**
+- 4100: auction for this user operation has already ended
+- 4101: auction for this user operation is ongoing
+
+### 5xxx (Bundle related error)
+
+**50xx** **(Bundle validation error):**
+- 5000: bundle for this user operation has already been submitted
+- 5001: bundle not found
+- 5002: bundle failed simulation
+
+**51xx** **(Bundle other error):**
+- 5100: bundle has not been bundled yet
+- 5101: bundle has already been bundled
+- 5102: bundle has already errored
