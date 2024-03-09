@@ -116,7 +116,9 @@ func runSolver(doneChan chan struct{}) {
 	userOpHash, _ := userOp.Hash()
 	fmt.Println("Received user operation", userOpHash.Hex())
 
-	solverOp := NewDemoSolverOperation(userOp)
+	ee := ExecutionEnvironment(userOp.From, userOp.Control)
+
+	solverOp := SolveUserOperation(userOp, ee)
 
 	//send solver operation
 	solverOpJSON, err := json.Marshal(solverOp)

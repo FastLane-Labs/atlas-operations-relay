@@ -209,7 +209,6 @@ func (api *Api) SubmitSolverOperation(w http.ResponseWriter, r *http.Request) {
 
 	result, relayErr := api.relay.submitSolverOperation(solverOp)
 	if relayErr != nil {
-		fmt.Println("relayErr", relayErr)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())
 		return

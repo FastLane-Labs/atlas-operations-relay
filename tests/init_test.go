@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlas"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlasVerification"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
@@ -149,10 +150,20 @@ func NewDemoUserOperation() *operation.UserOperation {
 	return userOp
 }
 
-func NewDemoSolverOperation(userOp *operation.UserOperation) *operation.SolverOperation {
+func SolveUserOperation(userOp *operation.UserOperation, executionEnvironment common.Address) *operation.SolverOperation {
 	userOpHash, relayErr := userOp.Hash()
 	if relayErr != nil {
 		panic(relayErr)
+	}
+
+	swapIntent, err := swapIntentAbiDecode(userOp.Data)
+	if err != nil {
+		panic(err)
+	}
+
+	data, err := solverData(swapIntent, executionEnvironment)
+	if err != nil {
+		panic(err)
 	}
 
 	solverOp := &operation.SolverOperation{
@@ -160,14 +171,14 @@ func NewDemoSolverOperation(userOp *operation.UserOperation) *operation.SolverOp
 		To:           conf.Contracts.Atlas,
 		Value:        big.NewInt(0),
 		Gas:          big.NewInt(100000),
-		MaxFeePerGas: big.NewInt(1000000000),
+		MaxFeePerGas: big.NewInt(5000000000),
 		Deadline:     userOp.Deadline,
 		Solver:       simpleRfqSolver,
 		Control:      userOp.Control,
 		UserOpHash:   userOpHash,
 		BidToken:     common.HexToAddress("0x0"),
-		BidAmount:    big.NewInt(1e16),
-		Data:         []byte(""),
+		BidAmount:    big.NewInt(1e15),
+		Data:         data,
 		Signature:    nil,
 	}
 
@@ -189,4 +200,18 @@ func NewDemoSolverOperation(userOp *operation.UserOperation) *operation.SolverOp
 	}
 
 	return solverOp
+}
+
+func ExecutionEnvironment(user common.Address, dAppControl common.Address) common.Address{
+	atlasContract, err := atlas.NewAtlas(conf.Contracts.Atlas, ethClient)
+	if err != nil {
+		panic(err)
+	}
+
+	executionEnvironment, err := atlasContract.GetExecutionEnvironment(nil, user, dAppControl)
+	if err != nil {
+		panic(err)
+	}
+
+	return executionEnvironment.ExecutionEnvironment
 }
