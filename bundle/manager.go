@@ -16,9 +16,9 @@ import (
 )
 
 var (
-	ErrBundleAlreadySubmitted = relayerror.NewError(3200, "bundle for this user operation has already been submitted")
-	ErrBundleNotFound         = relayerror.NewError(3201, "bundle not found")
-	ErrBundleFailedSimulation = relayerror.NewError(3202, "bundle failed simulation")
+	ErrBundleAlreadySubmitted = relayerror.NewError(5000, "bundle for this user operation has already been submitted")
+	ErrBundleNotFound         = relayerror.NewError(5001, "bundle not found")
+	ErrBundleFailedSimulation = relayerror.NewError(5002, "bundle failed simulation")
 )
 
 type Manager struct {

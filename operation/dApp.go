@@ -12,15 +12,15 @@ import (
 )
 
 var (
-	ErrDAppOpFromDoesNotMatchSessionKey = relayerror.NewError(3203, "dApp operation's 'from' field does not match user operation's session key")
-	ErrDAppOpInvalidToField             = relayerror.NewError(3204, "dApp operation's 'to' field must be atlas contract address")
-	ErrDAppOpDeadlineTooLow             = relayerror.NewError(3205, "dApp operation's deadline exceeded or lower than user operation's")
-	ErrDAppOpDAppControlMismatch        = relayerror.NewError(3206, "dApp operation's dApp control does not match the user operation's")
-	ErrDAppOpUserOpHashMismatch         = relayerror.NewError(3207, "dApp operation's user operation hash does not match the user operation's")
-	ErrDAppOpInvalidCallChainHash       = relayerror.NewError(3208, "dApp operation's call chain hash is invalid")
-	ErrDAppOpComputeProofHash           = relayerror.NewError(3209, "failed to compute dApp proof hash")
-	ErrDappOpSignatureInvalid           = relayerror.NewError(3210, "dApp operation has invalid signature")
-	ErrDAppOpGasLimitExceeded           = relayerror.NewError(3211, "dApp operation's gas limit exceeded")
+	ErrDAppOpFromDoesNotMatchSessionKey = relayerror.NewError(2200, "dApp operation's 'from' field does not match user operation's session key")
+	ErrDAppOpInvalidToField             = relayerror.NewError(2201, "dApp operation's 'to' field must be atlas contract address")
+	ErrDAppOpDeadlineTooLow             = relayerror.NewError(2202, "dApp operation's deadline exceeded or lower than user operation's")
+	ErrDAppOpDAppControlMismatch        = relayerror.NewError(2203, "dApp operation's dApp control does not match the user operation's")
+	ErrDAppOpUserOpHashMismatch         = relayerror.NewError(2204, "dApp operation's user operation hash does not match the user operation's")
+	ErrDAppOpInvalidCallChainHash       = relayerror.NewError(2205, "dApp operation's call chain hash is invalid")
+	ErrDAppOpComputeProofHash           = relayerror.NewError(2206, "failed to compute dApp proof hash")
+	ErrDappOpSignatureInvalid           = relayerror.NewError(2207, "dApp operation has invalid signature")
+	ErrDAppOpGasLimitExceeded           = relayerror.NewError(2208, "dApp operation's gas limit exceeded")
 )
 
 var (

@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	ErrNotBundledYet  = relayerror.NewError(3100, "bundle has not been bundled yet")
-	ErrAlreadyBundled = relayerror.NewError(3101, "bundle has already been bundled")
-	ErrAlreadyErrored = relayerror.NewError(3102, "bundle has already errored")
+	ErrNotBundledYet  = relayerror.NewError(5101, "bundle has not been bundled yet")
+	ErrAlreadyBundled = relayerror.NewError(5102, "bundle has already been bundled")
+	ErrAlreadyErrored = relayerror.NewError(5103, "bundle has already errored")
 )
 
 type Bundle struct {

@@ -84,9 +84,9 @@ var (
 )
 
 var (
-	ErrBundlerOffline    = relayerror.NewError(1300, "bundler is offline")
-	ErrCloggedConnection = relayerror.NewError(1301, "clogged connection")
-	ErrBundlingFailure   = relayerror.NewError(1302, "bundling failure")
+	ErrBundlerOffline    = relayerror.NewError(3200, "bundler is offline")
+	ErrCloggedConnection = relayerror.NewError(3201, "clogged connection")
+	ErrBundlingFailure   = relayerror.NewError(3202, "bundling failure")
 )
 
 type newSolverOperationFn func(*operation.SolverOperation) *relayerror.Error

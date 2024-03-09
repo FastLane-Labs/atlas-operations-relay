@@ -12,13 +12,13 @@ import (
 )
 
 var (
-	ErrSolverOpInvalidToField      = relayerror.NewError(2201, "solver operation's 'to' field must be atlas contract address")
-	ErrSolverOpGasLimitExceeded    = relayerror.NewError(2202, "solver operation's gas limit exceeded")
-	ErrSolverOpMaxFeePerGasTooLow  = relayerror.NewError(2203, "solver operation's maxFeePerGas must be equal or higher the user operation")
-	ErrSolverOpDeadlineTooLow      = relayerror.NewError(2204, "solver operation's deadline exceeded or lower than user operation's")
-	ErrSolverOpDAppControlMismatch = relayerror.NewError(2205, "solver operation's dApp control does not match the user operation's")
-	ErrSolverOpComputeProofHash    = relayerror.NewError(2206, "failed to compute solver proof hash")
-	ErrSolverOpSignatureInvalid    = relayerror.NewError(2207, "solver operation has invalid signature")
+	ErrSolverOpInvalidToField      = relayerror.NewError(2100, "solver operation's 'to' field must be atlas contract address")
+	ErrSolverOpGasLimitExceeded    = relayerror.NewError(2101, "solver operation's gas limit exceeded")
+	ErrSolverOpMaxFeePerGasTooLow  = relayerror.NewError(2102, "solver operation's maxFeePerGas must be equal or higher the user operation")
+	ErrSolverOpDeadlineTooLow      = relayerror.NewError(2103, "solver operation's deadline exceeded or lower than user operation's")
+	ErrSolverOpDAppControlMismatch = relayerror.NewError(2104, "solver operation's dApp control does not match the user operation's")
+	ErrSolverOpComputeProofHash    = relayerror.NewError(2105, "failed to compute solver proof hash")
+	ErrSolverOpSignatureInvalid    = relayerror.NewError(2106, "solver operation has invalid signature")
 )
 
 var (

@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	ErrAuctionClosed  = relayerror.NewError(2100, "auction for this user operation has already ended")
-	ErrAuctionOngoing = relayerror.NewError(2101, "auction for this user operation is ongoing")
+	ErrAuctionClosed  = relayerror.NewError(4100, "auction for this user operation has already ended")
+	ErrAuctionOngoing = relayerror.NewError(4101, "auction for this user operation is ongoing")
 )
 
 type Auction struct {
