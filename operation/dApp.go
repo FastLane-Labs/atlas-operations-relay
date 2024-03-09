@@ -73,7 +73,7 @@ func GenerateSimulationDAppOperation(userOp *UserOperation) *DAppOperation {
 		Bundler:       common.HexToAddress("0x0"),
 		UserOpHash:    common.HexToHash("0x0"),
 		CallChainHash: common.HexToHash("0x0"),
-		Signature:     []byte("0x0"),
+		Signature:     []byte(""),
 	}
 }
 

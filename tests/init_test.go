@@ -14,6 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
+
 )
 
 /*
@@ -134,14 +136,8 @@ func NewDemoUserOperation() *operation.UserOperation {
 	if err != nil {
 		panic(err)
 	}
-
-	payload := crypto.Keccak256Hash([]byte("\x19\x01"), atlasDomainSeparator[:], proofHash[:])
-	signature, err := crypto.Sign(payload[:], userPk)
-	if err != nil {
-		panic(err)
-	}
-
-	userOp.Signature = signature
+	
+	userOp.Signature = relayCrypto.SignEip712(atlasDomainSeparator, proofHash, userPk)
 
 	if err := userOp.Validate(ethClient, conf.Contracts.Atlas, atlasDomainSeparator, nil); err != nil {
 		panic(err)
@@ -187,13 +183,7 @@ func SolveUserOperation(userOp *operation.UserOperation, executionEnvironment co
 		panic(err)
 	}
 
-	payload := crypto.Keccak256Hash([]byte("\x19\x01"), atlasDomainSeparator[:], proofHash[:])
-	signature, err := crypto.Sign(payload[:], solverPk)
-	if err != nil {
-		panic(err)
-	}
-
-	solverOp.Signature = signature
+	solverOp.Signature = relayCrypto.SignEip712(atlasDomainSeparator, proofHash, solverPk)
 
 	if err := solverOp.Validate(userOp, conf.Contracts.Atlas, atlasDomainSeparator, nil); err != nil {
 		panic(err)
@@ -202,7 +192,7 @@ func SolveUserOperation(userOp *operation.UserOperation, executionEnvironment co
 	return solverOp
 }
 
-func ExecutionEnvironment(user common.Address, dAppControl common.Address) common.Address{
+func ExecutionEnvironment(user common.Address, dAppControl common.Address) common.Address {
 	atlasContract, err := atlas.NewAtlas(conf.Contracts.Atlas, ethClient)
 	if err != nil {
 		panic(err)
