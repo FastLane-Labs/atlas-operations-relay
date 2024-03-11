@@ -10,12 +10,11 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlas"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlasVerification"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
+	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
-
 )
 
 /*
@@ -49,7 +48,7 @@ var (
 	tokenA                = common.HexToAddress("0x7439E9Bb6D8a84dd3A23fe621A30F95403F87fB9")
 	tokenB                = common.HexToAddress("0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9")
 	swapIntentDAppControl = common.HexToAddress("0x2F98675731D0e659E716d890330901a8A2355813")
-	simpleRfqSolver       = common.HexToAddress("0x91eb17bBeD5557E70A7c0D9c69C413aecA820765")
+	simpleRfqSolver       = common.HexToAddress("0xbB4026B66fB10CF380Cb069F5ac517Ed5caAdc34")
 
 	userPk, _ = crypto.ToECDSA(common.FromHex("0x54c371fc7e513a4574cf87ca222664580e9c3fa58ecc636a2bd811bddfac66a2"))
 	userEoa   = crypto.PubkeyToAddress(userPk.PublicKey) // 0x7F14D219C66c53A638185146A20555bb6a3f234A
@@ -102,7 +101,7 @@ func NewDemoSwapIntent() *SwapIntent {
 		AmountUserSells:        big.NewInt(1e12),
 		AuctionBaseCurrency:    common.HexToAddress("0x0"),
 		SolverMustReimburseGas: false,
-		Conditions:             nil,
+		Conditions:             make([]Condition, 0),
 	}
 }
 
@@ -120,7 +119,7 @@ func NewDemoUserOperation() *operation.UserOperation {
 	userOp := &operation.UserOperation{
 		From:         userEoa,
 		To:           conf.Contracts.Atlas,
-		Deadline:     big.NewInt(int64(currentBlock) + 5),
+		Deadline:     big.NewInt(int64(currentBlock) + 1000),
 		Gas:          big.NewInt(100000),
 		Nonce:        big.NewInt(4),
 		MaxFeePerGas: big.NewInt(1000000000),
@@ -136,7 +135,7 @@ func NewDemoUserOperation() *operation.UserOperation {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	userOp.Signature = relayCrypto.SignEip712(atlasDomainSeparator, proofHash, userPk)
 
 	if err := userOp.Validate(ethClient, conf.Contracts.Atlas, atlasDomainSeparator, nil); err != nil {
@@ -173,7 +172,7 @@ func SolveUserOperation(userOp *operation.UserOperation, executionEnvironment co
 		Control:      userOp.Control,
 		UserOpHash:   userOpHash,
 		BidToken:     common.HexToAddress("0x0"),
-		BidAmount:    big.NewInt(1e15),
+		BidAmount:    big.NewInt(1e14),
 		Data:         data,
 		Signature:    nil,
 	}

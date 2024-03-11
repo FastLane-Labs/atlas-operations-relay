@@ -171,11 +171,7 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 
 	dAppOp := operation.GenerateSimulationDAppOperation(auction.userOp)
 
-	//remove userOpSignature before simulating
-	userOpWithoutSig := auction.userOp.Copy()
-	userOpWithoutSig.Signature = nil
-
-	pData, err := contract.SimulatorAbi.Pack("simSolverCall", *userOpWithoutSig, *solverOp, *dAppOp)
+	pData, err := contract.SimulatorAbi.Pack("simSolverCall", *auction.userOp, *solverOp, *dAppOp)
 	if err != nil {
 		log.Info("failed to pack solver operation", "err", err, "userOpHash", auction.userOpHash.Hex())
 		return relayerror.ErrServerInternal
@@ -187,7 +183,7 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 		return relayerror.ErrServerInternal
 	}
 
-	validOp, err := contract.SimulatorAbi.Unpack("simSolverCall", bData)
+	validOp, err := contract.SimulatorAbi.Unpack("simSolverCalls", bData)
 	if err != nil {
 		log.Info("failed to unpack simSolverCall return data", "err", err, "userOpHash", auction.userOpHash.Hex())
 		return relayerror.ErrServerInternal
