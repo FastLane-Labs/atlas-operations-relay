@@ -17,7 +17,7 @@ func TestBundlerFlow(t *testing.T) {
 	go runSolver(solverDoneChan)
 
 	//start bundler
-	go startBundler(t, bundlerPk)
+	go runBundler(bundlerPk)
 
 	//send user request
 	userOp, err := sendUserRequest()

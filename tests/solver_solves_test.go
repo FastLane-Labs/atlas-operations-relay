@@ -185,7 +185,5 @@ func runSolver(doneChan chan struct{}) {
 		panic("Expected status code 200, got " + fmt.Sprint(resp.StatusCode))
 	}
 
-	fmt.Println("solver operation posted")
-
 	doneChan <- struct{}{}
 }

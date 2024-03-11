@@ -3,11 +3,11 @@ package tests
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"log"
 	"net/url"
 	"testing"
 	"time"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gorilla/websocket"
@@ -19,10 +19,10 @@ func TestBundlerListen(t *testing.T) {
 		panic(err)
 	}
 
-	startBundler(t, sampleBundlerPk)
+	runBundler(sampleBundlerPk)
 }
 
-func startBundler(t *testing.T, bundlerPk *ecdsa.PrivateKey) {
+func runBundler(bundlerPk *ecdsa.PrivateKey) {
 	bundlerAddr := crypto.PubkeyToAddress(bundlerPk.PublicKey)
 	timestamp := time.Now().Unix()
 	signatureContent := fmt.Sprintf("%s:%d", bundlerAddr, timestamp)
@@ -44,15 +44,31 @@ func startBundler(t *testing.T, bundlerPk *ecdsa.PrivateKey) {
 
 	fmt.Printf("Connecting to %s\n", u.String())
 
-	_, resp, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	conn, resp, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		t.Logf("HTTP Response Status: %d", resp.StatusCode)
-		log.Fatalf("dial: %v", err)
+		log.Error("dial:", err)
+		return
 	}
 
 	if resp.StatusCode != 101 {
-		t.Errorf("Expected status code %d, got %d", 101, resp.StatusCode)
+		log.Error("Expected status code 101, got", resp.StatusCode)
+		return
 	}
+	// start listening on connection
+	go func() {
+		for {
+			_, message, err := conn.ReadMessage()
+			if err != nil {
+				log.Error("bundler ws error:", err)
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					log.Error("error:", err)
+				}
+				break
+			}
+
+			fmt.Println("Received message:", string(message))
+		}
+	}()
 }
 
 func signMessage(data []byte, privKey *ecdsa.PrivateKey) ([]byte, error) {
