@@ -71,7 +71,7 @@ func (b *BundleOperations) callChainHash(callConfig uint32, dAppControl common.A
 		counter.Add(counter, common.Big1)
 	}
 
-	userOpAbiEncoded, err := b.UserOperation.abiEncode()
+	userOpAbiEncoded, err := b.UserOperation.AbiEncode()
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -85,7 +85,7 @@ func (b *BundleOperations) callChainHash(callConfig uint32, dAppControl common.A
 	counter.Add(counter, common.Big1)
 
 	for _, solverOp := range b.SolverOperations {
-		solverOpAbiEncoded, err := solverOp.abiEncode()
+		solverOpAbiEncoded, err := solverOp.AbiEncode()
 		if err != nil {
 			return common.Hash{}, err
 		}

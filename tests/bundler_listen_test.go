@@ -19,10 +19,14 @@ func TestBundlerListen(t *testing.T) {
 		panic(err)
 	}
 
-	bundlerAddr := crypto.PubkeyToAddress(sampleBundlerPk.PublicKey)
+	startBundler(t, sampleBundlerPk)
+}
+
+func startBundler(t *testing.T, bundlerPk *ecdsa.PrivateKey) {
+	bundlerAddr := crypto.PubkeyToAddress(bundlerPk.PublicKey)
 	timestamp := time.Now().Unix()
 	signatureContent := fmt.Sprintf("%s:%d", bundlerAddr, timestamp)
-	signature, err := signMessage([]byte(signatureContent), sampleBundlerPk)
+	signature, err := signMessage([]byte(signatureContent), bundlerPk)
 	if err != nil {
 		panic(err)
 	}

@@ -133,14 +133,14 @@ func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Addre
 }
 
 func (u *UserOperation) Hash() (common.Hash, *relayerror.Error) {
-	packed, err := u.abiEncode()
+	packed, err := u.AbiEncode()
 	if err != nil {
 		return common.Hash{}, ErrUserOpComputeHash.AddError(err)
 	}
 	return crypto.Keccak256Hash(packed), nil
 }
 
-func (u *UserOperation) abiEncode() ([]byte, error) {
+func (u *UserOperation) AbiEncode() ([]byte, error) {
 	return userOpArgs.Pack(&u)
 }
 

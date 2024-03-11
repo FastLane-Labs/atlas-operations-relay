@@ -21,7 +21,7 @@ func TestSolverSolves(t *testing.T) {
 	solverDoneChan := make(chan struct{})
 
 	go runSolver(solverDoneChan)
-	userOpHash, err := sendUserRequest()
+	userOp, err := sendUserRequest()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,6 +32,7 @@ func TestSolverSolves(t *testing.T) {
 	time.Sleep(auction.AuctionDuration)
 
 	//user requests for solver solutions
+	userOpHash, _ := userOp.Hash()
 	solverOps, err := retreiveSolverOps(userOpHash)
 	if err != nil {
 		t.Fatal(err)
@@ -42,9 +43,8 @@ func TestSolverSolves(t *testing.T) {
 	}
 }
 
-func sendUserRequest() (common.Hash, error) {
+func sendUserRequest() (*operation.UserOperation, error) {
 	userOp := NewDemoUserOperation()
-	userOpHash, _ := userOp.Hash()
 	userOpJSON, err := json.Marshal(userOp)
 	if err != nil {
 		panic(err)
@@ -52,10 +52,10 @@ func sendUserRequest() (common.Hash, error) {
 
 	_, err = http.Post("http://localhost:8080/userOperation", "application/json", bytes.NewReader(userOpJSON))
 	if err != nil {
-		return common.Hash{}, err
+		return nil, err
 	}
 
-	return userOpHash, nil
+	return userOp, nil
 }
 
 func retreiveSolverOps(userOpHash common.Hash) ([]*operation.SolverOperation, error) {

@@ -150,8 +150,9 @@ func (api *Api) GetSolverOperations(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) SubmitBundleOperations(w http.ResponseWriter, r *http.Request) {
-	var bundleOps *operation.BundleOperations
+	bundleOps := &operation.BundleOperations{}
 	if relayErr := getPostRequestData(r, bundleOps); relayErr != nil {
+		fmt.Println("Error getting post request data", relayErr)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
@@ -159,6 +160,7 @@ func (api *Api) SubmitBundleOperations(w http.ResponseWriter, r *http.Request) {
 
 	result, relayErr := api.relay.submitBundleOperations(bundleOps)
 	if relayErr != nil {
+		fmt.Println("Error submitting bundle operations", relayErr)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())
 		return

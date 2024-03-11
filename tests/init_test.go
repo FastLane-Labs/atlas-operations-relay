@@ -7,12 +7,15 @@ import (
 	"testing"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlas"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlasVerification"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -55,6 +58,9 @@ var (
 
 	solverPk, _ = crypto.ToECDSA(common.FromHex("e3818ba09a3106ecbf80cafed7510df6f81e6dfab3cfa240680ec9389ba66206"))
 	solverEoa   = crypto.PubkeyToAddress(solverPk.PublicKey) // 0x915c0f7A6a3be9E2298De421C4FE6CA1E2194880
+
+	bundlerPk, _ = crypto.ToECDSA(common.FromHex("72c25cfbdc5cac5c90849eb8f4b5ec4c4efa984f7f8dc1be23725d42f1486158"))
+	bundlerEoa   = crypto.PubkeyToAddress(bundlerPk.PublicKey) // 0xeA075605911eBDc60FDa89f477fD4C54e88b0aE5
 
 	conf = &config.Config{
 		Network: config.Network{
@@ -203,4 +209,99 @@ func ExecutionEnvironment(user common.Address, dAppControl common.Address) commo
 	}
 
 	return executionEnvironment.ExecutionEnvironment
+}
+
+func NewDappOperation(userOp *operation.UserOperation, solverOps []*operation.SolverOperation) *operation.DAppOperation {
+	userOpHash, _ := userOp.Hash()
+
+	dAppControlContract, err := dAppControl.NewDAppControl(userOp.Control, ethClient)
+	if err != nil {
+		panic(err)
+	}
+
+	dAppConfig, err := dAppControlContract.GetDAppConfig(nil, dAppControl.UserOperation(*userOp))
+	if err != nil {
+		panic(err)
+	}
+
+	callChainHash, err := CallChainHash(dAppConfig.CallConfig, dAppConfig.To, userOp, solverOps)
+	if err != nil {
+		panic(err)
+	}
+
+	dAppOp := &operation.DAppOperation{
+		From:          userOp.From,
+		To:            conf.Contracts.Atlas,
+		Value:         big.NewInt(0),
+		Gas:           big.NewInt(100000),
+		Nonce:         big.NewInt(0),
+		Deadline:      userOp.Deadline,
+		Control:       userOp.Control,
+		Bundler:       bundlerEoa,
+		UserOpHash:    userOpHash,
+		CallChainHash: callChainHash,
+		Signature:     []byte(""),
+	}
+
+	proofHash, err := dAppOp.ProofHash()
+	if err != nil {
+		panic(err)
+	}
+
+	//user signs the DappOp
+	dAppOp.Signature = relayCrypto.SignEip712(atlasDomainSeparator, proofHash, userPk)
+
+	return dAppOp
+}
+
+func CallChainHash(callConfig uint32, dAppControl common.Address, userOp *operation.UserOperation, solverOps []*operation.SolverOperation) (common.Hash, error) {
+	counter := big.NewInt(0)
+	var callSequenceHash common.Hash
+
+	if callConfig&4 != 0 {
+		// Require preOps
+		preOpsEncoded, err := contract.DappControlAbi.Pack("preOpsCall", userOp)
+		if err != nil {
+			return common.Hash{}, err
+		}
+
+		callSequenceHash = crypto.Keccak256Hash(
+			callSequenceHash.Bytes(),
+			dAppControl.Bytes(),
+			preOpsEncoded,
+			math.U256Bytes(counter),
+		)
+
+		counter.Add(counter, common.Big1)
+	}
+
+	userOpAbiEncoded, err := userOp.AbiEncode()
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	callSequenceHash = crypto.Keccak256Hash(
+		callSequenceHash.Bytes(),
+		userOpAbiEncoded,
+		math.U256Bytes(counter),
+	)
+
+	counter.Add(counter, common.Big1)
+
+	for _, solverOp := range solverOps {
+		solverOpAbiEncoded, err := solverOp.AbiEncode()
+		if err != nil {
+			return common.Hash{}, err
+		}
+
+		callSequenceHash = crypto.Keccak256Hash(
+			callSequenceHash.Bytes(),
+			solverOpAbiEncoded,
+			math.U256Bytes(counter),
+		)
+
+		counter.Add(counter, common.Big1)
+	}
+
+	return callSequenceHash, nil
 }

@@ -29,7 +29,7 @@ func TestDAppOperationProofHash(t *testing.T) {
 	dAppOp := generateDAppOperation()
 	want := common.HexToHash("0x408d435740d89283a7971ca84aa32bf4c2e134d8b50dde7693ea3c6359bec74a")
 
-	result, err := dAppOp.proofHash()
+	result, err := dAppOp.ProofHash()
 	if err != nil {
 		t.Errorf("DAppOperation.proofHash() error = %v", err)
 	}

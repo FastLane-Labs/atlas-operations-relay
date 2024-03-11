@@ -118,7 +118,7 @@ func (s *SolverOperation) Validate(userOp *UserOperation, atlas common.Address, 
 	return nil
 }
 
-func (s *SolverOperation) abiEncode() ([]byte, error) {
+func (s *SolverOperation) AbiEncode() ([]byte, error) {
 	return solverOpArgs.Pack(&s)
 }
 
