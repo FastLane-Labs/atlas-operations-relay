@@ -5,24 +5,44 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
+	"github.com/FastLane-Labs/atlas-operations-relay/operation"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/websocket"
 )
 
 func TestSolverSolves(t *testing.T) {
-	doneChan := make(chan struct{})
+	solverDoneChan := make(chan struct{})
 
-	go runSolver(doneChan)
-	go runUser()
+	go runSolver(solverDoneChan)
+	userOpHash, err := sendUserRequest()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	<-doneChan
+	<-solverDoneChan
+
+	//wait for auction to end
+	time.Sleep(auction.AuctionDuration)
+
+	//user requests for solver solutions
+	solverOps, err := retreiveSolverOps(userOpHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(solverOps) == 0 {
+		t.Fatal("expected at least one solver operation")
+	}
 }
 
-func runUser() {
+func sendUserRequest() (common.Hash, error) {
 	userOp := NewDemoUserOperation()
 	userOpHash, _ := userOp.Hash()
 	userOpJSON, err := json.Marshal(userOp)
@@ -32,11 +52,42 @@ func runUser() {
 
 	_, err = http.Post("http://localhost:8080/userOperation", "application/json", bytes.NewReader(userOpJSON))
 	if err != nil {
-		fmt.Println("Error sending HTTP request:", err)
-		return
+		return common.Hash{}, err
 	}
 
-	fmt.Println("Sent user operation", userOpHash.Hex())
+	return userOpHash, nil
+}
+
+func retreiveSolverOps(userOpHash common.Hash) ([]*operation.SolverOperation, error) {
+	u := url.URL{
+		Scheme: "http",
+		Host:   "localhost:8080",
+		Path:   "/solverOperations",
+		RawQuery: url.Values{
+			"userOpHash": []string{userOpHash.Hex()},
+		}.Encode(),
+	}
+
+	resp, err := http.Get(u.String())
+	if err != nil {
+		fmt.Println("Error sending HTTP request:", err)
+		return make([]*operation.SolverOperation, 0), err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return make([]*operation.SolverOperation, 0), fmt.Errorf("Expected status code 200, got %d", resp.StatusCode)
+	}
+
+	var solverOps []*operation.SolverOperation
+	err = json.NewDecoder(resp.Body).Decode(&solverOps)
+
+	if err != nil {
+		return make([]*operation.SolverOperation, 0), err
+	}
+
+	return solverOps, nil
 }
 
 func runSolver(doneChan chan struct{}) {
@@ -113,8 +164,6 @@ func runSolver(doneChan chan struct{}) {
 	}
 
 	userOp := broadcast.Data.UserOperation
-	userOpHash, _ := userOp.Hash()
-	fmt.Println("Received user operation", userOpHash.Hex())
 
 	ee := ExecutionEnvironment(userOp.From, userOp.Control)
 
@@ -133,12 +182,10 @@ func runSolver(doneChan chan struct{}) {
 	}
 
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		panic("Expected status code 200, got " + fmt.Sprint(resp.StatusCode))
 	}
-	
-	fmt.Println("response Body:", resp.Body)
 
 	doneChan <- struct{}{}
 }

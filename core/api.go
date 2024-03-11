@@ -122,6 +122,7 @@ func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
 func (api *Api) GetSolverOperations(w http.ResponseWriter, r *http.Request) {
 	retrieveReq, relayErr := getRetrieveRequestData(r)
 	if relayErr != nil {
+		fmt.Println("Error getting retrieve request data", relayErr)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
@@ -134,6 +135,7 @@ func (api *Api) GetSolverOperations(w http.ResponseWriter, r *http.Request) {
 
 	solverOps, relayErr := api.relay.getSolverOperations(retrieveReq.UserOpHash, completionChan)
 	if relayErr != nil {
+		fmt.Println("Error getting solver operations", relayErr)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())
 		return
