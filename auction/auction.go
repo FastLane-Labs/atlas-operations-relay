@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	AuctionDuration = 500 * time.Millisecond
+	AuctionDuration = 2 * time.Second
 )
 
 var (
@@ -51,6 +51,7 @@ func (a *Auction) close() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
+	log.Info("closing auction", "userOpHash", a.userOpHash.Hex())
 	a.open = false
 
 	for _, subChan := range a.completionSubs {

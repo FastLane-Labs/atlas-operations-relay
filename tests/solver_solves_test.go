@@ -133,9 +133,11 @@ func runSolver(doneChan chan struct{}) {
 	}
 
 	defer resp.Body.Close()
-	fmt.Println("Sent solver operation", userOpHash.Hex())
-	fmt.Println("response Status:", resp.Status)
-	fmt.Println("response Headers:", resp.Header)
+	
+	if resp.StatusCode != http.StatusOK {
+		panic("Expected status code 200, got " + fmt.Sprint(resp.StatusCode))
+	}
+	
 	fmt.Println("response Body:", resp.Body)
 
 	doneChan <- struct{}{}
