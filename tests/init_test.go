@@ -59,8 +59,8 @@ var (
 	solverPk, _ = crypto.ToECDSA(common.FromHex("e3818ba09a3106ecbf80cafed7510df6f81e6dfab3cfa240680ec9389ba66206"))
 	solverEoa   = crypto.PubkeyToAddress(solverPk.PublicKey) // 0x915c0f7A6a3be9E2298De421C4FE6CA1E2194880
 
-	bundlerPk, _ = crypto.ToECDSA(common.FromHex("72c25cfbdc5cac5c90849eb8f4b5ec4c4efa984f7f8dc1be23725d42f1486158"))
-	bundlerEoa   = crypto.PubkeyToAddress(bundlerPk.PublicKey) // 0xeA075605911eBDc60FDa89f477fD4C54e88b0aE5
+	bundlerPk, _ = crypto.ToECDSA(common.FromHex("586af44cb6f500bdcdbea0e4411916dfc4806e7df43504da5bdfe144dd78f895"))
+	bundlerEoa   = crypto.PubkeyToAddress(bundlerPk.PublicKey) // 0xEdB89106f2293ed2bAAbA1e8E844306412cB39Fe
 
 	conf = &config.Config{
 		Network: config.Network{

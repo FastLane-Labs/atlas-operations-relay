@@ -44,12 +44,11 @@ func startBundler(t *testing.T, bundlerPk *ecdsa.PrivateKey) {
 
 	fmt.Printf("Connecting to %s\n", u.String())
 
-	c, resp, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	_, resp, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		t.Logf("HTTP Response Status: %d", resp.StatusCode)
 		log.Fatalf("dial: %v", err)
 	}
-	defer c.Close()
 
 	if resp.StatusCode != 101 {
 		t.Errorf("Expected status code %d, got %d", 101, resp.StatusCode)

@@ -70,7 +70,6 @@ func retreiveSolverOps(userOpHash common.Hash) ([]*operation.SolverOperation, er
 
 	resp, err := http.Get(u.String())
 	if err != nil {
-		fmt.Println("Error sending HTTP request:", err)
 		return make([]*operation.SolverOperation, 0), err
 	}
 
@@ -93,7 +92,6 @@ func retreiveSolverOps(userOpHash common.Hash) ([]*operation.SolverOperation, er
 func runSolver(doneChan chan struct{}) {
 	//solver ws connection
 	conn, solverResp := getWsConnection()
-	defer conn.Close()
 
 	if solverResp.StatusCode != 101 {
 		panic("Expected status code 101, got " + fmt.Sprint(solverResp.StatusCode))
@@ -156,6 +154,7 @@ func runSolver(doneChan chan struct{}) {
 
 	//wait for userOp to be received
 	userOpBroadcastBytes := <-userOpReceivedChan
+
 	broadcast := &core.Broadcast{}
 
 	err = json.Unmarshal(userOpBroadcastBytes, broadcast)
@@ -177,8 +176,7 @@ func runSolver(doneChan chan struct{}) {
 
 	resp, err := http.Post("http://localhost:8080/solverOperation", "application/json", bytes.NewReader(solverOpJSON))
 	if err != nil {
-		fmt.Println("Error sending HTTP request:", err)
-		return
+		panic(err)
 	}
 
 	defer resp.Body.Close()
@@ -186,6 +184,8 @@ func runSolver(doneChan chan struct{}) {
 	if resp.StatusCode != http.StatusOK {
 		panic("Expected status code 200, got " + fmt.Sprint(resp.StatusCode))
 	}
+
+	fmt.Println("solver operation posted")
 
 	doneChan <- struct{}{}
 }

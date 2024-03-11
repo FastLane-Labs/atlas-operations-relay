@@ -3,40 +3,35 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 func TestBundlerFlow(t *testing.T) {
-	//start bundler
-	sampleBundlerPk, err := crypto.GenerateKey()
-	if err != nil {
-		panic(err)
-	}
-
-	startBundler(t, sampleBundlerPk)
-
 	//start solver
 	solverDoneChan := make(chan struct{})
-
 	go runSolver(solverDoneChan)
+
+	//start bundler
+	go startBundler(t, bundlerPk)
+
+	//send user request
 	userOp, err := sendUserRequest()
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	//wait for solver to finish
 	<-solverDoneChan
 
 	//wait for auction to end
 	time.Sleep(auction.AuctionDuration)
 
-	//user requests for solver solutions
+	//user requests solver solutions
 	userOpHash, _ := userOp.Hash()
 	solverOps, err := retreiveSolverOps(userOpHash)
 	if err != nil {
@@ -48,7 +43,10 @@ func TestBundlerFlow(t *testing.T) {
 	}
 
 	//send bundleOps to the relay
-	sendBundleOperation(t, userOp, solverOps, NewDappOperation(userOp, solverOps))
+	err = sendBundleOperation(t, userOp, solverOps, NewDappOperation(userOp, solverOps))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 }
 
@@ -64,14 +62,10 @@ func sendBundleOperation(t *testing.T, userOp *operation.UserOperation, solverOp
 		t.Errorf("failed to marshal bundle operations: %v", err)
 	}
 
-	resp, err := http.Post("http://localhost:8080/bundleOperations", "application/json", bytes.NewReader(bundleOpsJSON))
+	_, err = http.Post("http://localhost:8080/bundleOperations", "application/json", bytes.NewReader(bundleOpsJSON))
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("Response Status:", resp.Status)
-	fmt.Println("Response Headers:", resp.Header)
-	fmt.Println("Response Body:", resp.Body)
 
 	return nil
 }

@@ -58,6 +58,7 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 		if err != nil {
 			return []common.Address{}, ErrCantGetDAppSignatories.AddError(err)
 		}
+
 		return signatories, nil
 	}
 
@@ -87,7 +88,6 @@ func (r *Relay) submitUserOperation(userOp *operation.UserOperation) (common.Has
 	if relayErr != nil {
 		return common.Hash{}, relayErr
 	}
-
 	go r.server.BroadcastUserOperation(userOp)
 	return userOpHash, nil
 }

@@ -89,7 +89,7 @@ func TestUserOpToSolverFLow(t *testing.T) {
 
 	_, err = http.Post("http://localhost:8080/userOperation", "application/json", bytes.NewReader(userOpJSON))
 	if err != nil {
-		fmt.Println("Error sending HTTP request:", err)
+		panic(err)
 		return
 	}
 
