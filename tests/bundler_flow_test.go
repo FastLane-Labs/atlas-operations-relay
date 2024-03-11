@@ -17,7 +17,8 @@ func TestBundlerFlow(t *testing.T) {
 	go runSolver(solverDoneChan)
 
 	//start bundler
-	go runBundler(bundlerPk)
+	bundlerReceiveChan := make(chan []byte)
+	go runBundler(bundlerPk, bundlerReceiveChan)
 
 	//send user request
 	userOp, err := sendUserRequest()
@@ -48,6 +49,8 @@ func TestBundlerFlow(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	//wait for bundler to receive the bundleOps
+	<-bundlerReceiveChan
 }
 
 func sendBundleOperation(t *testing.T, userOp *operation.UserOperation, solverOps []*operation.SolverOperation, dAppOp *operation.DAppOperation) error {

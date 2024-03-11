@@ -19,10 +19,10 @@ func TestBundlerListen(t *testing.T) {
 		panic(err)
 	}
 
-	runBundler(sampleBundlerPk)
+	runBundler(sampleBundlerPk, make(chan []byte))
 }
 
-func runBundler(bundlerPk *ecdsa.PrivateKey) {
+func runBundler(bundlerPk *ecdsa.PrivateKey, bundlerReceiveChan chan []byte) {
 	bundlerAddr := crypto.PubkeyToAddress(bundlerPk.PublicKey)
 	timestamp := time.Now().Unix()
 	signatureContent := fmt.Sprintf("%s:%d", bundlerAddr, timestamp)
@@ -66,7 +66,7 @@ func runBundler(bundlerPk *ecdsa.PrivateKey) {
 				break
 			}
 
-			fmt.Println("Received message:", string(message))
+			bundlerReceiveChan <- message
 		}
 	}()
 }
