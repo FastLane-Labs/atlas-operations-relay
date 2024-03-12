@@ -180,7 +180,7 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 		return relayerror.ErrServerInternal
 	}
 
-	validOp, err := contract.SimulatorAbi.Unpack("simSolverCalls", bData)
+	validOp, err := contract.SimulatorAbi.Unpack("simSolverCall", bData)
 	if err != nil {
 		log.Info("failed to unpack simSolverCall return data", "err", err, "userOpHash", auction.userOpHash.Hex())
 		return relayerror.ErrServerInternal
