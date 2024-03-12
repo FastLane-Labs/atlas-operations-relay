@@ -90,7 +90,6 @@ func TestUserOpToSolverFLow(t *testing.T) {
 	_, err = http.Post("http://localhost:8080/userOperation", "application/json", bytes.NewReader(userOpJSON))
 	if err != nil {
 		panic(err)
-		return
 	}
 
 	if !waitOnChanFor(userOpReceivedChan, 5*time.Second) {
