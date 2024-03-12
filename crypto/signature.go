@@ -1,8 +1,6 @@
 package crypto
 
 import (
-	"crypto/ecdsa"
-
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
@@ -37,17 +35,4 @@ func recoverSigner(messageHash []byte, signature []byte) (common.Address, error)
 		signature[crypto.RecoveryIDOffset] += 27
 	}
 	return crypto.PubkeyToAddress(*pubKey), nil
-}
-
-func SignEip712(domainSeparator common.Hash, proofHash common.Hash, pk *ecdsa.PrivateKey) []byte {
-	payload := crypto.Keccak256Hash([]byte("\x19\x01"), domainSeparator.Bytes(), proofHash.Bytes())
-	signature, err := crypto.Sign(payload.Bytes(), pk)
-	if err != nil {
-		panic(err)
-	}
-	if signature[64] < 2 {
-		signature[64] += 27
-	}
-
-	return signature
 }

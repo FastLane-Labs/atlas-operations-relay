@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"fmt"
 	"math/big"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlasVerification"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
-	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -157,7 +157,7 @@ func NewDemoUserOperation() *operation.UserOperation {
 		panic(err)
 	}
 
-	userOp.Signature = relayCrypto.SignEip712(atlasDomainSeparator, proofHash, userPk)
+	userOp.Signature = SignEip712(atlasDomainSeparator, proofHash, userPk)
 
 	if err := userOp.Validate(ethClient, conf.Contracts.Atlas, atlasDomainSeparator, conf.Relay.Gas.MaxPerUserOperation); err != nil {
 		panic(err)
@@ -203,7 +203,7 @@ func SolveUserOperation(userOp *operation.UserOperation, executionEnvironment co
 		panic(err)
 	}
 
-	solverOp.Signature = relayCrypto.SignEip712(atlasDomainSeparator, proofHash, solverPk)
+	solverOp.Signature = SignEip712(atlasDomainSeparator, proofHash, solverPk)
 
 	if err := solverOp.Validate(userOp, conf.Contracts.Atlas, atlasDomainSeparator, conf.Relay.Gas.MaxPerSolverOperation); err != nil {
 		panic(err)
@@ -263,7 +263,7 @@ func NewDappOperation(userOp *operation.UserOperation, solverOps []*operation.So
 		panic(err)
 	}
 
-	dAppOp.Signature = relayCrypto.SignEip712(atlasDomainSeparator, proofHash, userPk)
+	dAppOp.Signature = SignEip712(atlasDomainSeparator, proofHash, userPk)
 
 	return dAppOp
 }
@@ -394,4 +394,17 @@ func CallChainHash(callConfig uint32, dAppControl common.Address, userOp *operat
 	}
 
 	return callSequenceHash, nil
+}
+
+func SignEip712(domainSeparator common.Hash, proofHash common.Hash, pk *ecdsa.PrivateKey) []byte {
+	payload := crypto.Keccak256Hash([]byte("\x19\x01"), domainSeparator.Bytes(), proofHash.Bytes())
+	signature, err := crypto.Sign(payload.Bytes(), pk)
+	if err != nil {
+		panic(err)
+	}
+	if signature[64] < 2 {
+		signature[64] += 27
+	}
+
+	return signature
 }
