@@ -53,7 +53,7 @@ var (
 
 	chainId int64 = 11155111 //sepolia
 
-	sendAtlaxTx bool = false //true -> send tx to the network, false 
+	sendAtlaxTx bool = false //true -> send tx to the network, false
 
 	tokenA                = common.HexToAddress("0x7439E9Bb6D8a84dd3A23fe621A30F95403F87fB9")
 	tokenB                = common.HexToAddress("0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9")
@@ -281,7 +281,7 @@ func NewAtlasTx(bundleRequest *core.BundleRequest) (*types.Transaction, error) {
 		Signer:   signFn,
 		Nonce:    nil,
 		Value:    nil,
-		GasLimit: uint64(5_000_000), // > SOLVER_GAS_LIMIT(1m) + VALIDATION_GAS_LIMIT(500k)
+		GasLimit: uint64(2_000_000), // > SOLVER_GAS_LIMIT(1m) + VALIDATION_GAS_LIMIT(500k)
 		NoSend:   sendAtlaxTx,
 	}
 
