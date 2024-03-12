@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"testing"
-	"time"
 
-	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/ethereum/go-ethereum/common"
@@ -32,12 +30,9 @@ func TestBundlerFlow(t *testing.T) {
 	//wait for solver to finish
 	<-solverDoneChan
 
-	//wait for auction to end
-	time.Sleep(auction.AuctionDuration)
-
 	//user requests solver solutions
 	userOpHash, _ := userOp.Hash()
-	solverOps, err := retreiveSolverOps(userOpHash)
+	solverOps, err := retreiveSolverOps(userOpHash, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +72,7 @@ func TestBundlerFlow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	if txHash != tx.Hash() {
 		t.Fatalf("expected txHash %s, got %s", tx.Hash(), txHash)
 	}
@@ -103,7 +98,7 @@ func sendBundleOperation(t *testing.T, userOp *operation.UserOperation, solverOp
 	return nil
 }
 
-func sendBundleResposne(txHash common.Hash, id string,bundlerSendChan chan []byte) error {
+func sendBundleResposne(txHash common.Hash, id string, bundlerSendChan chan []byte) error {
 	bundleResponse := &core.BundleResponse{
 		Id:     id,
 		Result: txHash,

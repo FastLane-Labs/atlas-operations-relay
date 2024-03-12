@@ -33,7 +33,7 @@ func TestSolverSolves(t *testing.T) {
 
 	//user requests for solver solutions
 	userOpHash, _ := userOp.Hash()
-	solverOps, err := retreiveSolverOps(userOpHash)
+	solverOps, err := retreiveSolverOps(userOpHash, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,13 +43,14 @@ func TestSolverSolves(t *testing.T) {
 	}
 }
 
-func retreiveSolverOps(userOpHash common.Hash) ([]*operation.SolverOperation, error) {
+func retreiveSolverOps(userOpHash common.Hash, wait bool) ([]*operation.SolverOperation, error) {
 	u := url.URL{
 		Scheme: "http",
 		Host:   "localhost:8080",
 		Path:   "/solverOperations",
 		RawQuery: url.Values{
 			"userOpHash": []string{userOpHash.Hex()},
+			"wait":       []string{fmt.Sprintf("%t", wait)},
 		}.Encode(),
 	}
 

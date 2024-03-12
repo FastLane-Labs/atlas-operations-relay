@@ -251,7 +251,6 @@ func NewDappOperation(userOp *operation.UserOperation, solverOps []*operation.So
 		panic(err)
 	}
 
-	//user signs the DappOp
 	dAppOp.Signature = relayCrypto.SignEip712(atlasDomainSeparator, proofHash, userPk)
 
 	return dAppOp
@@ -278,7 +277,7 @@ func NewAtlasTx(bundleRequest *core.BundleRequest) (*types.Transaction, error) {
 		Signer:   signFn,
 		Nonce:    nil,
 		Value:    nil,
-		GasLimit: uint64(5_000_000),
+		GasLimit: uint64(5_000_000), // > SOLVER_GAS_LIMIT(1m) + VALIDATION_GAS_LIMIT(500k)
 		NoSend:   true,
 	}
 
