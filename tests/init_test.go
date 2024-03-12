@@ -53,7 +53,7 @@ var (
 
 	chainId int64 = 11155111 //sepolia
 
-	sendAtlaxTx bool = false //true -> send tx to the network, false
+	sendAtlaxTx bool = true //false -> send tx to the network, true -> do everything apart from sending
 
 	tokenA                = common.HexToAddress("0x7439E9Bb6D8a84dd3A23fe621A30F95403F87fB9")
 	tokenB                = common.HexToAddress("0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9")
@@ -134,7 +134,7 @@ func NewDemoUserOperation() *operation.UserOperation {
 		To:           conf.Contracts.Atlas,
 		Deadline:     big.NewInt(int64(currentBlock) + 1000),
 		Gas:          big.NewInt(100000),
-		Nonce:        big.NewInt(5),
+		Nonce:        big.NewInt(7),
 		MaxFeePerGas: big.NewInt(20e9),
 		Value:        big.NewInt(0),
 		Dapp:         swapIntentDAppControl,
