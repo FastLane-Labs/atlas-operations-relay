@@ -54,7 +54,7 @@ const (
 	pongWait        = 60 * time.Second
 	pingPeriod      = (pongWait * 9) / 10
 	writeWait       = 10 * time.Second
-	maxMessageSize  = 512
+	maxMessageSize  = 2048
 	readBufferSize  = 1024
 	writeBufferSize = 1024
 )

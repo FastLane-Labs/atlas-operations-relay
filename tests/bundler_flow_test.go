@@ -14,7 +14,7 @@ import (
 func TestBundlerFlow(t *testing.T) {
 	//start solver
 	solverDoneChan := make(chan struct{})
-	go runSolver(solverDoneChan)
+	go runSolver(solverDoneChan, true)
 
 	//start bundler
 	bundlerReceiveChan := make(chan []byte)

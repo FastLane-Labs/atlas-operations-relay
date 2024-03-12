@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"testing"
 	"time"
 
@@ -17,7 +16,7 @@ import (
 func TestUserOpToSolverFLow(t *testing.T) {
 
 	//solver ws connection
-	conn, solverResp := getWsConnection()
+	conn, solverResp := getSolverWsConnection()
 	defer conn.Close()
 
 	if solverResp.StatusCode != 101 {
@@ -95,17 +94,6 @@ func TestUserOpToSolverFLow(t *testing.T) {
 	if !waitOnChanFor(userOpReceivedChan, 5*time.Second) {
 		t.Error("user operation not received by solver")
 	}
-}
-
-func getWsConnection() (*websocket.Conn, *http.Response) {
-	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws/solver"}
-	fmt.Printf("Connecting to %s\n", u.String())
-
-	conn, solverResp, err := websocket.DefaultDialer.Dial(u.String(), nil)
-	if err != nil {
-		panic(err)
-	}
-	return conn, solverResp
 }
 
 func waitOnChanFor(ch chan struct{}, t time.Duration) bool {

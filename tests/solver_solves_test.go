@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
@@ -20,16 +19,14 @@ import (
 func TestSolverSolves(t *testing.T) {
 	solverDoneChan := make(chan struct{})
 
-	go runSolver(solverDoneChan)
+	go runSolver(solverDoneChan, false)
+
 	userOp, err := sendUserRequest()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	<-solverDoneChan
-
-	//wait for auction to end
-	time.Sleep(auction.AuctionDuration)
 
 	//user requests for solver solutions
 	userOpHash, _ := userOp.Hash()
@@ -75,9 +72,9 @@ func retreiveSolverOps(userOpHash common.Hash, wait bool) ([]*operation.SolverOp
 	return solverOps, nil
 }
 
-func runSolver(doneChan chan struct{}) {
+func runSolver(doneChan chan struct{}, sendMsgOnWs bool) {
 	//solver ws connection
-	conn, solverResp := getWsConnection()
+	conn, solverResp := getSolverWsConnection()
 
 	if solverResp.StatusCode != 101 {
 		panic("Expected status code 101, got " + fmt.Sprint(solverResp.StatusCode))
@@ -149,27 +146,70 @@ func runSolver(doneChan chan struct{}) {
 	}
 
 	userOp := broadcast.Data.UserOperation
-
 	ee := ExecutionEnvironment(userOp.From, userOp.Control)
-
 	solverOp := SolveUserOperation(userOp, ee)
 
-	//send solver operation
-	solverOpJSON, err := json.Marshal(solverOp)
+	if sendMsgOnWs {
+		if err := sendSolverOpWs(solverOp, conn); err != nil {
+			panic(err)
+		}
+	} else {
+		if err := sendSolverOpHttp(solverOp); err != nil {
+			panic(err)
+		}
+	}
+
+	doneChan <- struct{}{}
+}
+
+func getSolverWsConnection() (*websocket.Conn, *http.Response) {
+	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws/solver"}
+	fmt.Printf("Connecting to %s\n", u.String())
+
+	conn, solverResp, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		panic(err)
+	}
+	return conn, solverResp
+}
+
+func sendSolverOpHttp(solverOp *operation.SolverOperation) error {
+	solverOpJSON, err := json.Marshal(solverOp)
+	if err != nil {
+		return err
 	}
 
 	resp, err := http.Post("http://localhost:8080/solverOperation", "application/json", bytes.NewReader(solverOpJSON))
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		panic("Expected status code 200, got " + fmt.Sprint(resp.StatusCode))
+		return fmt.Errorf("Expected status code 200, got %d", resp.StatusCode)
 	}
 
-	doneChan <- struct{}{}
+	return nil
+}
+
+func sendSolverOpWs(solverOp *operation.SolverOperation, conn *websocket.Conn) error {
+	req := core.Request{
+		Id:     solverOp.UserOpHash.Hex(),
+		Method: "submitSolverOperation",
+		Params: &core.RequestParams{
+			SolverOperation: solverOp,
+		},
+	}
+
+	reqJSON, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+
+	if err := conn.WriteMessage(websocket.TextMessage, reqJSON); err != nil {
+		return err
+	}
+
+	return nil
 }
