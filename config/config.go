@@ -5,6 +5,8 @@ import (
 	"flag"
 	"math/big"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -21,6 +23,9 @@ type configJson struct {
 	} `json:"contracts"`
 
 	Relay struct {
+		Auction struct {
+			Duration uint64 `json:"duration"`
+		} `json:"auction"`
 		Gas struct {
 			MaxPerUserOperation   uint64 `json:"max_per_user_operation"`
 			MaxPerSolverOperation uint64 `json:"max_per_solver_operation"`
@@ -39,6 +44,10 @@ type Contracts struct {
 	Simulator         common.Address `json:"simulator"`
 }
 
+type Auction struct {
+	Duration time.Duration `json:"duration"`
+}
+
 type Gas struct {
 	MaxPerUserOperation   *big.Int `json:"max_per_user_operation"`
 	MaxPerSolverOperation *big.Int `json:"max_per_solver_operation"`
@@ -46,7 +55,8 @@ type Gas struct {
 }
 
 type Relay struct {
-	Gas Gas `json:"gas"`
+	Auction Auction `json:"auction"`
+	Gas     Gas     `json:"gas"`
 }
 
 type Config struct {
@@ -105,6 +115,8 @@ func (c *Config) parseConfigFile() {
 		c.Contracts.Simulator = common.HexToAddress(configJson.Contracts.Simulator)
 	}
 
+	c.Relay.Auction.Duration = time.Duration(configJson.Relay.Auction.Duration * uint64(time.Millisecond))
+
 	c.Relay.Gas.MaxPerUserOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerUserOperation)
 	c.Relay.Gas.MaxPerSolverOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerSolverOperation)
 	c.Relay.Gas.MaxPerDAppOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerDAppOperation)
@@ -115,6 +127,7 @@ func (c *Config) parseFlags() {
 	contractsAtlasPtr := flag.String("contracts.atlas", "", "Atlas contract address")
 	contractsAtlasVerificationPtr := flag.String("contracts.atlasVerification", "", "AtlasVerification contract address")
 	contractsSimulatorPtr := flag.String("contracts.simulator", "", "Simulator contract address")
+	relayAuctionDurationPtr := flag.String("relay.auction.duration", "", "Auction duration in milliseconds")
 	relayGasMaxPerUserOperationPtr := flag.String("relay.gas.max_per_user_operation", "", "Max gas per user operation")
 	relayGasMaxPerSolverOperationPtr := flag.String("relay.gas.max_per_solver_operation", "", "Max gas per solver operation")
 	relayGasMaxPerDAppOperationPtr := flag.String("relay.gas.max_per_dApp_operation", "", "Max gas per dApp operation")
@@ -143,6 +156,14 @@ func (c *Config) parseFlags() {
 			panic("contracts.simulator is not a valid address")
 		}
 		c.Contracts.Simulator = common.HexToAddress(*contractsSimulatorPtr)
+	}
+
+	if len(*relayAuctionDurationPtr) > 0 {
+		dur, err := strconv.ParseUint(*relayAuctionDurationPtr, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		c.Relay.Auction.Duration = time.Duration(dur * uint64(time.Millisecond))
 	}
 
 	if len(*relayGasMaxPerUserOperationPtr) > 0 {

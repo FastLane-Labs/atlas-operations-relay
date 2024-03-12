@@ -112,7 +112,7 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Has
 		return common.Hash{}, ErrAuctionAlreadyStarted
 	}
 
-	am.auctions[userOpHash] = NewAuction(userOp, userOpHash)
+	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, userOp, userOpHash)
 	return userOpHash, nil
 }
 

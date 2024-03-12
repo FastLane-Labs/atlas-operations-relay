@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	AuctionDuration = 2 * time.Second
+	AuctionDuration = 5 * time.Millisecond
 )
 
 var (
@@ -33,7 +33,7 @@ type Auction struct {
 	mu sync.RWMutex
 }
 
-func NewAuction(userOp *operation.UserOperation, userOpHash common.Hash) *Auction {
+func NewAuction(duration time.Duration, userOp *operation.UserOperation, userOpHash common.Hash) *Auction {
 	auction := &Auction{
 		open:           true,
 		userOpHash:     userOpHash,
@@ -43,7 +43,12 @@ func NewAuction(userOp *operation.UserOperation, userOpHash common.Hash) *Auctio
 		createdAt:      time.Now(),
 	}
 
-	time.AfterFunc(AuctionDuration, auction.close)
+	enforcedDuration := AuctionDuration
+	if duration > 0 {
+		enforcedDuration = duration
+	}
+
+	time.AfterFunc(enforcedDuration, auction.close)
 	return auction
 }
 
