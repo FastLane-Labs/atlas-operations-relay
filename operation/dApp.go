@@ -24,7 +24,6 @@ var (
 )
 
 var (
-	dAppGasLimit   = big.NewInt(1000000)
 	DAPP_TYPE_HASH = crypto.Keccak256Hash([]byte("DAppApproval(address from,address to,uint256 value,uint256 gas,uint256 nonce,uint256 deadline,address control,address bundler,bytes32 userOpHash,bytes32 callChainHash)"))
 )
 
@@ -86,12 +85,7 @@ func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, 
 		return ErrDAppOpInvalidToField
 	}
 
-	enforcedGasLimit := new(big.Int).Set(dAppGasLimit)
-	if gasLimit != nil && gasLimit.Cmp(common.Big0) > 0 {
-		enforcedGasLimit = gasLimit
-	}
-
-	if d.Gas.Cmp(enforcedGasLimit) > 0 {
+	if d.Gas.Cmp(gasLimit) > 0 {
 		return ErrDAppOpGasLimitExceeded
 	}
 

@@ -10,10 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const (
-	AuctionDuration = 5 * time.Millisecond
-)
-
 var (
 	ErrAuctionClosed  = relayerror.NewError(2100, "auction for this user operation has already ended")
 	ErrAuctionOngoing = relayerror.NewError(2101, "auction for this user operation is ongoing")
@@ -43,12 +39,7 @@ func NewAuction(duration time.Duration, userOp *operation.UserOperation, userOpH
 		createdAt:      time.Now(),
 	}
 
-	enforcedDuration := AuctionDuration
-	if duration > 0 {
-		enforcedDuration = duration
-	}
-
-	time.AfterFunc(enforcedDuration, auction.close)
+	time.AfterFunc(duration, auction.close)
 	return auction
 }
 

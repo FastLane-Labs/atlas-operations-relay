@@ -88,6 +88,8 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	conf.Validate()
+
 	var err error
 	ethClient, err = ethclient.Dial(conf.Network.RpcUrl)
 	if err != nil {
@@ -157,7 +159,7 @@ func NewDemoUserOperation() *operation.UserOperation {
 
 	userOp.Signature = relayCrypto.SignEip712(atlasDomainSeparator, proofHash, userPk)
 
-	if err := userOp.Validate(ethClient, conf.Contracts.Atlas, atlasDomainSeparator, nil); err != nil {
+	if err := userOp.Validate(ethClient, conf.Contracts.Atlas, atlasDomainSeparator, conf.Relay.Gas.MaxPerUserOperation); err != nil {
 		panic(err)
 	}
 
@@ -203,7 +205,7 @@ func SolveUserOperation(userOp *operation.UserOperation, executionEnvironment co
 
 	solverOp.Signature = relayCrypto.SignEip712(atlasDomainSeparator, proofHash, solverPk)
 
-	if err := solverOp.Validate(userOp, conf.Contracts.Atlas, atlasDomainSeparator, nil); err != nil {
+	if err := solverOp.Validate(userOp, conf.Contracts.Atlas, atlasDomainSeparator, conf.Relay.Gas.MaxPerSolverOperation); err != nil {
 		panic(err)
 	}
 
