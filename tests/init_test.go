@@ -51,6 +51,10 @@ var (
 	ethClient            *ethclient.Client
 	atlasDomainSeparator common.Hash
 
+	chainId int64 = 11155111 //sepolia
+
+	sendAtlaxTx bool = false //true -> send tx to the network, false 
+
 	tokenA                = common.HexToAddress("0x7439E9Bb6D8a84dd3A23fe621A30F95403F87fB9")
 	tokenB                = common.HexToAddress("0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9")
 	swapIntentDAppControl = common.HexToAddress("0x2F98675731D0e659E716d890330901a8A2355813")
@@ -263,7 +267,7 @@ func NewAtlasTx(bundleRequest *core.BundleRequest) (*types.Transaction, error) {
 	}
 
 	signFn := func(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
-		return types.SignTx(tx, types.NewEIP155Signer(big.NewInt(int64(11155111))), bundlerPk)
+		return types.SignTx(tx, types.NewEIP155Signer(big.NewInt(chainId)), bundlerPk)
 	}
 
 	gasPrice, err := ethClient.SuggestGasPrice(context.Background())
@@ -278,7 +282,7 @@ func NewAtlasTx(bundleRequest *core.BundleRequest) (*types.Transaction, error) {
 		Nonce:    nil,
 		Value:    nil,
 		GasLimit: uint64(5_000_000), // > SOLVER_GAS_LIMIT(1m) + VALIDATION_GAS_LIMIT(500k)
-		NoSend:   true,
+		NoSend:   sendAtlaxTx,
 	}
 
 	atlas_userOp := atlas.UserOperation{

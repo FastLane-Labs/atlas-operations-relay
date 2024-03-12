@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func TestUserOpToSolverFLow(t *testing.T) {
+func TestUserOpToSolverFlow(t *testing.T) {
 
 	//solver ws connection
 	conn, solverResp := getSolverWsConnection()
