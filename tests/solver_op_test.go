@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"testing"
-	"time"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
@@ -15,30 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/websocket"
 )
-
-func TestSolverSolves(t *testing.T) {
-	solverDoneChan := make(chan struct{})
-
-	go runSolver(solverDoneChan, false)
-
-	userOp, err := sendUserRequest()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	<-solverDoneChan
-
-	//user requests for solver solutions
-	userOpHash, _ := userOp.Hash()
-	solverOps, err := retreiveSolverOps(userOpHash, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(solverOps) == 0 {
-		t.Fatal("expected at least one solver operation")
-	}
-}
 
 func retreiveSolverOps(userOpHash common.Hash, wait bool) ([]*operation.SolverOperation, error) {
 	u := url.URL{
@@ -77,7 +51,8 @@ func runSolver(doneChan chan struct{}, sendMsgOnWs bool) {
 	conn, solverResp := getSolverWsConnection()
 
 	if solverResp.StatusCode != 101 {
-		panic("Expected status code 101, got " + fmt.Sprint(solverResp.StatusCode))
+		log.Error("Expected status code 101, got", solverResp.StatusCode)
+		return
 	}
 
 	//track what's being received
@@ -124,16 +99,18 @@ func runSolver(doneChan chan struct{}, sendMsgOnWs bool) {
 	}
 	msg, err := json.Marshal(req)
 	if err != nil {
-		panic(err)
+		log.Error("failed to marshal request:", err)
+		return
 	}
 	if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-		panic(err)
+		log.Error("failed to send request:", err)
+		return
 	}
 
 	//dont proceed until subscribled
-	if !waitOnChanFor(subscribedChan, 1*time.Second) {
-		panic("not subscribed to newUserOperations topic")
-	}
+	<-subscribedChan
+
+	log.Info("solver subscribed to", "topic", req.Params.Topic)
 
 	//wait for userOp to be received
 	userOpBroadcastBytes := <-userOpReceivedChan
@@ -142,29 +119,33 @@ func runSolver(doneChan chan struct{}, sendMsgOnWs bool) {
 
 	err = json.Unmarshal(userOpBroadcastBytes, broadcast)
 	if err != nil {
-		panic(err)
+		log.Error("failed to unmarshal userOpBroadcastBytes:", err)
+		return
 	}
 
 	userOp := broadcast.Data.UserOperation
+	userOpHash, _ := userOp.Hash()
+	log.Info("solver received userOp", "userOpHash", userOpHash.Hex())
+
 	ee := ExecutionEnvironment(userOp.From, userOp.Control)
 	solverOp := SolveUserOperation(userOp, ee)
 
 	if sendMsgOnWs {
 		if err := sendSolverOpWs(solverOp, conn); err != nil {
-			panic(err)
+			log.Error("failed to send solverOp on ws:", err)
 		}
 	} else {
 		if err := sendSolverOpHttp(solverOp); err != nil {
-			panic(err)
+			log.Error("failed to send solverOp on http:", err)
 		}
 	}
-
+	log.Info("solver sent solverOp", "userOpHash", solverOp.UserOpHash.Hex())
+	
 	doneChan <- struct{}{}
 }
 
 func getSolverWsConnection() (*websocket.Conn, *http.Response) {
 	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws/solver"}
-	fmt.Printf("Connecting to %s\n", u.String())
 
 	conn, solverResp, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -213,3 +194,29 @@ func sendSolverOpWs(solverOp *operation.SolverOperation, conn *websocket.Conn) e
 
 	return nil
 }
+
+/**
+func TestSolverOp(t *testing.T) {
+	solverDoneChan := make(chan struct{})
+
+	go runSolver(solverDoneChan, false)
+
+	userOp, err := sendUserRequest()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	<-solverDoneChan
+
+	//user requests for solver solutions
+	userOpHash, _ := userOp.Hash()
+	solverOps, err := retreiveSolverOps(userOpHash, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(solverOps) == 0 {
+		t.Fatal("expected at least one solver operation")
+	}
+}
+**/

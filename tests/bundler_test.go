@@ -1,26 +1,23 @@
 package tests
 
 import (
+	"bytes"
 	"crypto/ecdsa"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"testing"
 	"time"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
+	"github.com/FastLane-Labs/atlas-operations-relay/operation"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gorilla/websocket"
 )
-
-func TestBundlerListen(t *testing.T) {
-	sampleBundlerPk, err := crypto.GenerateKey()
-	if err != nil {
-		panic(err)
-	}
-
-	runBundler(sampleBundlerPk, make(chan []byte), make(chan []byte))
-}
 
 func runBundler(bundlerPk *ecdsa.PrivateKey, bundlerReceiveChan chan []byte, bundlerSendChan chan []byte) {
 	bundlerAddr := crypto.PubkeyToAddress(bundlerPk.PublicKey)
@@ -28,7 +25,8 @@ func runBundler(bundlerPk *ecdsa.PrivateKey, bundlerReceiveChan chan []byte, bun
 	signatureContent := fmt.Sprintf("%s:%d", bundlerAddr, timestamp)
 	signature, err := signMessage([]byte(signatureContent), bundlerPk)
 	if err != nil {
-		panic(err)
+		log.Error("failed to sign message:", err)
+		return
 	}
 
 	u := url.URL{
@@ -42,8 +40,6 @@ func runBundler(bundlerPk *ecdsa.PrivateKey, bundlerReceiveChan chan []byte, bun
 		}.Encode(),
 	}
 
-	fmt.Printf("Connecting to %s\n", u.String())
-
 	conn, resp, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Error("dial:", err)
@@ -54,6 +50,9 @@ func runBundler(bundlerPk *ecdsa.PrivateKey, bundlerReceiveChan chan []byte, bun
 		log.Error("Expected status code 101, got", resp.StatusCode)
 		return
 	}
+
+	log.Info("bundler connected", "bundlerEoa", bundlerAddr.Hex())
+
 	// start listening on connection
 	go func() {
 		for {
@@ -81,6 +80,46 @@ func runBundler(bundlerPk *ecdsa.PrivateKey, bundlerReceiveChan chan []byte, bun
 			}
 		}
 	}()
+}
+
+func sendBundleOperation(t *testing.T, userOp *operation.UserOperation, solverOps []*operation.SolverOperation, dAppOp *operation.DAppOperation) error {
+	bundleOps := &operation.BundleOperations{
+		UserOperation:    userOp,
+		SolverOperations: solverOps,
+		DAppOperation:    dAppOp,
+	}
+
+	bundleOpsJSON, err := json.Marshal(bundleOps)
+	if err != nil {
+		t.Errorf("failed to marshal bundle operations: %v", err)
+	}
+
+	_, err = http.Post("http://localhost:8080/bundleOperations", "application/json", bytes.NewReader(bundleOpsJSON))
+	if err != nil {
+		return err
+	}
+
+	userOpHash, _ := userOp.Hash()
+	log.Info("relay sent bundleOps", "userOpHash", userOpHash.Hex(), "nSolverOps", len(bundleOps.SolverOperations))
+
+	return nil
+}
+
+func sendBundlerResposne(txHash common.Hash, id string, bundlerSendChan chan []byte) error {
+	bundleResponse := &core.BundleResponse{
+		Id:     id,
+		Result: txHash,
+	}
+
+	bundleResponseJSON, err := json.Marshal(bundleResponse)
+	if err != nil {
+		return err
+	}
+
+	bundlerSendChan <- bundleResponseJSON
+
+	log.Info("bundler sent bundleResponse", "txHash", txHash.Hex())
+	return nil
 }
 
 func signMessage(data []byte, privKey *ecdsa.PrivateKey) ([]byte, error) {

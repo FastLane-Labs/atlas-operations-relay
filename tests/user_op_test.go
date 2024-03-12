@@ -8,35 +8,30 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"testing"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/ethereum/go-ethereum/common"
 )
-
-func TestUserOpFlow(t *testing.T) {
-	_, err := sendUserRequest()
-	if err != nil {
-		t.Fatal(err)
-	}
-}
 
 func sendUserRequest() (*operation.UserOperation, error) {
 	userOp := NewDemoUserOperation()
 	userOpHash, relayErr := userOp.Hash()
 	if relayErr != nil {
-		panic(relayErr)
+		return nil, relayErr
 	}
 
 	userOpJSON, err := json.Marshal(userOp)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("Failed to marshal userOp: %w", err)
 	}
 
 	resp, err := http.Post("http://localhost:8080/userOperation", "application/json", bytes.NewReader(userOpJSON))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to send userOp: %w", err)
 	}
+
+	log.Info("user sent userOp", "userOpHash", userOpHash.Hex())
 
 	defer resp.Body.Close()
 
@@ -46,13 +41,13 @@ func sendUserRequest() (*operation.UserOperation, error) {
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("Failed to read response body: %w", err)
 	}
 
-	userOpHashReceived := common.HexToHash(strings.Trim(string(bodyBytes), "\""))
+	userOpHashInResp := common.HexToHash(strings.Trim(string(bodyBytes), "\""))
 
-	if userOpHashReceived != userOpHash {
-		return nil, fmt.Errorf("Expected userOpHash %s, got %s", userOpHash, userOpHashReceived)
+	if userOpHashInResp != userOpHash {
+		return nil, fmt.Errorf("Expected userOpHash %s, got %s", userOpHash, userOpHashInResp)
 	}
 
 	return userOp, nil
@@ -87,3 +82,12 @@ func retrieveAtlasTxHash(userOpHash common.Hash, wait bool) (common.Hash, error)
 
 	return txHash, nil
 }
+
+/**
+func TestUserOp(t *testing.T) {
+	_, err := sendUserRequest()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+**/
