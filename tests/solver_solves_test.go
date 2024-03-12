@@ -43,21 +43,6 @@ func TestSolverSolves(t *testing.T) {
 	}
 }
 
-func sendUserRequest() (*operation.UserOperation, error) {
-	userOp := NewDemoUserOperation()
-	userOpJSON, err := json.Marshal(userOp)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = http.Post("http://localhost:8080/userOperation", "application/json", bytes.NewReader(userOpJSON))
-	if err != nil {
-		return nil, err
-	}
-
-	return userOp, nil
-}
-
 func retreiveSolverOps(userOpHash common.Hash) ([]*operation.SolverOperation, error) {
 	u := url.URL{
 		Scheme: "http",

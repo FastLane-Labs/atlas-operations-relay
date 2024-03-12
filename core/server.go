@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	BundlerTimeout = 300 * time.Millisecond
+	BundlerTimeout = 2 * time.Second
 
 	// Channels
 	ChannelSolver  = "solver"

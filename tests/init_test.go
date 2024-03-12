@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"os"
 	"testing"
@@ -14,8 +15,10 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -127,7 +130,7 @@ func NewDemoUserOperation() *operation.UserOperation {
 		To:           conf.Contracts.Atlas,
 		Deadline:     big.NewInt(int64(currentBlock) + 1000),
 		Gas:          big.NewInt(100000),
-		Nonce:        big.NewInt(4),
+		Nonce:        big.NewInt(5),
 		MaxFeePerGas: big.NewInt(20e9),
 		Value:        big.NewInt(0),
 		Dapp:         swapIntentDAppControl,
@@ -252,6 +255,82 @@ func NewDappOperation(userOp *operation.UserOperation, solverOps []*operation.So
 	dAppOp.Signature = relayCrypto.SignEip712(atlasDomainSeparator, proofHash, userPk)
 
 	return dAppOp
+}
+
+func NewAtlasTx(bundleRequest *core.BundleRequest) (*types.Transaction, error) {
+	atlasContract, err := atlas.NewAtlas(conf.Contracts.Atlas, ethClient)
+	if err != nil {
+		panic(err)
+	}
+
+	signFn := func(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
+		return types.SignTx(tx, types.NewEIP155Signer(big.NewInt(int64(11155111))), bundlerPk)
+	}
+
+	gasPrice, err := ethClient.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("Can't get gas price suggestion: %w", err)
+	}
+
+	opts := &bind.TransactOpts{
+		From:     bundlerEoa,
+		GasPrice: gasPrice,
+		Signer:   signFn,
+		Nonce:    nil,
+		Value:    nil,
+		GasLimit: uint64(5_000_000),
+		NoSend:   true,
+	}
+
+	atlas_userOp := atlas.UserOperation{
+		From:         bundleRequest.Bundle.UserOperation.From,
+		To:           bundleRequest.Bundle.UserOperation.To,
+		Value:        bundleRequest.Bundle.UserOperation.Value,
+		Gas:          bundleRequest.Bundle.UserOperation.Gas,
+		MaxFeePerGas: bundleRequest.Bundle.UserOperation.MaxFeePerGas,
+		Nonce:        bundleRequest.Bundle.UserOperation.Nonce,
+		Deadline:     bundleRequest.Bundle.UserOperation.Deadline,
+		Dapp:         bundleRequest.Bundle.UserOperation.Dapp,
+		Control:      bundleRequest.Bundle.UserOperation.Control,
+		SessionKey:   bundleRequest.Bundle.UserOperation.SessionKey,
+		Data:         bundleRequest.Bundle.UserOperation.Data,
+		Signature:    bundleRequest.Bundle.UserOperation.Signature,
+	}
+
+	atlas_dappOp := atlas.DAppOperation{
+		From:          bundleRequest.Bundle.DAppOperation.From,
+		To:            bundleRequest.Bundle.DAppOperation.To,
+		Value:         bundleRequest.Bundle.DAppOperation.Value,
+		Gas:           bundleRequest.Bundle.DAppOperation.Gas,
+		Nonce:         bundleRequest.Bundle.DAppOperation.Nonce,
+		Deadline:      bundleRequest.Bundle.DAppOperation.Deadline,
+		Control:       bundleRequest.Bundle.DAppOperation.Control,
+		Bundler:       bundleRequest.Bundle.DAppOperation.Bundler,
+		UserOpHash:    bundleRequest.Bundle.DAppOperation.UserOpHash,
+		CallChainHash: bundleRequest.Bundle.DAppOperation.CallChainHash,
+		Signature:     bundleRequest.Bundle.DAppOperation.Signature,
+	}
+
+	atlas_solverOps := make([]atlas.SolverOperation, len(bundleRequest.Bundle.SolverOperations))
+	for i, solverOp := range bundleRequest.Bundle.SolverOperations {
+		atlas_solverOps[i] = atlas.SolverOperation{
+			From:         solverOp.From,
+			To:           solverOp.To,
+			Value:        solverOp.Value,
+			Gas:          solverOp.Gas,
+			MaxFeePerGas: solverOp.MaxFeePerGas,
+			Deadline:     solverOp.Deadline,
+			Solver:       solverOp.Solver,
+			Control:      solverOp.Control,
+			UserOpHash:   solverOp.UserOpHash,
+			BidToken:     solverOp.BidToken,
+			BidAmount:    solverOp.BidAmount,
+			Data:         solverOp.Data,
+			Signature:    solverOp.Signature,
+		}
+	}
+
+	return atlasContract.Metacall(opts, atlas_userOp, atlas_solverOps, atlas_dappOp)
 }
 
 func CallChainHash(callConfig uint32, dAppControl common.Address, userOp *operation.UserOperation, solverOps []*operation.SolverOperation) (common.Hash, error) {

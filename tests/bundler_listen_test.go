@@ -19,10 +19,10 @@ func TestBundlerListen(t *testing.T) {
 		panic(err)
 	}
 
-	runBundler(sampleBundlerPk, make(chan []byte))
+	runBundler(sampleBundlerPk, make(chan []byte), make(chan []byte))
 }
 
-func runBundler(bundlerPk *ecdsa.PrivateKey, bundlerReceiveChan chan []byte) {
+func runBundler(bundlerPk *ecdsa.PrivateKey, bundlerReceiveChan chan []byte, bundlerSendChan chan []byte) {
 	bundlerAddr := crypto.PubkeyToAddress(bundlerPk.PublicKey)
 	timestamp := time.Now().Unix()
 	signatureContent := fmt.Sprintf("%s:%d", bundlerAddr, timestamp)
@@ -67,6 +67,18 @@ func runBundler(bundlerPk *ecdsa.PrivateKey, bundlerReceiveChan chan []byte) {
 			}
 
 			bundlerReceiveChan <- message
+		}
+	}()
+
+	// start listening on bundlerSendChan
+	go func() {
+		for {
+			message := <-bundlerSendChan
+			err := conn.WriteMessage(websocket.TextMessage, message)
+			if err != nil {
+				log.Error("bundler ws error:", err)
+				break
+			}
 		}
 	}()
 }
