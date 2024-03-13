@@ -123,3 +123,25 @@ func TestIntegration(t *testing.T) {
 		t.Fatalf("expected txHash %s, got %s", tx.Hash(), txHash)
 	}
 }
+
+func TestIntegrationSolverHttp(t *testing.T) {
+	//start solver
+	go runSolver(false)
+
+	//send user request
+	userOp, err := sendUserRequest()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//user requests solver solutions
+	userOpHash, _ := userOp.Hash()
+	solverOps, err := retreiveSolverOps(userOpHash, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(solverOps) == 0 {
+		t.Fatal("expected at least one solver operation")
+	}
+}

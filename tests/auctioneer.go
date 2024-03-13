@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -39,10 +40,14 @@ func newDemoUserOperation() *operation.UserOperation {
 		panic(err)
 	}
 
+	//randomize the deadline so that a new userOp is created every time with a different userOpHash
+	deadline := big.NewInt(int64(currentBlock) + 100 + rand.Int63n(1000))
+	fmt.Println("deadline", deadline)
+
 	userOp := &operation.UserOperation{
 		From:         userEoa,
 		To:           conf.Contracts.Atlas,
-		Deadline:     big.NewInt(int64(currentBlock) + 1000),
+		Deadline:     deadline,
 		Gas:          big.NewInt(100000),
 		Nonce:        big.NewInt(7),
 		MaxFeePerGas: big.NewInt(20e9),
