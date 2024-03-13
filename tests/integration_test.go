@@ -124,7 +124,7 @@ func TestIntegration(t *testing.T) {
 	}
 }
 
-func TestIntegrationSolverHttp(t *testing.T) {
+func TestSolverHttp(t *testing.T) {
 	//start solver
 	go runSolver(false)
 

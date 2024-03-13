@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"net/http"
 	"net/url"
 
@@ -25,8 +26,11 @@ func runSolver(sendMsgOnWs bool) {
 		return
 	}
 
+	//subscription id
+	subscriptionId := generateRandomString(10)
+
 	//track what's being received
-	subscribedChan := make(chan struct{})
+	responseChan := make(chan string)
 	userOpReceivedChan := make(chan []byte)
 
 	//start listening on connection
@@ -51,7 +55,7 @@ func runSolver(sendMsgOnWs bool) {
 				panic("cannot handle msg " + string(message))
 			}
 			if response.Id != "" {
-				subscribedChan <- struct{}{}
+				responseChan <- response.Id
 			}
 			if broadcast.Topic != "" {
 				userOpReceivedChan <- message
@@ -61,7 +65,7 @@ func runSolver(sendMsgOnWs bool) {
 
 	//subscribe to newUserOperations topic
 	req := core.Request{
-		Id:     "1234",
+		Id:     subscriptionId,
 		Method: "subscribe",
 		Params: &core.RequestParams{
 			Topic: "newUserOperations",
@@ -78,7 +82,10 @@ func runSolver(sendMsgOnWs bool) {
 	}
 
 	//dont proceed until subscribled
-	<-subscribedChan
+	latestResponseId := <-responseChan
+	if latestResponseId != subscriptionId {
+		log.Error("expected subscription id", "expected", subscriptionId, "got", latestResponseId)
+	}
 
 	log.Info("solver subscribed to", "topic", req.Params.Topic)
 
@@ -101,9 +108,15 @@ func runSolver(sendMsgOnWs bool) {
 	solverOp := solveUserOperation(userOp, ee)
 
 	if sendMsgOnWs {
-		if err := sendSolverOpWs(solverOp, conn); err != nil {
+		requestId, err := sendSolverOpWs(solverOp, conn) 
+		if err != nil {
 			log.Error("failed to send solverOp on ws:", err)
 		}
+		responseId := <-responseChan
+		if responseId != requestId {
+			log.Error("expected response id", "expected", requestId, "got", responseId)
+		}
+
 	} else {
 		if err := sendSolverOpHttp(solverOp); err != nil {
 			log.Error("failed to send solverOp on http:", err)
@@ -202,9 +215,11 @@ func sendSolverOpHttp(solverOp *operation.SolverOperation) error {
 	return nil
 }
 
-func sendSolverOpWs(solverOp *operation.SolverOperation, conn *websocket.Conn) error {
+func sendSolverOpWs(solverOp *operation.SolverOperation, conn *websocket.Conn) (string, error) {
+	request_id := generateRandomString(10)
+
 	req := core.Request{
-		Id:     solverOp.UserOpHash.Hex(),
+		Id:     request_id,
 		Method: "submitSolverOperation",
 		Params: &core.RequestParams{
 			SolverOperation: solverOp,
@@ -213,12 +228,24 @@ func sendSolverOpWs(solverOp *operation.SolverOperation, conn *websocket.Conn) e
 
 	reqJSON, err := json.Marshal(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if err := conn.WriteMessage(websocket.TextMessage, reqJSON); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return request_id, nil
+}
+
+func generateRandomString(n int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	var output []byte
+	for i := 0; i < n; i++ {
+		randomIndex := rand.Intn(len(charset))
+		output = append(output, charset[randomIndex])
+	}
+
+	return string(output)
 }

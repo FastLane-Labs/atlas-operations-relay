@@ -42,7 +42,6 @@ func newDemoUserOperation() *operation.UserOperation {
 
 	//randomize the deadline so that a new userOp is created every time with a different userOpHash
 	deadline := big.NewInt(int64(currentBlock) + 100 + rand.Int63n(1000))
-	fmt.Println("deadline", deadline)
 
 	userOp := &operation.UserOperation{
 		From:         userEoa,
