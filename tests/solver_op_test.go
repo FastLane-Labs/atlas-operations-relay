@@ -46,7 +46,7 @@ func retreiveSolverOps(userOpHash common.Hash, wait bool) ([]*operation.SolverOp
 	return solverOps, nil
 }
 
-func runSolver(doneChan chan struct{}, sendMsgOnWs bool) {
+func runSolver(sendMsgOnWs bool) {
 	//solver ws connection
 	conn, solverResp := getSolverWsConnection()
 
@@ -140,8 +140,6 @@ func runSolver(doneChan chan struct{}, sendMsgOnWs bool) {
 		}
 	}
 	log.Info("solver sent solverOp", "userOpHash", solverOp.UserOpHash.Hex())
-	
-	doneChan <- struct{}{}
 }
 
 func getSolverWsConnection() (*websocket.Conn, *http.Response) {

@@ -9,8 +9,7 @@ import (
 
 func TestIntegration(t *testing.T) {
 	//start solver
-	solverDoneChan := make(chan struct{})
-	go runSolver(solverDoneChan, true)
+	go runSolver(true)
 
 	//start bundler
 	bundlerReceiveChan := make(chan []byte)
@@ -22,9 +21,6 @@ func TestIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	//wait for solver to finish
-	<-solverDoneChan
 
 	//user requests solver solutions
 	userOpHash, _ := userOp.Hash()
