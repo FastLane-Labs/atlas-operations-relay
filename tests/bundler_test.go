@@ -1,20 +1,21 @@
 package tests
 
 import (
-	"bytes"
+	"context"
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"math/big"
 	"net/url"
-	"testing"
 	"time"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlas"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
-	"github.com/FastLane-Labs/atlas-operations-relay/operation"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gorilla/websocket"
 )
@@ -82,30 +83,7 @@ func runBundler(bundlerPk *ecdsa.PrivateKey, bundlerReceiveChan chan []byte, bun
 	}()
 }
 
-func sendBundleOperation(t *testing.T, userOp *operation.UserOperation, solverOps []*operation.SolverOperation, dAppOp *operation.DAppOperation) error {
-	bundleOps := &operation.BundleOperations{
-		UserOperation:    userOp,
-		SolverOperations: solverOps,
-		DAppOperation:    dAppOp,
-	}
-
-	bundleOpsJSON, err := json.Marshal(bundleOps)
-	if err != nil {
-		t.Errorf("failed to marshal bundle operations: %v", err)
-	}
-
-	_, err = http.Post("http://localhost:8080/bundleOperations", "application/json", bytes.NewReader(bundleOpsJSON))
-	if err != nil {
-		return err
-	}
-
-	userOpHash, _ := userOp.Hash()
-	log.Info("relay sent bundleOps", "userOpHash", userOpHash.Hex(), "nSolverOps", len(bundleOps.SolverOperations))
-
-	return nil
-}
-
-func sendBundlerResposne(txHash common.Hash, id string, bundlerSendChan chan []byte) error {
+func sendBundlerResponse(txHash common.Hash, id string, bundlerSendChan chan []byte) error {
 	bundleResponse := &core.BundleResponse{
 		Id:     id,
 		Result: txHash,
@@ -122,23 +100,64 @@ func sendBundlerResposne(txHash common.Hash, id string, bundlerSendChan chan []b
 	return nil
 }
 
-func signMessage(data []byte, privKey *ecdsa.PrivateKey) ([]byte, error) {
-	prefix := fmt.Sprintf("\x19Ethereum Signed Message:\n%d", len(data))
-	prefixedData := []byte(prefix + string(data))
-
-	hash := crypto.Keccak256Hash(prefixedData)
-
-	signature, err := crypto.Sign(hash.Bytes(), privKey)
+func newAtlasTx(bundleRequest *core.BundleRequest) (*types.Transaction, error) {
+	atlasContract, err := atlas.NewAtlas(conf.Contracts.Atlas, ethClient)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	// According to the yellow paper, the V value in signature (27 or 28) is expected
-	// by most libraries, including web3. However, Go Ethereum `Sign` method produces
-	// 0 or 1 for V. So we adjust V back to 27 or 28 to ensure compatibility.
-	if signature[64] < 27 {
-		signature[64] += 27
+	signFn := func(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
+		return types.SignTx(tx, types.NewEIP155Signer(big.NewInt(chainId)), bundlerPk)
 	}
 
-	return signature, nil
+	gasPrice, err := ethClient.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("Can't get gas price suggestion: %w", err)
+	}
+
+	opts := &bind.TransactOpts{
+		From:     bundlerEoa,
+		GasPrice: gasPrice,
+		Signer:   signFn,
+		Nonce:    nil,
+		Value:    nil,
+		GasLimit: uint64(2_000_000), // > SOLVER_GAS_LIMIT(1m) + VALIDATION_GAS_LIMIT(500k)
+		NoSend:   !sendAtlasTx,
+	}
+
+	atlas_userOp := atlas.UserOperation(*bundleRequest.Bundle.UserOperation)
+	atlas_dappOp := atlas.DAppOperation{
+		From:          bundleRequest.Bundle.DAppOperation.From,
+		To:            bundleRequest.Bundle.DAppOperation.To,
+		Value:         bundleRequest.Bundle.DAppOperation.Value,
+		Gas:           bundleRequest.Bundle.DAppOperation.Gas,
+		Nonce:         bundleRequest.Bundle.DAppOperation.Nonce,
+		Deadline:      bundleRequest.Bundle.DAppOperation.Deadline,
+		Control:       bundleRequest.Bundle.DAppOperation.Control,
+		Bundler:       bundleRequest.Bundle.DAppOperation.Bundler,
+		UserOpHash:    bundleRequest.Bundle.DAppOperation.UserOpHash,
+		CallChainHash: bundleRequest.Bundle.DAppOperation.CallChainHash,
+		Signature:     bundleRequest.Bundle.DAppOperation.Signature,
+	}
+
+	atlas_solverOps := make([]atlas.SolverOperation, len(bundleRequest.Bundle.SolverOperations))
+	for i, solverOp := range bundleRequest.Bundle.SolverOperations {
+		atlas_solverOps[i] = atlas.SolverOperation{
+			From:         solverOp.From,
+			To:           solverOp.To,
+			Value:        solverOp.Value,
+			Gas:          solverOp.Gas,
+			MaxFeePerGas: solverOp.MaxFeePerGas,
+			Deadline:     solverOp.Deadline,
+			Solver:       solverOp.Solver,
+			Control:      solverOp.Control,
+			UserOpHash:   solverOp.UserOpHash,
+			BidToken:     solverOp.BidToken,
+			BidAmount:    solverOp.BidAmount,
+			Data:         solverOp.Data,
+			Signature:    solverOp.Signature,
+		}
+	}
+
+	return atlasContract.Metacall(opts, atlas_userOp, atlas_solverOps, atlas_dappOp)
 }

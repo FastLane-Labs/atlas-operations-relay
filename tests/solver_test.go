@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"net/http"
 	"net/url"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/contract"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
@@ -14,39 +16,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func retreiveSolverOps(userOpHash common.Hash, wait bool) ([]*operation.SolverOperation, error) {
-	u := url.URL{
-		Scheme: "http",
-		Host:   "localhost:8080",
-		Path:   "/solverOperations",
-		RawQuery: url.Values{
-			"userOpHash": []string{userOpHash.Hex()},
-			"wait":       []string{fmt.Sprintf("%t", wait)},
-		}.Encode(),
-	}
-
-	resp, err := http.Get(u.String())
-	if err != nil {
-		return make([]*operation.SolverOperation, 0), err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return make([]*operation.SolverOperation, 0), fmt.Errorf("Expected status code 200, got %d", resp.StatusCode)
-	}
-
-	var solverOps []*operation.SolverOperation
-	err = json.NewDecoder(resp.Body).Decode(&solverOps)
-
-	if err != nil {
-		return make([]*operation.SolverOperation, 0), err
-	}
-
-	return solverOps, nil
-}
-
-func runSolver(doneChan chan struct{}, sendMsgOnWs bool) {
+func runSolver(sendMsgOnWs bool) {
 	//solver ws connection
 	conn, solverResp := getSolverWsConnection()
 
@@ -127,8 +97,8 @@ func runSolver(doneChan chan struct{}, sendMsgOnWs bool) {
 	userOpHash, _ := userOp.Hash()
 	log.Info("solver received userOp", "userOpHash", userOpHash.Hex())
 
-	ee := ExecutionEnvironment(userOp.From, userOp.Control)
-	solverOp := SolveUserOperation(userOp, ee)
+	ee := executionEnvironment(userOp.From, userOp.Control)
+	solverOp := solveUserOperation(userOp, ee)
 
 	if sendMsgOnWs {
 		if err := sendSolverOpWs(solverOp, conn); err != nil {
@@ -140,8 +110,66 @@ func runSolver(doneChan chan struct{}, sendMsgOnWs bool) {
 		}
 	}
 	log.Info("solver sent solverOp", "userOpHash", solverOp.UserOpHash.Hex())
-	
-	doneChan <- struct{}{}
+}
+
+func solveUserOperation(userOp *operation.UserOperation, executionEnvironment common.Address) *operation.SolverOperation {
+	userOpHash, relayErr := userOp.Hash()
+	if relayErr != nil {
+		panic(relayErr)
+	}
+
+	swapIntent, err := swapIntentAbiDecode(userOp.Data)
+	if err != nil {
+		panic(err)
+	}
+
+	data, err := solverData(swapIntent, executionEnvironment)
+	if err != nil {
+		panic(err)
+	}
+
+	solverOp := &operation.SolverOperation{
+		From:         solverEoa,
+		To:           conf.Contracts.Atlas,
+		Value:        big.NewInt(0),
+		Gas:          big.NewInt(100000),
+		MaxFeePerGas: big.NewInt(0).Add(userOp.MaxFeePerGas, big.NewInt(1e9)),
+		Deadline:     userOp.Deadline,
+		Solver:       simpleRfqSolver,
+		Control:      userOp.Control,
+		UserOpHash:   userOpHash,
+		BidToken:     common.Address{},
+		BidAmount:    big.NewInt(1e13),
+		Data:         data,
+		Signature:    nil,
+	}
+
+	proofHash, err := solverOp.ProofHash()
+	if err != nil {
+		panic(err)
+	}
+
+	solverOp.Signature = signEip712(atlasDomainSeparator, proofHash, solverPk)
+
+	if err := solverOp.Validate(userOp, conf.Contracts.Atlas, atlasDomainSeparator, conf.Relay.Gas.MaxPerSolverOperation); err != nil {
+		panic(err)
+	}
+
+	return solverOp
+}
+
+func solverData(swapIntent *SwapIntent, executionEnvironment common.Address) ([]byte, error) {
+	method, exists := contract.SimpleRfqSolverAbi.Methods["fulfillRFQ"]
+	if !exists {
+		return nil, fmt.Errorf("method signature not found")
+	}
+
+	data, err := method.Inputs.Pack(swapIntent, executionEnvironment)
+	if err != nil {
+		return nil, fmt.Errorf("failed to pack inputs: %v", err)
+	}
+
+	return append(common.Hex2Bytes(solverFulfillFuncSelector), data...), nil
 }
 
 func getSolverWsConnection() (*websocket.Conn, *http.Response) {
@@ -194,29 +222,3 @@ func sendSolverOpWs(solverOp *operation.SolverOperation, conn *websocket.Conn) e
 
 	return nil
 }
-
-/**
-func TestSolverOp(t *testing.T) {
-	solverDoneChan := make(chan struct{})
-
-	go runSolver(solverDoneChan, false)
-
-	userOp, err := sendUserRequest()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	<-solverDoneChan
-
-	//user requests for solver solutions
-	userOpHash, _ := userOp.Hash()
-	solverOps, err := retreiveSolverOps(userOpHash, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(solverOps) == 0 {
-		t.Fatal("expected at least one solver operation")
-	}
-}
-**/

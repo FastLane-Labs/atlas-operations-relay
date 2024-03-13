@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/FastLane-Labs/atlas-operations-relay/contract"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -105,18 +104,4 @@ func swapIntentAbiDecode(input []byte) (*SwapIntent, error) {
 		SolverMustReimburseGas: decoded_struct.SolverMustReimburseGas,
 		Conditions:             make([]Condition, len(decoded_struct.Conditions)),
 	}, nil
-}
-
-func solverData(swapIntent *SwapIntent, executionEnvironment common.Address) ([]byte, error) {
-	method, exists := contract.SimpleRfqSolverAbi.Methods["fulfillRFQ"]
-	if !exists {
-		return nil, fmt.Errorf("method signature not found")
-	}
-
-	data, err := method.Inputs.Pack(swapIntent, executionEnvironment)
-	if err != nil {
-		return nil, fmt.Errorf("failed to pack inputs: %v", err)
-	}
-
-	return append(common.Hex2Bytes(solverFulfillFuncSelector), data...), nil
 }
