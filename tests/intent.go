@@ -83,16 +83,16 @@ func swapIntentAbiDecode(input []byte) (*SwapIntent, error) {
 	}
 
 	decoded_struct := unpacked[0].(struct {
-		TokenUserBuys          common.Address "json:\"tokenUserBuys\""
-		AmountUserBuys         *big.Int       "json:\"amountUserBuys\""
-		TokenUserSells         common.Address "json:\"tokenUserSells\""
-		AmountUserSells        *big.Int       "json:\"amountUserSells\""
-		AuctionBaseCurrency    common.Address "json:\"auctionBaseCurrency\""
-		SolverMustReimburseGas bool           "json:\"solverMustReimburseGas\""
+		TokenUserBuys          common.Address `json:"tokenUserBuys"`
+		AmountUserBuys         *big.Int       `json:"amountUserBuys"`
+		TokenUserSells         common.Address `json:"tokenUserSells"`
+		AmountUserSells        *big.Int       `json:"amountUserSells"`
+		AuctionBaseCurrency    common.Address `json:"auctionBaseCurrency"`
+		SolverMustReimburseGas bool           `json:"solverMustReimburseGas"`
 		Conditions             []struct {
-			Antecedent common.Address "json:\"antecedent\""
-			Context    []uint8        "json:\"context\""
-		} "json:\"conditions\""
+			Antecedent common.Address `json:"antecedent"`
+			Context    []uint8        `json:"context"`
+		} `json:"conditions"`
 	})
 
 	return &SwapIntent{
