@@ -10,30 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-/*
-
-Dev note:
-
-All EOAs and contracts used here have been deployed/integrated/funded on Sepolia for the sole purpose of the integration tests.
-Changing even one of those values will most likely break the tests.
-
-For reference, here are the necessary components:
-
-EOAs:
-- user: has at least 1e12 tokenB, as defined in the demo swap intent data, and has approved Atlas to spend it (permit69)
-- solver: has bonded at least 0.5 ATLETH on Atlas
-
-Contracts:
-- Atlas
-- AtlasVerification
-- Simulator
-The above 3 contracts are dependent on each others.
-
-- swapIntentDAppControl: is integrated and dependent on Atlas
-- SimpleRfqSolver: has at least 0.01 ETH, and 200e12 tokenA, as defined in the demo swap intent
-
-*/
-
 func TestMain(m *testing.M) {
 	conf.Validate()
 
