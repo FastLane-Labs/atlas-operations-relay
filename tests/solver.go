@@ -196,7 +196,7 @@ func sendSolverOpHttp(solverOp *operation.SolverOperation) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Expected status code 200, got %d", resp.StatusCode)
+		return fmt.Errorf("expected status code 200, got %d", resp.StatusCode)
 	}
 
 	return nil

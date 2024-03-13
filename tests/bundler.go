@@ -112,7 +112,7 @@ func newAtlasTx(bundleRequest *core.BundleRequest) (*types.Transaction, error) {
 
 	gasPrice, err := ethClient.SuggestGasPrice(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("Can't get gas price suggestion: %w", err)
+		return nil, fmt.Errorf("can't get gas price suggestion: %w", err)
 	}
 
 	opts := &bind.TransactOpts{

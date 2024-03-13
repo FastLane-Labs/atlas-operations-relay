@@ -77,12 +77,12 @@ func sendUserRequest() (*operation.UserOperation, error) {
 
 	userOpJSON, err := json.Marshal(userOp)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal userOp: %w", err)
+		return nil, fmt.Errorf("failed to marshal userOp: %w", err)
 	}
 
 	resp, err := http.Post("http://localhost:8080/userOperation", "application/json", bytes.NewReader(userOpJSON))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to send userOp: %w", err)
+		return nil, fmt.Errorf("failed to send userOp: %w", err)
 	}
 
 	log.Info("user sent userOp", "userOpHash", userOpHash.Hex())
@@ -90,18 +90,18 @@ func sendUserRequest() (*operation.UserOperation, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Expected status code 200, got %d", resp.StatusCode)
+		return nil, fmt.Errorf("expected status code 200, got %d", resp.StatusCode)
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	userOpHashInResp := common.HexToHash(strings.Trim(string(bodyBytes), "\""))
 
 	if userOpHashInResp != userOpHash {
-		return nil, fmt.Errorf("Expected userOpHash %s, got %s", userOpHash, userOpHashInResp)
+		return nil, fmt.Errorf("expected userOpHash %s, got %s", userOpHash, userOpHashInResp)
 	}
 
 	return userOp, nil
@@ -126,7 +126,7 @@ func retreiveSolverOps(userOpHash common.Hash, wait bool) ([]*operation.SolverOp
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return make([]*operation.SolverOperation, 0), fmt.Errorf("Expected status code 200, got %d", resp.StatusCode)
+		return make([]*operation.SolverOperation, 0), fmt.Errorf("expected status code 200, got %d", resp.StatusCode)
 	}
 
 	var solverOps []*operation.SolverOperation
@@ -180,7 +180,7 @@ func retrieveAtlasTxHash(userOpHash common.Hash, wait bool) (common.Hash, error)
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return common.Hash{}, fmt.Errorf("Expected status code 200, got %d", resp.StatusCode)
+		return common.Hash{}, fmt.Errorf("expected status code 200, got %d", resp.StatusCode)
 	}
 
 	var txHash common.Hash
