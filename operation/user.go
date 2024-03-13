@@ -14,13 +14,13 @@ import (
 )
 
 var (
-	ErrUserOpInvalidSignature = relayerror.NewError(5001, "user operation has invalid signature")
-	ErrUserOpInvalidToField   = relayerror.NewError(5002, "user operation's 'to' field must be atlas contract address")
-	ErrUserOpDeadlineExceeded = relayerror.NewError(5003, "user operation's deadline exceeded")
-	ErrUserOpComputeHash      = relayerror.NewError(5004, "failed to compute user operation hash")
-	ErrUserOpComputeProofHash = relayerror.NewError(5005, "failed to compute user proof hash")
-	ErrUserOpSignatureInvalid = relayerror.NewError(5006, "user operation has invalid signature")
-	ErrUserOpGasLimitExceeded = relayerror.NewError(5007, "user operation's gas limit exceeded")
+	ErrUserOpInvalidSignature = relayerror.NewError(2001, "user operation has invalid signature")
+	ErrUserOpInvalidToField   = relayerror.NewError(2002, "user operation's 'to' field must be atlas contract address")
+	ErrUserOpDeadlineExceeded = relayerror.NewError(2003, "user operation's deadline exceeded")
+	ErrUserOpComputeHash      = relayerror.NewError(2004, "failed to compute user operation hash")
+	ErrUserOpComputeProofHash = relayerror.NewError(2005, "failed to compute user proof hash")
+	ErrUserOpSignatureInvalid = relayerror.NewError(2006, "user operation has invalid signature")
+	ErrUserOpGasLimitExceeded = relayerror.NewError(2007, "user operation's gas limit exceeded")
 )
 
 var (

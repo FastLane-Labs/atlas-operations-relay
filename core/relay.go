@@ -20,9 +20,9 @@ const (
 )
 
 var (
-	ErrForwardBundle          = relayerror.NewError(1200, "failed to forward bundle")
-	ErrCantGetDAppSignatories = relayerror.NewError(1201, "failed to get dapp signatories")
-	ErrCantGetBondedBalance   = relayerror.NewError(1202, "failed to get atlEth bonded balance")
+	ErrForwardBundle          = relayerror.NewError(3100, "failed to forward bundle")
+	ErrCantGetDAppSignatories = relayerror.NewError(3101, "failed to get dapp signatories")
+	ErrCantGetBondedBalance   = relayerror.NewError(3102, "failed to get atlEth bonded balance")
 )
 
 type Relay struct {

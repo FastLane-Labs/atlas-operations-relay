@@ -17,18 +17,16 @@ import (
 )
 
 var (
-	ErrMalformedRequest    = relayerror.NewError(1100, "malformed request")
-	ErrMalformedJson       = relayerror.NewError(1101, "malformed json")
-	ErrInvalidParameter    = relayerror.NewError(1102, "invalid parameter")
-	ErrServerCorruptedData = relayerror.NewError(1103, "server corrupted data")
-	ErrInvalidUserOpHash   = relayerror.NewError(1104, "invalid user operation hash")
-
-	// Bundler signature errors
-	ErrInvalidBundlerAddress = relayerror.NewError(1200, "invalid bundler address")
-	ErrInvalidTimestamp      = relayerror.NewError(1201, "invalid timestamp")
-	ErrExpiredSignature      = relayerror.NewError(1202, "expired signature")
-	ErrBadSignature          = relayerror.NewError(1203, "bad signature (decode/recover error)")
-	ErrSignatureMismatch     = relayerror.NewError(1204, "signature mismatch")
+	ErrMalformedRequest      = relayerror.NewError(3000, "malformed request")
+	ErrMalformedJson         = relayerror.NewError(3001, "malformed json")
+	ErrInvalidParameter      = relayerror.NewError(3002, "invalid parameter")
+	ErrServerCorruptedData   = relayerror.NewError(3003, "server corrupted data")
+	ErrInvalidUserOpHash     = relayerror.NewError(3004, "invalid user operation hash")
+	ErrInvalidBundlerAddress = relayerror.NewError(3005, "invalid bundler address")
+	ErrInvalidTimestamp      = relayerror.NewError(3006, "invalid timestamp")
+	ErrExpiredSignature      = relayerror.NewError(3007, "expired signature")
+	ErrBadSignature          = relayerror.NewError(3008, "bad signature (decode/recover error)")
+	ErrSignatureMismatch     = relayerror.NewError(3009, "signature mismatch")
 )
 
 type RetrieveRequest struct {

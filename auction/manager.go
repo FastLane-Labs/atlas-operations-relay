@@ -17,11 +17,11 @@ import (
 )
 
 var (
-	ErrAuctionAlreadyStarted    = relayerror.NewError(2202, "auction for this user operation has already started")
-	ErrAuctionNotFound          = relayerror.NewError(2203, "auction not found")
-	ErrUserOpFailedSimulation   = relayerror.NewError(2204, "user operation failed simulation")
-	ErrSolverOpFailedSimulation = relayerror.NewError(2205, "solver operation failed simulation")
-	ErrNotEnoughBondedBalance   = relayerror.NewError(2206, "not enough atlEth bonded balance")
+	ErrAuctionAlreadyStarted    = relayerror.NewError(4000, "auction for this user operation has already started")
+	ErrAuctionNotFound          = relayerror.NewError(4001, "auction not found")
+	ErrUserOpFailedSimulation   = relayerror.NewError(4002, "user operation failed simulation")
+	ErrSolverOpFailedSimulation = relayerror.NewError(4003, "solver operation failed simulation")
+	ErrNotEnoughBondedBalance   = relayerror.NewError(4004, "not enough atlEth bonded balance")
 )
 
 var (

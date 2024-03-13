@@ -7,7 +7,7 @@ import (
 
 var (
 	// Errors used across different packages
-	ErrServerInternal = NewError(3001, "server internal error")
+	ErrServerInternal = NewError(1000, "server internal error")
 )
 
 type Error struct {
