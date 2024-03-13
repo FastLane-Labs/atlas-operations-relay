@@ -24,7 +24,6 @@ var (
 )
 
 var (
-	userGasLimit   = big.NewInt(1000000)
 	USER_TYPE_HASH = crypto.Keccak256Hash([]byte("UserOperation(address from,address to,uint256 value,uint256 gas,uint256 maxFeePerGas,uint256 nonce,uint256 deadline,address dapp,address control,address sessionKey,bytes32 data)"))
 )
 
@@ -88,12 +87,7 @@ func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Addre
 		return ErrUserOpInvalidToField
 	}
 
-	enforcedGasLimit := new(big.Int).Set(userGasLimit)
-	if gasLimit != nil && gasLimit.Cmp(common.Big0) > 0 {
-		enforcedGasLimit = gasLimit
-	}
-
-	if u.Gas.Cmp(enforcedGasLimit) > 0 {
+	if u.Gas.Cmp(gasLimit) > 0 {
 		return ErrUserOpGasLimitExceeded
 	}
 
@@ -116,18 +110,18 @@ func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Addre
 }
 
 func (u *UserOperation) Hash() (common.Hash, *relayerror.Error) {
-	packed, err := u.abiEncode()
+	packed, err := u.AbiEncode()
 	if err != nil {
 		return common.Hash{}, ErrUserOpComputeHash.AddError(err)
 	}
 	return crypto.Keccak256Hash(packed), nil
 }
 
-func (u *UserOperation) abiEncode() ([]byte, error) {
+func (u *UserOperation) AbiEncode() ([]byte, error) {
 	return userOpArgs.Pack(&u)
 }
 
-func (u *UserOperation) proofHash() (common.Hash, error) {
+func (u *UserOperation) ProofHash() (common.Hash, error) {
 	proofHash := struct {
 		UserTypeHash common.Hash
 		From         common.Address
@@ -164,7 +158,7 @@ func (u *UserOperation) proofHash() (common.Hash, error) {
 }
 
 func (u *UserOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
-	proofHash, err := u.proofHash()
+	proofHash, err := u.ProofHash()
 	if err != nil {
 		log.Info("failed to compute user proof hash", "err", err)
 		return ErrUserOpComputeProofHash.AddError(err)

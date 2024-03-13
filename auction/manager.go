@@ -112,7 +112,7 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Has
 		return common.Hash{}, ErrAuctionAlreadyStarted
 	}
 
-	am.auctions[userOpHash] = NewAuction(userOp, userOpHash)
+	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, userOp, userOpHash)
 	return userOpHash, nil
 }
 
@@ -168,7 +168,7 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 
 	dAppOp := operation.GenerateSimulationDAppOperation(auction.userOp)
 
-	pData, err := contract.SimulatorAbi.Pack("simSolverCall", *auction.userOp, []operation.SolverOperation{*solverOp}, *dAppOp)
+	pData, err := contract.SimulatorAbi.Pack("simSolverCall", *auction.userOp, *solverOp, *dAppOp)
 	if err != nil {
 		log.Info("failed to pack solver operation", "err", err, "userOpHash", auction.userOpHash.Hex())
 		return relayerror.ErrServerInternal

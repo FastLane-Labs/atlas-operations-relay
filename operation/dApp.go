@@ -24,7 +24,6 @@ var (
 )
 
 var (
-	dAppGasLimit   = big.NewInt(1000000)
 	DAPP_TYPE_HASH = crypto.Keccak256Hash([]byte("DAppApproval(address from,address to,uint256 value,uint256 gas,uint256 nonce,uint256 deadline,address control,address bundler,bytes32 userOpHash,bytes32 callChainHash)"))
 )
 
@@ -63,7 +62,17 @@ type DAppOperation struct {
 
 func GenerateSimulationDAppOperation(userOp *UserOperation) *DAppOperation {
 	return &DAppOperation{
-		Control: userOp.Control,
+		From:          common.HexToAddress("0x0"),
+		To:            common.HexToAddress("0x0"),
+		Value:         big.NewInt(0),
+		Gas:           big.NewInt(100000),
+		Nonce:         big.NewInt(0),
+		Deadline:      userOp.Deadline,
+		Control:       userOp.Control,
+		Bundler:       common.HexToAddress("0x0"),
+		UserOpHash:    common.HexToHash("0x0"),
+		CallChainHash: common.HexToHash("0x0"),
+		Signature:     []byte(""),
 	}
 }
 
@@ -76,12 +85,7 @@ func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, 
 		return ErrDAppOpInvalidToField
 	}
 
-	enforcedGasLimit := new(big.Int).Set(dAppGasLimit)
-	if gasLimit != nil && gasLimit.Cmp(common.Big0) > 0 {
-		enforcedGasLimit = gasLimit
-	}
-
-	if d.Gas.Cmp(enforcedGasLimit) > 0 {
+	if d.Gas.Cmp(gasLimit) > 0 {
 		return ErrDAppOpGasLimitExceeded
 	}
 
@@ -89,7 +93,7 @@ func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, 
 		return ErrDAppOpDeadlineTooLow
 	}
 
-	if d.Control != userOp.To {
+	if d.Control != userOp.Control {
 		return ErrDAppOpDAppControlMismatch
 	}
 
@@ -109,7 +113,7 @@ func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, 
 	return nil
 }
 
-func (d *DAppOperation) proofHash() (common.Hash, error) {
+func (d *DAppOperation) ProofHash() (common.Hash, error) {
 	proofHash := struct {
 		DAppTypeHash  common.Hash
 		From          common.Address
@@ -142,7 +146,7 @@ func (d *DAppOperation) proofHash() (common.Hash, error) {
 }
 
 func (d *DAppOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
-	proofHash, err := d.proofHash()
+	proofHash, err := d.ProofHash()
 	if err != nil {
 		log.Info("failed to compute dApp proof hash", "err", err)
 		return ErrDAppOpComputeProofHash.AddError(err)

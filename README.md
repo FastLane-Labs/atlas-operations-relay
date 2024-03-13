@@ -27,6 +27,11 @@ If a combination is used, the priority order is **ENV var** > **CLI param** > **
 - **ATLAS SIMULATOR CONTRACT ADDRESS** (required)
     - *config.json*:  `contracts.simulator` (string)
     - *CLI flag*:     `--contracts.simulator`
+- **AUCTION DURATION** (optional)
+    - *config.json*:  `relay.auction.duration` (integer)
+    - *CLI flag*:     `--relay.auction.duration`
+    - *default*:      `500`
+    - *comment*:      in milliseconds, values <= 0 are ignored
 - **MAX GAS PER USER OPERATION** (optional)
     - *config.json*:  `relay.gas.max_per_user_operation` (integer)
     - *CLI flag*:     `--relay.gas.max_per_user_operation`

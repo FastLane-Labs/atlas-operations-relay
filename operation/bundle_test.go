@@ -24,7 +24,7 @@ func TestBundleOperationsCallChainHashWithRequiredPreOps(t *testing.T) {
 	bundleOps := generateBundleOperations()
 	want := common.HexToHash("0xbb6a59376026161b088c50619219ae0ca70d2574ef8bf0346064910a4564624a")
 
-	result, err := bundleOps.callChainHash(4, common.HexToAddress("0x4"))
+	result, err := bundleOps.CallChainHash(4, common.HexToAddress("0x4"))
 	if err != nil {
 		t.Errorf("BundleOperations.callChainHash() error = %v", err)
 	}
@@ -40,7 +40,7 @@ func TestBundleOperationsCallChainHashWithoutRequiredPreOps(t *testing.T) {
 	bundleOps := generateBundleOperations()
 	want := common.HexToHash("0x7a856dd01991620aa2adcb177ef5cdcc9c1f524920d6791817f9272e131f869c")
 
-	result, err := bundleOps.callChainHash(0, common.HexToAddress("0x4"))
+	result, err := bundleOps.CallChainHash(0, common.HexToAddress("0x4"))
 	if err != nil {
 		t.Errorf("BundleOperations.callChainHash() error = %v", err)
 	}

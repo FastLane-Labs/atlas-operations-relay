@@ -5,8 +5,14 @@ import (
 	"flag"
 	"math/big"
 	"os"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+)
+
+var (
+	defaultAuctionDuration   = 500 * time.Millisecond
+	defaultOperationGasLimit = big.NewInt(1000000)
 )
 
 type configJson struct {
@@ -21,32 +27,40 @@ type configJson struct {
 	} `json:"contracts"`
 
 	Relay struct {
+		Auction struct {
+			Duration uint64 `json:"duration,omitempty"`
+		} `json:"auction,omitempty"`
 		Gas struct {
-			MaxPerUserOperation   uint64 `json:"max_per_user_operation"`
-			MaxPerSolverOperation uint64 `json:"max_per_solver_operation"`
-			MaxPerDAppOperation   uint64 `json:"max_per_dApp_operation"`
-		} `json:"gas"`
-	} `json:"relay"`
+			MaxPerUserOperation   uint64 `json:"max_per_user_operation,omitempty"`
+			MaxPerSolverOperation uint64 `json:"max_per_solver_operation,omitempty"`
+			MaxPerDAppOperation   uint64 `json:"max_per_dApp_operation,omitempty"`
+		} `json:"gas,omitempty"`
+	} `json:"relay,omitempty"`
 }
 
 type Network struct {
-	RpcUrl string `json:"rpc_url"`
+	RpcUrl string
 }
 
 type Contracts struct {
-	Atlas             common.Address `json:"atlas"`
-	AtlasVerification common.Address `json:"atlasVerification"`
-	Simulator         common.Address `json:"simulator"`
+	Atlas             common.Address
+	AtlasVerification common.Address
+	Simulator         common.Address
+}
+
+type Auction struct {
+	Duration time.Duration
 }
 
 type Gas struct {
-	MaxPerUserOperation   *big.Int `json:"max_per_user_operation"`
-	MaxPerSolverOperation *big.Int `json:"max_per_solver_operation"`
-	MaxPerDAppOperation   *big.Int `json:"max_per_dApp_operation"`
+	MaxPerUserOperation   *big.Int
+	MaxPerSolverOperation *big.Int
+	MaxPerDAppOperation   *big.Int
 }
 
 type Relay struct {
-	Gas Gas `json:"gas"`
+	Auction Auction
+	Gas     Gas
 }
 
 type Config struct {
@@ -61,7 +75,7 @@ func Load() *Config {
 	config.parseConfigFile()
 	config.parseFlags()
 	config.parseEnv()
-	config.validate()
+	config.Validate()
 
 	return config
 }
@@ -105,6 +119,8 @@ func (c *Config) parseConfigFile() {
 		c.Contracts.Simulator = common.HexToAddress(configJson.Contracts.Simulator)
 	}
 
+	c.Relay.Auction.Duration = time.Duration(configJson.Relay.Auction.Duration * uint64(time.Millisecond))
+
 	c.Relay.Gas.MaxPerUserOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerUserOperation)
 	c.Relay.Gas.MaxPerSolverOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerSolverOperation)
 	c.Relay.Gas.MaxPerDAppOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerDAppOperation)
@@ -115,9 +131,10 @@ func (c *Config) parseFlags() {
 	contractsAtlasPtr := flag.String("contracts.atlas", "", "Atlas contract address")
 	contractsAtlasVerificationPtr := flag.String("contracts.atlasVerification", "", "AtlasVerification contract address")
 	contractsSimulatorPtr := flag.String("contracts.simulator", "", "Simulator contract address")
-	relayGasMaxPerUserOperationPtr := flag.String("relay.gas.max_per_user_operation", "", "Max gas per user operation")
-	relayGasMaxPerSolverOperationPtr := flag.String("relay.gas.max_per_solver_operation", "", "Max gas per solver operation")
-	relayGasMaxPerDAppOperationPtr := flag.String("relay.gas.max_per_dApp_operation", "", "Max gas per dApp operation")
+	relayAuctionDurationPtr := flag.Uint64("relay.auction.duration", 0, "Auction duration in milliseconds")
+	relayGasMaxPerUserOperationPtr := flag.Uint64("relay.gas.max_per_user_operation", 0, "Max gas per user operation")
+	relayGasMaxPerSolverOperationPtr := flag.Uint64("relay.gas.max_per_solver_operation", 0, "Max gas per solver operation")
+	relayGasMaxPerDAppOperationPtr := flag.Uint64("relay.gas.max_per_dApp_operation", 0, "Max gas per dApp operation")
 	flag.Parse()
 
 	if len(*networkRpcUrlPtr) > 0 {
@@ -145,19 +162,20 @@ func (c *Config) parseFlags() {
 		c.Contracts.Simulator = common.HexToAddress(*contractsSimulatorPtr)
 	}
 
-	if len(*relayGasMaxPerUserOperationPtr) > 0 {
-		c.Relay.Gas.MaxPerUserOperation = new(big.Int)
-		c.Relay.Gas.MaxPerUserOperation.SetString(*relayGasMaxPerUserOperationPtr, 10)
+	if *relayAuctionDurationPtr > 0 {
+		c.Relay.Auction.Duration = time.Duration(*relayAuctionDurationPtr * uint64(time.Millisecond))
 	}
 
-	if len(*relayGasMaxPerSolverOperationPtr) > 0 {
-		c.Relay.Gas.MaxPerSolverOperation = new(big.Int)
-		c.Relay.Gas.MaxPerSolverOperation.SetString(*relayGasMaxPerSolverOperationPtr, 10)
+	if *relayGasMaxPerUserOperationPtr > 0 {
+		c.Relay.Gas.MaxPerUserOperation = new(big.Int).SetUint64(*relayGasMaxPerUserOperationPtr)
 	}
 
-	if len(*relayGasMaxPerDAppOperationPtr) > 0 {
-		c.Relay.Gas.MaxPerDAppOperation = new(big.Int)
-		c.Relay.Gas.MaxPerDAppOperation.SetString(*relayGasMaxPerDAppOperationPtr, 10)
+	if *relayGasMaxPerSolverOperationPtr > 0 {
+		c.Relay.Gas.MaxPerSolverOperation = new(big.Int).SetUint64(*relayGasMaxPerSolverOperationPtr)
+	}
+
+	if *relayGasMaxPerDAppOperationPtr > 0 {
+		c.Relay.Gas.MaxPerDAppOperation = new(big.Int).SetUint64(*relayGasMaxPerDAppOperationPtr)
 	}
 }
 
@@ -167,7 +185,7 @@ func (c *Config) parseEnv() {
 	}
 }
 
-func (c *Config) validate() {
+func (c *Config) Validate() {
 	if len(c.Network.RpcUrl) == 0 {
 		panic("network.rpc_url is required")
 	}
@@ -182,5 +200,21 @@ func (c *Config) validate() {
 
 	if c.Contracts.Simulator == (common.Address{}) {
 		panic("contracts.simulator is required")
+	}
+
+	if c.Relay.Auction.Duration == 0 {
+		c.Relay.Auction.Duration = defaultAuctionDuration
+	}
+
+	if c.Relay.Gas.MaxPerUserOperation == nil || c.Relay.Gas.MaxPerUserOperation.Cmp(common.Big0) == 0 {
+		c.Relay.Gas.MaxPerUserOperation = new(big.Int).Set(defaultOperationGasLimit)
+	}
+
+	if c.Relay.Gas.MaxPerSolverOperation == nil || c.Relay.Gas.MaxPerSolverOperation.Cmp(common.Big0) == 0 {
+		c.Relay.Gas.MaxPerSolverOperation = new(big.Int).Set(defaultOperationGasLimit)
+	}
+
+	if c.Relay.Gas.MaxPerDAppOperation == nil || c.Relay.Gas.MaxPerDAppOperation.Cmp(common.Big0) == 0 {
+		c.Relay.Gas.MaxPerDAppOperation = new(big.Int).Set(defaultOperationGasLimit)
 	}
 }

@@ -8,6 +8,9 @@
     "simulator": ""
   },
   "relay": {
+    "auction": {
+      "duration": 0
+    },
     "gas": {
       "max_per_user_operation": 0,
       "max_per_solver_operation": 0,

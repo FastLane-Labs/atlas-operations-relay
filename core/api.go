@@ -102,14 +102,13 @@ func writeResponseData(w http.ResponseWriter, data interface{}) {
 }
 
 func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
-	var userpOp *operation.UserOperation
-	if relayErr := getPostRequestData(r, userpOp); relayErr != nil {
+	userOp := &operation.UserOperation{}
+	if relayErr := getPostRequestData(r, userOp); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
 	}
-
-	userOpHash, relayErr := api.relay.submitUserOperation(userpOp)
+	userOpHash, relayErr := api.relay.submitUserOperation(userOp)
 	if relayErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())
@@ -148,7 +147,7 @@ func (api *Api) GetSolverOperations(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) SubmitBundleOperations(w http.ResponseWriter, r *http.Request) {
-	var bundleOps *operation.BundleOperations
+	bundleOps := &operation.BundleOperations{}
 	if relayErr := getPostRequestData(r, bundleOps); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
@@ -200,7 +199,7 @@ func (api *Api) GetBundleHash(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) SubmitSolverOperation(w http.ResponseWriter, r *http.Request) {
-	var solverOp *operation.SolverOperation
+	solverOp := &operation.SolverOperation{}
 	if relayErr := getPostRequestData(r, solverOp); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())

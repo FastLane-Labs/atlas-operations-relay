@@ -10,10 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const (
-	AuctionDuration = 500 * time.Millisecond
-)
-
 var (
 	ErrAuctionClosed  = relayerror.NewError(2100, "auction for this user operation has already ended")
 	ErrAuctionOngoing = relayerror.NewError(2101, "auction for this user operation is ongoing")
@@ -33,7 +29,7 @@ type Auction struct {
 	mu sync.RWMutex
 }
 
-func NewAuction(userOp *operation.UserOperation, userOpHash common.Hash) *Auction {
+func NewAuction(duration time.Duration, userOp *operation.UserOperation, userOpHash common.Hash) *Auction {
 	auction := &Auction{
 		open:           true,
 		userOpHash:     userOpHash,
@@ -43,7 +39,7 @@ func NewAuction(userOp *operation.UserOperation, userOpHash common.Hash) *Auctio
 		createdAt:      time.Now(),
 	}
 
-	time.AfterFunc(AuctionDuration, auction.close)
+	time.AfterFunc(duration, auction.close)
 	return auction
 }
 
@@ -51,6 +47,7 @@ func (a *Auction) close() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
+	log.Info("closing auction", "userOpHash", a.userOpHash.Hex())
 	a.open = false
 
 	for _, subChan := range a.completionSubs {

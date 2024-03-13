@@ -18,8 +18,10 @@ func RecoverEthereumSigner(message string, signature []byte) (common.Address, er
 }
 
 func recoverSigner(messageHash []byte, signature []byte) (common.Address, error) {
+	changedSignature := false
 	if signature[crypto.RecoveryIDOffset] == 27 || signature[crypto.RecoveryIDOffset] == 28 {
 		signature[crypto.RecoveryIDOffset] -= 27 // Transform yellow paper V from 27/28 to 0/1
+		changedSignature = true
 	}
 
 	pubKey, err := crypto.SigToPub(messageHash, signature)
@@ -28,5 +30,9 @@ func recoverSigner(messageHash []byte, signature []byte) (common.Address, error)
 		return common.Address{}, err
 	}
 
+	//reset the v of the signature
+	if changedSignature {
+		signature[crypto.RecoveryIDOffset] += 27
+	}
 	return crypto.PubkeyToAddress(*pubKey), nil
 }

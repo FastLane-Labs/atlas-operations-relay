@@ -22,7 +22,6 @@ var (
 )
 
 var (
-	solverGasLimit   = big.NewInt(1000000)
 	SOLVER_TYPE_HASH = crypto.Keccak256Hash([]byte("SolverOperation(address from,address to,uint256 value,uint256 gas,uint256 maxFeePerGas,uint256 deadline,address dapp,address control,bytes32 userOpHash,address bidToken,uint256 bidAmount,bytes32 data)"))
 )
 
@@ -89,12 +88,7 @@ func (s *SolverOperation) Validate(userOp *UserOperation, atlas common.Address, 
 		return ErrSolverOpInvalidToField
 	}
 
-	enforcedGasLimit := new(big.Int).Set(solverGasLimit)
-	if gasLimit != nil && gasLimit.Cmp(common.Big0) > 0 {
-		enforcedGasLimit = gasLimit
-	}
-
-	if s.Gas.Cmp(enforcedGasLimit) > 0 {
+	if s.Gas.Cmp(gasLimit) > 0 {
 		return ErrSolverOpGasLimitExceeded
 	}
 
@@ -118,11 +112,11 @@ func (s *SolverOperation) Validate(userOp *UserOperation, atlas common.Address, 
 	return nil
 }
 
-func (s *SolverOperation) abiEncode() ([]byte, error) {
+func (s *SolverOperation) AbiEncode() ([]byte, error) {
 	return solverOpArgs.Pack(&s)
 }
 
-func (s *SolverOperation) proofHash() (common.Hash, error) {
+func (s *SolverOperation) ProofHash() (common.Hash, error) {
 	proofHash := struct {
 		SolverTypeHash common.Hash
 		From           common.Address
@@ -161,7 +155,7 @@ func (s *SolverOperation) proofHash() (common.Hash, error) {
 }
 
 func (s *SolverOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
-	proofHash, err := s.proofHash()
+	proofHash, err := s.ProofHash()
 	if err != nil {
 		log.Info("failed to compute solver proof hash", "err", err)
 		return ErrSolverOpComputeProofHash.AddError(err)
