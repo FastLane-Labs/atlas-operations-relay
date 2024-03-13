@@ -9,7 +9,8 @@ import (
 )
 
 var (
-	swapIntentFuncSelector = "83a6992a"
+	swapIntentFuncSelector    = "83a6992a"
+	solverFulfillFuncSelector = "491274c5"
 
 	swapIntentSolType, _ = abi.NewType("tuple", "struct SwapIntent", []abi.ArgumentMarshaling{
 		{Name: "tokenUserBuys", Type: "address", InternalType: "address"},
@@ -32,8 +33,6 @@ var (
 	swapIntentArgs = abi.Arguments{
 		{Type: swapIntentSolType, Name: "swapIntent"},
 	}
-
-	solverFulfillFuncSelector = "491274c5"
 )
 
 type Condition struct {
