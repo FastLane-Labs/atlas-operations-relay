@@ -47,17 +47,17 @@ var (
 )
 
 type DAppOperation struct {
-	From          common.Address `json:"from"`
-	To            common.Address `json:"to"`
-	Value         *big.Int       `json:"value"`
-	Gas           *big.Int       `json:"gas"`
-	Nonce         *big.Int       `json:"nonce"`
-	Deadline      *big.Int       `json:"deadline"`
-	Control       common.Address `json:"control"`
-	Bundler       common.Address `json:"bundler"`
-	UserOpHash    common.Hash    `json:"userOpHash"`
-	CallChainHash common.Hash    `json:"callChainHash"`
-	Signature     []byte         `json:"signature"`
+	From          common.Address
+	To            common.Address
+	Value         *big.Int
+	Gas           *big.Int
+	Nonce         *big.Int
+	Deadline      *big.Int
+	Control       common.Address
+	Bundler       common.Address
+	UserOpHash    common.Hash
+	CallChainHash common.Hash
+	Signature     []byte
 }
 
 func GenerateSimulationDAppOperation(userOp *UserOperation) *DAppOperation {

@@ -68,19 +68,19 @@ var (
 )
 
 type SolverOperation struct {
-	From         common.Address `json:"from"`
-	To           common.Address `json:"to"`
-	Value        *big.Int       `json:"value"`
-	Gas          *big.Int       `json:"gas"`
-	MaxFeePerGas *big.Int       `json:"maxFeePerGas"`
-	Deadline     *big.Int       `json:"deadline"`
-	Solver       common.Address `json:"solver"`
-	Control      common.Address `json:"control"`
-	UserOpHash   common.Hash    `json:"userOpHash"`
-	BidToken     common.Address `json:"bidToken"`
-	BidAmount    *big.Int       `json:"bidAmount"`
-	Data         []byte         `json:"data"`
-	Signature    []byte         `json:"signature"`
+	From         common.Address
+	To           common.Address
+	Value        *big.Int
+	Gas          *big.Int
+	MaxFeePerGas *big.Int
+	Deadline     *big.Int
+	Solver       common.Address
+	Control      common.Address
+	UserOpHash   common.Hash
+	BidToken     common.Address
+	BidAmount    *big.Int
+	Data         []byte
+	Signature    []byte
 }
 
 func (s *SolverOperation) Validate(userOp *UserOperation, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {

@@ -10,7 +10,6 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/bundle"
 	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
-	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
@@ -76,7 +75,6 @@ func getRetrieveRequestData(r *http.Request) (*RetrieveRequest, *relayerror.Erro
 
 func getPostRequestData(r *http.Request, v interface{}) *relayerror.Error {
 	body, err := io.ReadAll(r.Body)
-	log.Info("post request body", r.Body)
 	defer r.Body.Close()
 	if err != nil {
 		return ErrMalformedRequest.AddError(err)
@@ -104,14 +102,12 @@ func writeResponseData(w http.ResponseWriter, data interface{}) {
 func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
 	userOp := &UserOperationArgs{}
 	if relayErr := getPostRequestData(r, userOp); relayErr != nil {
-		log.Info("got to submituseroperation", "getpostdataerr", relayErr)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
 	}
 	userOpHash, relayErr := api.relay.submitUserOperation(userOp)
 	if relayErr != nil {
-		log.Info("got to submituseroperation", "submitoperr", relayErr)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())
 		return
@@ -149,7 +145,7 @@ func (api *Api) GetSolverOperations(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) SubmitBundleOperations(w http.ResponseWriter, r *http.Request) {
-	bundleOps := &operation.BundleOperations{}
+	bundleOps := BundleOperationArgs{}
 	if relayErr := getPostRequestData(r, bundleOps); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
@@ -201,7 +197,7 @@ func (api *Api) GetBundleHash(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) SubmitSolverOperation(w http.ResponseWriter, r *http.Request) {
-	solverOp := &operation.SolverOperation{}
+	solverOp := &SolverOperationArgs{}
 	if relayErr := getPostRequestData(r, solverOp); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())

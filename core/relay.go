@@ -88,10 +88,10 @@ type UserOperationArgs struct {
 	From         common.Address `json:"from"`
 	To           common.Address `json:"to"`
 	Value        *hexutil.Big   `json:"value"`
-	Gas          hexutil.Uint64 `json:"gas"`
+	Gas          *hexutil.Big   `json:"gas"`
 	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas"`
-	Nonce        hexutil.Uint64 `json:"nonce"`
-	Deadline     hexutil.Uint64 `json:"deadline"`
+	Nonce        *hexutil.Big   `json:"nonce"`
+	Deadline     *hexutil.Big   `json:"deadline"`
 	Dapp         common.Address `json:"dapp"`
 	Control      common.Address `json:"control"`
 	SessionKey   common.Address `json:"sessionKey"`
@@ -99,21 +99,108 @@ type UserOperationArgs struct {
 	Signature    hexutil.Bytes  `json:"signature"`
 }
 
-func (r *Relay) submitUserOperation(args *UserOperationArgs) (common.Hash, *relayerror.Error) {
-	userOp := &operation.UserOperation{
+func (args *UserOperationArgs) toUserOperation() *operation.UserOperation {
+	return &operation.UserOperation{
 		From:         args.From,
 		To:           args.To,
 		Value:        args.Value.ToInt(),
-		Gas:          new(big.Int).SetUint64(uint64(args.Gas)),
+		Gas:          args.Gas.ToInt(),
 		MaxFeePerGas: args.MaxFeePerGas.ToInt(),
-		Nonce:        new(big.Int).SetUint64(uint64(args.Nonce)),
-		Deadline:     new(big.Int).SetUint64(uint64(args.Deadline)),
+		Nonce:        args.Nonce.ToInt(),
+		Deadline:     args.Deadline.ToInt(),
 		Dapp:         args.Dapp,
 		Control:      args.Control,
 		SessionKey:   args.SessionKey,
 		Data:         args.Data,
 		Signature:    args.Signature,
 	}
+
+}
+
+type SolverOperationArgs struct {
+	From         common.Address `json:"from"`
+	To           common.Address `json:"to"`
+	Value        *hexutil.Big   `json:"value"`
+	Gas          *hexutil.Big   `json:"gas"`
+	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas"`
+	Deadline     *hexutil.Big   `json:"deadline"`
+	Solver       common.Address `json:"solver"`
+	Control      common.Address `json:"control"`
+	UserOpHash   common.Hash    `json:"userOpHash"`
+	BidToken     common.Address `json:"bidToken"`
+	BidAmount    *hexutil.Big   `json:"bidAmount"`
+	Data         hexutil.Bytes  `json:"data"`
+	Signature    hexutil.Bytes  `json:"signature"`
+}
+
+func (args *SolverOperationArgs) toSolverOperation() *operation.SolverOperation {
+	return &operation.SolverOperation{
+		From:         args.From,
+		To:           args.To,
+		Value:        args.Value.ToInt(),
+		Gas:          args.Gas.ToInt(),
+		MaxFeePerGas: args.MaxFeePerGas.ToInt(),
+		Deadline:     args.Deadline.ToInt(),
+		Solver:       args.Solver,
+		Control:      args.Control,
+		UserOpHash:   args.UserOpHash,
+		BidToken:     args.BidToken,
+		BidAmount:    args.BidAmount.ToInt(),
+		Data:         args.Data,
+		Signature:    args.Signature,
+	}
+}
+
+type DAppOperationArgs struct {
+	From          common.Address `json:"from"`
+	To            common.Address `json:"to"`
+	Value         *hexutil.Big   `json:"value"`
+	Gas           *hexutil.Big   `json:"gas"`
+	Nonce         *hexutil.Big   `json:"nonce"`
+	Deadline      *hexutil.Big   `json:"deadline"`
+	Control       common.Address `json:"control"`
+	Bundler       common.Address `json:"bundler"`
+	UserOpHash    common.Hash    `json:"userOpHash"`
+	CallChainHash common.Hash    `json:"callChainHash"`
+	Signature     hexutil.Bytes  `json:"signature"`
+}
+
+func (args *DAppOperationArgs) toDAppOperation() *operation.DAppOperation {
+	return &operation.DAppOperation{
+		From:          args.From,
+		To:            args.To,
+		Value:         args.Value.ToInt(),
+		Gas:           args.Gas.ToInt(),
+		Nonce:         args.Nonce.ToInt(),
+		Deadline:      args.Deadline.ToInt(),
+		Control:       args.Control,
+		Bundler:       args.Bundler,
+		UserOpHash:    args.UserOpHash,
+		CallChainHash: args.CallChainHash,
+		Signature:     args.Signature,
+	}
+}
+
+type BundleOperationArgs struct {
+	UserOperation    *UserOperationArgs     `json:"userOperation"`
+	SolverOperations []*SolverOperationArgs `json:"solverOperations"`
+	DAppOperation    *DAppOperationArgs     `json:"dAppOperation"`
+}
+
+func (args *BundleOperationArgs) toBundleOperations() *operation.BundleOperations {
+	var solverOps []*operation.SolverOperation
+	for _, solverOpArgs := range args.SolverOperations {
+		solverOps = append(solverOps, solverOpArgs.toSolverOperation())
+	}
+	return &operation.BundleOperations{
+		UserOperation:    args.UserOperation.toUserOperation(),
+		SolverOperations: solverOps,
+		DAppOperation:    args.DAppOperation.toDAppOperation(),
+	}
+}
+
+func (r *Relay) submitUserOperation(args *UserOperationArgs) (common.Hash, *relayerror.Error) {
+	userOp := args.toUserOperation()
 
 	userOpHash, relayErr := r.auctionManager.NewUserOperation(userOp)
 	if relayErr != nil {
@@ -128,7 +215,8 @@ func (r *Relay) getSolverOperations(userOpHash common.Hash, completionChan chan 
 	return r.auctionManager.GetSolverOperations(userOpHash, completionChan)
 }
 
-func (r *Relay) submitBundleOperations(bundleOps *operation.BundleOperations) (string, *relayerror.Error) {
+func (r *Relay) submitBundleOperations(args BundleOperationArgs) (string, *relayerror.Error) {
+	bundleOps := args.toBundleOperations()
 	bundle, relayErr := r.bundleManager.NewBundle(bundleOps)
 	if relayErr != nil {
 		return "", relayErr
@@ -147,10 +235,10 @@ func (r *Relay) getBundleHash(userOpHash common.Hash, completionChan chan *bundl
 	return r.bundleManager.GetBundleHash(userOpHash, completionChan)
 }
 
-func (r *Relay) submitSolverOperation(solverOp *operation.SolverOperation) (string, *relayerror.Error) {
+func (r *Relay) submitSolverOperation(args *SolverOperationArgs) (string, *relayerror.Error) {
 	var result string
 
-	relayErr := r.auctionManager.NewSolverOperation(solverOp)
+	relayErr := r.auctionManager.NewSolverOperation(args.toSolverOperation())
 	if relayErr == nil {
 		result = SolverOpSuccessfullySubmitted
 	}
