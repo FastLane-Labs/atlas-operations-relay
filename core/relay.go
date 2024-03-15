@@ -11,6 +11,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -83,7 +84,37 @@ func (r *Relay) Run(serverReadyChan chan struct{}) {
 	r.server.ListenAndServe(serverReadyChan)
 }
 
-func (r *Relay) submitUserOperation(userOp *operation.UserOperation) (common.Hash, *relayerror.Error) {
+type UserOperationArgs struct {
+	From         common.Address `json:"from"`
+	To           common.Address `json:"to"`
+	Value        *hexutil.Big   `json:"value"`
+	Gas          hexutil.Uint64 `json:"gas"`
+	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas"`
+	Nonce        hexutil.Uint64 `json:"nonce"`
+	Deadline     hexutil.Uint64 `json:"deadline"`
+	Dapp         common.Address `json:"dapp"`
+	Control      common.Address `json:"control"`
+	SessionKey   common.Address `json:"sessionKey"`
+	Data         hexutil.Bytes  `json:"data"`
+	Signature    hexutil.Bytes  `json:"signature"`
+}
+
+func (r *Relay) submitUserOperation(args *UserOperationArgs) (common.Hash, *relayerror.Error) {
+	userOp := &operation.UserOperation{
+		From:         args.From,
+		To:           args.To,
+		Value:        args.Value.ToInt(),
+		Gas:          new(big.Int).SetUint64(uint64(args.Gas)),
+		MaxFeePerGas: args.MaxFeePerGas.ToInt(),
+		Nonce:        new(big.Int).SetUint64(uint64(args.Nonce)),
+		Deadline:     new(big.Int).SetUint64(uint64(args.Deadline)),
+		Dapp:         args.Dapp,
+		Control:      args.Control,
+		SessionKey:   args.SessionKey,
+		Data:         args.Data,
+		Signature:    args.Signature,
+	}
+
 	userOpHash, relayErr := r.auctionManager.NewUserOperation(userOp)
 	if relayErr != nil {
 		return common.Hash{}, relayErr

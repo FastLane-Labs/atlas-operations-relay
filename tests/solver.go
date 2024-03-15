@@ -108,7 +108,7 @@ func runSolver(sendMsgOnWs bool) {
 	solverOp := solveUserOperation(userOp, ee)
 
 	if sendMsgOnWs {
-		requestId, err := sendSolverOpWs(solverOp, conn) 
+		requestId, err := sendSolverOpWs(solverOp, conn)
 		if err != nil {
 			log.Error("failed to send solverOp on ws:", err)
 		}

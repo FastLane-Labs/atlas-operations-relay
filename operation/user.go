@@ -68,18 +68,18 @@ var (
 )
 
 type UserOperation struct {
-	From         common.Address `json:"from"`
-	To           common.Address `json:"to"`
-	Value        *big.Int       `json:"value"`
-	Gas          *big.Int       `json:"gas"`
-	MaxFeePerGas *big.Int       `json:"maxFeePerGas"`
-	Nonce        *big.Int       `json:"nonce"`
-	Deadline     *big.Int       `json:"deadline"`
-	Dapp         common.Address `json:"dapp"`
-	Control      common.Address `json:"control"`
-	SessionKey   common.Address `json:"sessionKey"`
-	Data         []byte         `json:"data"`
-	Signature    []byte         `json:"signature"`
+	From         common.Address
+	To           common.Address
+	Value        *big.Int
+	Gas          *big.Int
+	MaxFeePerGas *big.Int
+	Nonce        *big.Int
+	Deadline     *big.Int
+	Dapp         common.Address
+	Control      common.Address
+	SessionKey   common.Address
+	Data         []byte
+	Signature    []byte
 }
 
 func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
