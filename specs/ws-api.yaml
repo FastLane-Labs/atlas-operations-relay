@@ -354,21 +354,15 @@ components:
           description: Solidity type uint256
           pattern: '^0x[0-9a-f]{1,64}$'
         gas:
-          type: string
-          description: Solidity type uint256
-          pattern: '^0x[0-9a-f]{1,64}$'
+          type: integer
         maxFeePerGas:
           type: string
           description: Solidity type uint256
           pattern: '^0x[0-9a-f]{1,64}$'
         nonce:
-          type: string
-          description: Solidity type uint256
-          pattern: '^0x[0-9a-f]{1,64}$'
+          type: integer
         deadline:
-          type: string
-          description: Solidity type uint256
-          pattern: '^0x[0-9a-f]{1,64}$'
+          type: integer
         dapp:
           type: string
           description: Solidity type address
@@ -419,17 +413,13 @@ components:
           description: Solidity type uint256
           pattern: '^0x[0-9a-f]{1,64}$'
         gas:
-          type: string
-          description: Solidity type uint256
-          pattern: '^0x[0-9a-f]{1,64}$'
+          type: integer
         maxFeePerGas:
           type: string
           description: Solidity type uint256
           pattern: '^0x[0-9a-f]{1,64}$'
         deadline:
-          type: string
-          description: Solidity type uint256
-          pattern: '^0x[0-9a-f]{1,64}$'
+          type: integer
         solver:
           type: string
           description: Solidity type address
@@ -494,17 +484,11 @@ components:
           description: Solidity type uint256
           pattern: '^0x[0-9a-f]{1,64}$'
         gas:
-          type: string
-          description: Solidity type uint256
-          pattern: '^0x[0-9a-f]{1,64}$'
+          type: integer
         nonce:
-          type: string
-          description: Solidity type uint256
-          pattern: '^0x[0-9a-f]{1,64}$'
+          type: integer
         deadline:
-          type: string
-          description: Solidity type uint256
-          pattern: '^0x[0-9a-f]{1,64}$'
+          type: integer
         control:
           type: string
           description: Solidity type address
