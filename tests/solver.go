@@ -100,7 +100,7 @@ func runSolver(sendMsgOnWs bool) {
 		return
 	}
 
-	userOp := broadcast.Data.UserOperation
+	userOp := broadcast.Data.UserOperation.Decode()
 	userOpHash, _ := userOp.Hash()
 	log.Info("solver received userOp", "userOpHash", userOpHash.Hex())
 
@@ -196,7 +196,7 @@ func getSolverWsConnection() (*websocket.Conn, *http.Response) {
 }
 
 func sendSolverOpHttp(solverOp *operation.SolverOperation) error {
-	solverOpJSON, err := json.Marshal(solverOp)
+	solverOpJSON, err := json.Marshal(solverOp.EncodeToRaw())
 	if err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func sendSolverOpWs(solverOp *operation.SolverOperation, conn *websocket.Conn) (
 		Id:     request_id,
 		Method: "submitSolverOperation",
 		Params: &core.RequestParams{
-			SolverOperation: solverOp,
+			SolverOperation: solverOp.EncodeToRaw(),
 		},
 	}
 

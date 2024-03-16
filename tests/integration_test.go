@@ -78,7 +78,7 @@ func TestIntegration(t *testing.T) {
 	}
 
 	//send atlas tx
-	tx, err := newAtlasTx(bundleRequest)
+	tx, err := newAtlasTx(bundleRequest.Bundle.Decode())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -79,7 +79,7 @@ func sendUserRequest() (*operation.UserOperation, error) {
 		return nil, relayErr
 	}
 
-	userOpJSON, err := json.Marshal(userOp)
+	userOpJSON, err := json.Marshal(userOp.EncodeToRaw())
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal userOp: %w", err)
 	}
@@ -128,9 +128,12 @@ func retreiveSolverOps(userOpHash common.Hash, wait bool) ([]*operation.SolverOp
 	}
 
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
-		return make([]*operation.SolverOperation, 0), fmt.Errorf("expected status code 200, got %d", resp.StatusCode)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", err)
+		}
+		return nil, fmt.Errorf("expected status code 200, got %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	var solverOps []*operation.SolverOperation
@@ -150,14 +153,23 @@ func sendBundleOperation(userOp *operation.UserOperation, solverOps []*operation
 		DAppOperation:    dAppOp,
 	}
 
-	bundleOpsJSON, err := json.Marshal(bundleOps)
+	bundleOpsJSON, err := json.Marshal(bundleOps.EncodeToRaw())
 	if err != nil {
 		return err
 	}
 
-	_, err = http.Post("http://localhost:8080/bundleOperations", "application/json", bytes.NewReader(bundleOpsJSON))
+	resp, err := http.Post("http://localhost:8080/bundleOperations", "application/json", bytes.NewReader(bundleOpsJSON))
 	if err != nil {
 		return err
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read response body: %w", err)
+		}
+		return fmt.Errorf("expected status code 200, got %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	userOpHash, _ := userOp.Hash()
@@ -184,7 +196,11 @@ func retrieveAtlasTxHash(userOpHash common.Hash, wait bool) (common.Hash, error)
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return common.Hash{}, fmt.Errorf("expected status code 200, got %d", resp.StatusCode)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return common.Hash{}, fmt.Errorf("failed to read response body: %w", err)
+		}
+		return common.Hash{}, fmt.Errorf("expected status code 200, got %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	var txHash common.Hash

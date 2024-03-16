@@ -8,6 +8,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -46,6 +47,39 @@ var (
 	}
 )
 
+// External representation of a dApp operation,
+// the relay receives and broadcasts dApp operations in this format
+type DAppOperationRaw struct {
+	From          common.Address `json:"from"`
+	To            common.Address `json:"to"`
+	Value         *hexutil.Big   `json:"value"`
+	Gas           hexutil.Uint64 `json:"gas"`
+	Nonce         hexutil.Uint64 `json:"nonce"`
+	Deadline      hexutil.Uint64 `json:"deadline"`
+	Control       common.Address `json:"control"`
+	Bundler       common.Address `json:"bundler"`
+	UserOpHash    common.Hash    `json:"userOpHash"`
+	CallChainHash common.Hash    `json:"callChainHash"`
+	Signature     hexutil.Bytes  `json:"signature"`
+}
+
+func (d *DAppOperationRaw) Decode() *DAppOperation {
+	return &DAppOperation{
+		From:          d.From,
+		To:            d.To,
+		Value:         d.Value.ToInt(),
+		Gas:           new(big.Int).SetUint64(uint64(d.Gas)),
+		Nonce:         new(big.Int).SetUint64(uint64(d.Nonce)),
+		Deadline:      new(big.Int).SetUint64(uint64(d.Deadline)),
+		Control:       d.Control,
+		Bundler:       d.Bundler,
+		UserOpHash:    d.UserOpHash,
+		CallChainHash: d.CallChainHash,
+		Signature:     d.Signature,
+	}
+}
+
+// Internal representation of a dApp operation
 type DAppOperation struct {
 	From          common.Address
 	To            common.Address
@@ -73,6 +107,22 @@ func GenerateSimulationDAppOperation(userOp *UserOperation) *DAppOperation {
 		UserOpHash:    common.HexToHash("0x0"),
 		CallChainHash: common.HexToHash("0x0"),
 		Signature:     []byte(""),
+	}
+}
+
+func (d *DAppOperation) EncodeToRaw() *DAppOperationRaw {
+	return &DAppOperationRaw{
+		From:          d.From,
+		To:            d.To,
+		Value:         (*hexutil.Big)(d.Value),
+		Gas:           hexutil.Uint64(d.Gas.Uint64()),
+		Nonce:         hexutil.Uint64(d.Nonce.Uint64()),
+		Deadline:      hexutil.Uint64(d.Deadline.Uint64()),
+		Control:       d.Control,
+		Bundler:       d.Bundler,
+		UserOpHash:    d.UserOpHash,
+		CallChainHash: d.CallChainHash,
+		Signature:     d.Signature,
 	}
 }
 

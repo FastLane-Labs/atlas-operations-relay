@@ -9,6 +9,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -67,6 +68,41 @@ var (
 	}
 )
 
+// External representation of a user operation,
+// the relay receives and broadcasts user operations in this format
+type UserOperationRaw struct {
+	From         common.Address `json:"from"`
+	To           common.Address `json:"to"`
+	Value        *hexutil.Big   `json:"value"`
+	Gas          hexutil.Uint64 `json:"gas"`
+	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas"`
+	Nonce        hexutil.Uint64 `json:"nonce"`
+	Deadline     hexutil.Uint64 `json:"deadline"`
+	Dapp         common.Address `json:"dapp"`
+	Control      common.Address `json:"control"`
+	SessionKey   common.Address `json:"sessionKey"`
+	Data         hexutil.Bytes  `json:"data"`
+	Signature    hexutil.Bytes  `json:"signature"`
+}
+
+func (u *UserOperationRaw) Decode() *UserOperation {
+	return &UserOperation{
+		From:         u.From,
+		To:           u.To,
+		Value:        u.Value.ToInt(),
+		Gas:          new(big.Int).SetUint64(uint64(u.Gas)),
+		MaxFeePerGas: u.MaxFeePerGas.ToInt(),
+		Nonce:        new(big.Int).SetUint64(uint64(u.Nonce)),
+		Deadline:     new(big.Int).SetUint64(uint64(u.Deadline)),
+		Dapp:         u.Dapp,
+		Control:      u.Control,
+		SessionKey:   u.SessionKey,
+		Data:         u.Data,
+		Signature:    u.Signature,
+	}
+}
+
+// Internal representation of a user operation
 type UserOperation struct {
 	From         common.Address
 	To           common.Address
@@ -80,6 +116,23 @@ type UserOperation struct {
 	SessionKey   common.Address
 	Data         []byte
 	Signature    []byte
+}
+
+func (u *UserOperation) EncodeToRaw() *UserOperationRaw {
+	return &UserOperationRaw{
+		From:         u.From,
+		To:           u.To,
+		Value:        (*hexutil.Big)(u.Value),
+		Gas:          hexutil.Uint64(u.Gas.Uint64()),
+		MaxFeePerGas: (*hexutil.Big)(u.MaxFeePerGas),
+		Nonce:        hexutil.Uint64(u.Nonce.Uint64()),
+		Deadline:     hexutil.Uint64(u.Deadline.Uint64()),
+		Dapp:         u.Dapp,
+		Control:      u.Control,
+		SessionKey:   u.SessionKey,
+		Data:         hexutil.Bytes(u.Data),
+		Signature:    hexutil.Bytes(u.Signature),
+	}
 }
 
 func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {

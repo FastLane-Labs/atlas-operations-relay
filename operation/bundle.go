@@ -13,10 +13,44 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
+// External representation of a bundle of operations,
+// the relay receives and broadcasts bundles in this format
+type BundleOperationsRaw struct {
+	UserOperation    *UserOperationRaw     `json:"userOperation"`
+	SolverOperations []*SolverOperationRaw `json:"solverOperations"`
+	DAppOperation    *DAppOperationRaw     `json:"dAppOperation"`
+}
+
+func (args *BundleOperationsRaw) Decode() *BundleOperations {
+	var solverOps []*SolverOperation
+	for _, solverOpArgs := range args.SolverOperations {
+		solverOps = append(solverOps, solverOpArgs.Decode())
+	}
+	return &BundleOperations{
+		UserOperation:    args.UserOperation.Decode(),
+		SolverOperations: solverOps,
+		DAppOperation:    args.DAppOperation.Decode(),
+	}
+}
+
+// Internal representation of a bundle of operations
 type BundleOperations struct {
-	UserOperation    *UserOperation     `json:"userOperation"`
-	SolverOperations []*SolverOperation `json:"solverOperations"`
-	DAppOperation    *DAppOperation     `json:"dAppOperation"`
+	UserOperation    *UserOperation
+	SolverOperations []*SolverOperation
+	DAppOperation    *DAppOperation
+}
+
+func (b *BundleOperations) EncodeToRaw() *BundleOperationsRaw {
+	var solverOpsRaw []*SolverOperationRaw
+	for _, solverOp := range b.SolverOperations {
+		solverOpsRaw = append(solverOpsRaw, solverOp.EncodeToRaw())
+	}
+
+	return &BundleOperationsRaw{
+		UserOperation:    b.UserOperation.EncodeToRaw(),
+		SolverOperations: solverOpsRaw,
+		DAppOperation:    b.DAppOperation.EncodeToRaw(),
+	}
 }
 
 func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash common.Hash, atlas common.Address, atlasDomainSeparator common.Hash, userOpGasLimit *big.Int, dAppOpGasLimit *big.Int) *relayerror.Error {

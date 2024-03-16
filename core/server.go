@@ -95,9 +95,9 @@ type setAtlasTxHashFn func(common.Hash) *relayerror.Error
 type setRelayErrorFn func(*relayerror.Error) *relayerror.Error
 
 type RequestParams struct {
-	Topic           string                      `json:"topic,omitempty"`
-	SolverOperation *operation.SolverOperation  `json:"solverOperation,omitempty"`
-	Bundle          *operation.BundleOperations `json:"bundle,omitempty"`
+	Topic           string                         `json:"topic,omitempty"`
+	SolverOperation *operation.SolverOperationRaw  `json:"solverOperation,omitempty"`
+	Bundle          *operation.BundleOperationsRaw `json:"bundle,omitempty"`
 }
 
 type Request struct {
@@ -118,7 +118,7 @@ func (r *Response) Marshal() []byte {
 }
 
 type BroadcastParams struct {
-	UserOperation *operation.UserOperation `json:"userOperation,omitempty"`
+	UserOperation *operation.UserOperationRaw `json:"userOperation,omitempty"`
 }
 
 type Broadcast struct {
@@ -133,9 +133,9 @@ func (bc *Broadcast) Marshal() []byte {
 }
 
 type BundleRequest struct {
-	Id     string                      `json:"id"`
-	Event  string                      `json:"event"`
-	Bundle *operation.BundleOperations `json:"bundle"`
+	Id     string                         `json:"id"`
+	Event  string                         `json:"event"`
+	Bundle *operation.BundleOperationsRaw `json:"bundle"`
 }
 
 func (br *BundleRequest) Marshal() []byte {
@@ -313,7 +313,7 @@ func (s *Server) BroadcastUserOperation(userOp *operation.UserOperation) {
 		Event: EventUpdate,
 		Topic: TopicNewUserOperations,
 		Data: &BroadcastParams{
-			UserOperation: userOp,
+			UserOperation: userOp.EncodeToRaw(),
 		},
 	}
 	s.publish(broadcast)
@@ -369,7 +369,7 @@ func (s *Server) ForwardBundle(bundleOps *operation.BundleOperations, setAtlasTx
 	bundleReq := &BundleRequest{
 		Id:     id,
 		Event:  EventNewBundle,
-		Bundle: bundleOps,
+		Bundle: bundleOps.EncodeToRaw(),
 	}
 
 	go s.runBundlingRequest(id, bundleReq, firstCandidate, bundlingRequest)
@@ -448,7 +448,7 @@ func (s *Server) processSolverMessage(conn *Conn, msg []byte) {
 		s.unsubscribe(conn, req.Params.Topic, resp)
 
 	case MethodSubmitSolverOperation:
-		s.processNewSolverOperation(req.Params.SolverOperation, resp)
+		s.processNewSolverOperation(req.Params.SolverOperation.Decode(), resp)
 
 	default:
 		resp.Error = InvalidMethod

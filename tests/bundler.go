@@ -12,6 +12,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlas"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
+	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -100,7 +101,7 @@ func sendBundlerResponse(txHash common.Hash, id string, bundlerSendChan chan []b
 	return nil
 }
 
-func newAtlasTx(bundleRequest *core.BundleRequest) (*types.Transaction, error) {
+func newAtlasTx(bundleRequest *operation.BundleOperations) (*types.Transaction, error) {
 	atlasContract, err := atlas.NewAtlas(conf.Contracts.Atlas, ethClient)
 	if err != nil {
 		panic(err)
@@ -125,23 +126,23 @@ func newAtlasTx(bundleRequest *core.BundleRequest) (*types.Transaction, error) {
 		NoSend:   !sendAtlasTx,
 	}
 
-	atlas_userOp := atlas.UserOperation(*bundleRequest.Bundle.UserOperation)
+	atlas_userOp := atlas.UserOperation(*bundleRequest.UserOperation)
 	atlas_dappOp := atlas.DAppOperation{
-		From:          bundleRequest.Bundle.DAppOperation.From,
-		To:            bundleRequest.Bundle.DAppOperation.To,
-		Value:         bundleRequest.Bundle.DAppOperation.Value,
-		Gas:           bundleRequest.Bundle.DAppOperation.Gas,
-		Nonce:         bundleRequest.Bundle.DAppOperation.Nonce,
-		Deadline:      bundleRequest.Bundle.DAppOperation.Deadline,
-		Control:       bundleRequest.Bundle.DAppOperation.Control,
-		Bundler:       bundleRequest.Bundle.DAppOperation.Bundler,
-		UserOpHash:    bundleRequest.Bundle.DAppOperation.UserOpHash,
-		CallChainHash: bundleRequest.Bundle.DAppOperation.CallChainHash,
-		Signature:     bundleRequest.Bundle.DAppOperation.Signature,
+		From:          bundleRequest.DAppOperation.From,
+		To:            bundleRequest.DAppOperation.To,
+		Value:         bundleRequest.DAppOperation.Value,
+		Gas:           bundleRequest.DAppOperation.Gas,
+		Nonce:         bundleRequest.DAppOperation.Nonce,
+		Deadline:      bundleRequest.DAppOperation.Deadline,
+		Control:       bundleRequest.DAppOperation.Control,
+		Bundler:       bundleRequest.DAppOperation.Bundler,
+		UserOpHash:    bundleRequest.DAppOperation.UserOpHash,
+		CallChainHash: bundleRequest.DAppOperation.CallChainHash,
+		Signature:     bundleRequest.DAppOperation.Signature,
 	}
 
-	atlas_solverOps := make([]atlas.SolverOperation, len(bundleRequest.Bundle.SolverOperations))
-	for i, solverOp := range bundleRequest.Bundle.SolverOperations {
+	atlas_solverOps := make([]atlas.SolverOperation, len(bundleRequest.SolverOperations))
+	for i, solverOp := range bundleRequest.SolverOperations {
 		atlas_solverOps[i] = atlas.SolverOperation{
 			From:         solverOp.From,
 			To:           solverOp.To,
