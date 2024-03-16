@@ -74,9 +74,9 @@ type SolverOperationRaw struct {
 	From         common.Address `json:"from"`
 	To           common.Address `json:"to"`
 	Value        *hexutil.Big   `json:"value"`
-	Gas          hexutil.Uint64 `json:"gas"`
+	Gas          uint64         `json:"gas"`
 	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas"`
-	Deadline     hexutil.Uint64 `json:"deadline"`
+	Deadline     uint64         `json:"deadline"`
 	Solver       common.Address `json:"solver"`
 	Control      common.Address `json:"control"`
 	UserOpHash   common.Hash    `json:"userOpHash"`
@@ -91,9 +91,9 @@ func (s *SolverOperationRaw) Decode() *SolverOperation {
 		From:         s.From,
 		To:           s.To,
 		Value:        s.Value.ToInt(),
-		Gas:          new(big.Int).SetUint64(uint64(s.Gas)),
+		Gas:          new(big.Int).SetUint64(s.Gas),
 		MaxFeePerGas: s.MaxFeePerGas.ToInt(),
-		Deadline:     new(big.Int).SetUint64(uint64(s.Deadline)),
+		Deadline:     new(big.Int).SetUint64(s.Deadline),
 		Solver:       s.Solver,
 		Control:      s.Control,
 		UserOpHash:   s.UserOpHash,
@@ -126,9 +126,9 @@ func (s *SolverOperation) EncodeToRaw() *SolverOperationRaw {
 		From:         s.From,
 		To:           s.To,
 		Value:        (*hexutil.Big)(s.Value),
-		Gas:          hexutil.Uint64(s.Gas.Uint64()),
+		Gas:          s.Gas.Uint64(),
 		MaxFeePerGas: (*hexutil.Big)(s.MaxFeePerGas),
-		Deadline:     hexutil.Uint64(s.Deadline.Uint64()),
+		Deadline:     s.Deadline.Uint64(),
 		Solver:       s.Solver,
 		Control:      s.Control,
 		UserOpHash:   s.UserOpHash,
