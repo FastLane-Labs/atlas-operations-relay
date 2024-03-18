@@ -81,7 +81,7 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (*Bundle, *r
 		return nil, relayerror.ErrServerInternal
 	}
 
-	bData, err := bm.ethClient.CallContract(
+	_, err = bm.ethClient.CallContract(
 		context.Background(),
 		ethereum.CallMsg{
 			From: bundleOps.DAppOperation.Bundler,
@@ -94,17 +94,6 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (*Bundle, *r
 	if err != nil {
 		log.Info("metacall simulation failed", "err", err, "userOpHash", userOpHash.Hex())
 		return nil, ErrBundleFailedSimulation.AddError(err)
-	}
-
-	auctionWon, err := contract.AtlasAbi.Unpack("metacall", bData)
-	if err != nil {
-		log.Info("failed to unpack metacall return data", "err", err, "userOpHash", userOpHash.Hex())
-		return nil, relayerror.ErrServerInternal
-	}
-
-	if !auctionWon[0].(bool) && len(solverOps) > 0 {
-		log.Info("no auction won", "userOpHash", userOpHash.Hex())
-		return nil, relayerror.ErrServerInternal
 	}
 
 	bm.mu.Lock()
