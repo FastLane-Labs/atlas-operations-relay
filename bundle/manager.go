@@ -75,27 +75,25 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (*Bundle, *r
 		solverOps = append(solverOps, *solverOp)
 	}
 
-	pData, err := contract.SimulatorAbi.Pack("simSolverCalls", *bundleOps.UserOperation, solverOps, *bundleOps.DAppOperation)
+	pData, err := contract.AtlasAbi.Pack("metacall", *bundleOps.UserOperation, solverOps, *bundleOps.DAppOperation)
 	if err != nil {
 		log.Info("failed to pack bundle", "err", err, "userOpHash", userOpHash.Hex())
 		return nil, relayerror.ErrServerInternal
 	}
 
-	bData, err := bm.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &bm.config.Contracts.Simulator, Data: pData}, nil)
-	if err != nil {
-		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.Hex())
-		return nil, relayerror.ErrServerInternal
-	}
+	_, err = bm.ethClient.CallContract(
+		context.Background(),
+		ethereum.CallMsg{
+			From: bundleOps.DAppOperation.Bundler,
+			To:   &bm.config.Contracts.Atlas,
+			Data: pData,
+		},
+		nil,
+	)
 
-	validOp, err := contract.SimulatorAbi.Unpack("simSolverCalls", bData)
 	if err != nil {
-		log.Info("failed to unpack simSolverCalls return data", "err", err, "userOpHash", userOpHash.Hex())
-		return nil, relayerror.ErrServerInternal
-	}
-
-	if !validOp[0].(bool) {
-		log.Info("bundle failed simulation", "userOpHash", userOpHash.Hex())
-		return nil, ErrBundleFailedSimulation
+		log.Info("metacall simulation failed", "err", err, "userOpHash", userOpHash.Hex())
+		return nil, ErrBundleFailedSimulation.AddError(err)
 	}
 
 	bm.mu.Lock()

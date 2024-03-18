@@ -95,6 +95,7 @@ type DAppOperation struct {
 }
 
 func GenerateSimulationDAppOperation(userOp *UserOperation) *DAppOperation {
+	userOpHash, _ := userOp.Hash()
 	return &DAppOperation{
 		From:          common.HexToAddress("0x0"),
 		To:            common.HexToAddress("0x0"),
@@ -104,7 +105,7 @@ func GenerateSimulationDAppOperation(userOp *UserOperation) *DAppOperation {
 		Deadline:      userOp.Deadline,
 		Control:       userOp.Control,
 		Bundler:       common.HexToAddress("0x0"),
-		UserOpHash:    common.HexToHash("0x0"),
+		UserOpHash:    userOpHash,
 		CallChainHash: common.HexToHash("0x0"),
 		Signature:     []byte(""),
 	}
