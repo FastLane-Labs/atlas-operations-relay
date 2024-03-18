@@ -155,9 +155,15 @@ func sendBundleOperation(userOp *operation.UserOperation, solverOps []*operation
 		return err
 	}
 
-	_, err = http.Post("http://localhost:8080/bundleOperations", "application/json", bytes.NewReader(bundleOpsJSON))
+	resp, err := http.Post("http://localhost:8080/bundleOperations", "application/json", bytes.NewReader(bundleOpsJSON))
 	if err != nil {
 		return err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("expected status code 200, got %d", resp.StatusCode)
 	}
 
 	userOpHash, _ := userOp.Hash()
