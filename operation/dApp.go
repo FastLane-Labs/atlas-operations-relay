@@ -53,9 +53,9 @@ type DAppOperationRaw struct {
 	From          common.Address `json:"from"`
 	To            common.Address `json:"to"`
 	Value         *hexutil.Big   `json:"value"`
-	Gas           uint64         `json:"gas"`
-	Nonce         uint64         `json:"nonce"`
-	Deadline      uint64         `json:"deadline"`
+	Gas           *hexutil.Big   `json:"gas"`
+	Nonce         *hexutil.Big   `json:"nonce"`
+	Deadline      *hexutil.Big   `json:"deadline"`
 	Control       common.Address `json:"control"`
 	Bundler       common.Address `json:"bundler"`
 	UserOpHash    common.Hash    `json:"userOpHash"`
@@ -68,9 +68,9 @@ func (d *DAppOperationRaw) Decode() *DAppOperation {
 		From:          d.From,
 		To:            d.To,
 		Value:         d.Value.ToInt(),
-		Gas:           new(big.Int).SetUint64(d.Gas),
-		Nonce:         new(big.Int).SetUint64(d.Nonce),
-		Deadline:      new(big.Int).SetUint64(d.Deadline),
+		Gas:           d.Gas.ToInt(),
+		Nonce:         d.Nonce.ToInt(),
+		Deadline:      d.Deadline.ToInt(),
 		Control:       d.Control,
 		Bundler:       d.Bundler,
 		UserOpHash:    d.UserOpHash,
@@ -115,9 +115,9 @@ func (d *DAppOperation) EncodeToRaw() *DAppOperationRaw {
 		From:          d.From,
 		To:            d.To,
 		Value:         (*hexutil.Big)(d.Value),
-		Gas:           d.Gas.Uint64(),
-		Nonce:         d.Nonce.Uint64(),
-		Deadline:      d.Deadline.Uint64(),
+		Gas:           (*hexutil.Big)(d.Gas),
+		Nonce:         (*hexutil.Big)(d.Nonce),
+		Deadline:      (*hexutil.Big)(d.Deadline),
 		Control:       d.Control,
 		Bundler:       d.Bundler,
 		UserOpHash:    d.UserOpHash,

@@ -74,10 +74,10 @@ type UserOperationRaw struct {
 	From         common.Address `json:"from"`
 	To           common.Address `json:"to"`
 	Value        *hexutil.Big   `json:"value"`
-	Gas          uint64         `json:"gas"`
+	Gas          *hexutil.Big   `json:"gas"`
 	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas"`
-	Nonce        uint64         `json:"nonce"`
-	Deadline     uint64         `json:"deadline"`
+	Nonce        *hexutil.Big   `json:"nonce"`
+	Deadline     *hexutil.Big   `json:"deadline"`
 	Dapp         common.Address `json:"dapp"`
 	Control      common.Address `json:"control"`
 	SessionKey   common.Address `json:"sessionKey"`
@@ -90,10 +90,10 @@ func (u *UserOperationRaw) Decode() *UserOperation {
 		From:         u.From,
 		To:           u.To,
 		Value:        u.Value.ToInt(),
-		Gas:          new(big.Int).SetUint64(u.Gas),
+		Gas:          u.Gas.ToInt(),
 		MaxFeePerGas: u.MaxFeePerGas.ToInt(),
-		Nonce:        new(big.Int).SetUint64(u.Nonce),
-		Deadline:     new(big.Int).SetUint64(u.Deadline),
+		Nonce:        u.Nonce.ToInt(),
+		Deadline:     u.Deadline.ToInt(),
 		Dapp:         u.Dapp,
 		Control:      u.Control,
 		SessionKey:   u.SessionKey,
@@ -123,10 +123,10 @@ func (u *UserOperation) EncodeToRaw() *UserOperationRaw {
 		From:         u.From,
 		To:           u.To,
 		Value:        (*hexutil.Big)(u.Value),
-		Gas:          u.Gas.Uint64(),
+		Gas:          (*hexutil.Big)(u.Gas),
 		MaxFeePerGas: (*hexutil.Big)(u.MaxFeePerGas),
-		Nonce:        u.Nonce.Uint64(),
-		Deadline:     u.Deadline.Uint64(),
+		Nonce:        (*hexutil.Big)(u.Nonce),
+		Deadline:     (*hexutil.Big)(u.Deadline),
 		Dapp:         u.Dapp,
 		Control:      u.Control,
 		SessionKey:   u.SessionKey,
