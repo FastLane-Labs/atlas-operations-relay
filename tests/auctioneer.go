@@ -48,7 +48,7 @@ func newDemoUserOperation() *operation.UserOperation {
 		To:           conf.Contracts.Atlas,
 		Deadline:     deadline,
 		Gas:          big.NewInt(100000),
-		Nonce:        big.NewInt(7),
+		Nonce:        big.NewInt(1),
 		MaxFeePerGas: big.NewInt(20e9),
 		Value:        big.NewInt(0),
 		Dapp:         swapIntentDAppControl,

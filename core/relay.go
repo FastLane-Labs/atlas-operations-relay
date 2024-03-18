@@ -44,7 +44,6 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 		if err != nil {
 			return nil, ErrCantGetBondedBalance.AddError(err)
 		}
-
 		return balance, nil
 	}
 
