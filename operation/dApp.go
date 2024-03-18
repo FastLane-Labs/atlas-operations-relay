@@ -8,6 +8,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -46,18 +47,51 @@ var (
 	}
 )
 
-type DAppOperation struct {
+// External representation of a dApp operation,
+// the relay receives and broadcasts dApp operations in this format
+type DAppOperationRaw struct {
 	From          common.Address `json:"from"`
 	To            common.Address `json:"to"`
-	Value         *big.Int       `json:"value"`
-	Gas           *big.Int       `json:"gas"`
-	Nonce         *big.Int       `json:"nonce"`
-	Deadline      *big.Int       `json:"deadline"`
+	Value         *hexutil.Big   `json:"value"`
+	Gas           *hexutil.Big   `json:"gas"`
+	Nonce         *hexutil.Big   `json:"nonce"`
+	Deadline      *hexutil.Big   `json:"deadline"`
 	Control       common.Address `json:"control"`
 	Bundler       common.Address `json:"bundler"`
 	UserOpHash    common.Hash    `json:"userOpHash"`
 	CallChainHash common.Hash    `json:"callChainHash"`
-	Signature     []byte         `json:"signature"`
+	Signature     hexutil.Bytes  `json:"signature"`
+}
+
+func (d *DAppOperationRaw) Decode() *DAppOperation {
+	return &DAppOperation{
+		From:          d.From,
+		To:            d.To,
+		Value:         d.Value.ToInt(),
+		Gas:           d.Gas.ToInt(),
+		Nonce:         d.Nonce.ToInt(),
+		Deadline:      d.Deadline.ToInt(),
+		Control:       d.Control,
+		Bundler:       d.Bundler,
+		UserOpHash:    d.UserOpHash,
+		CallChainHash: d.CallChainHash,
+		Signature:     d.Signature,
+	}
+}
+
+// Internal representation of a dApp operation
+type DAppOperation struct {
+	From          common.Address
+	To            common.Address
+	Value         *big.Int
+	Gas           *big.Int
+	Nonce         *big.Int
+	Deadline      *big.Int
+	Control       common.Address
+	Bundler       common.Address
+	UserOpHash    common.Hash
+	CallChainHash common.Hash
+	Signature     []byte
 }
 
 func GenerateSimulationDAppOperation(userOp *UserOperation) *DAppOperation {
@@ -74,6 +108,22 @@ func GenerateSimulationDAppOperation(userOp *UserOperation) *DAppOperation {
 		UserOpHash:    userOpHash,
 		CallChainHash: common.HexToHash("0x0"),
 		Signature:     []byte(""),
+	}
+}
+
+func (d *DAppOperation) EncodeToRaw() *DAppOperationRaw {
+	return &DAppOperationRaw{
+		From:          d.From,
+		To:            d.To,
+		Value:         (*hexutil.Big)(d.Value),
+		Gas:           (*hexutil.Big)(d.Gas),
+		Nonce:         (*hexutil.Big)(d.Nonce),
+		Deadline:      (*hexutil.Big)(d.Deadline),
+		Control:       d.Control,
+		Bundler:       d.Bundler,
+		UserOpHash:    d.UserOpHash,
+		CallChainHash: d.CallChainHash,
+		Signature:     d.Signature,
 	}
 }
 

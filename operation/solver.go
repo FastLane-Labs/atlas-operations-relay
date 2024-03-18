@@ -8,6 +8,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -67,20 +68,75 @@ var (
 	}
 )
 
-type SolverOperation struct {
+// External representation of a solver operation,
+// the relay receives and broadcasts solver operations in this format
+type SolverOperationRaw struct {
 	From         common.Address `json:"from"`
 	To           common.Address `json:"to"`
-	Value        *big.Int       `json:"value"`
-	Gas          *big.Int       `json:"gas"`
-	MaxFeePerGas *big.Int       `json:"maxFeePerGas"`
-	Deadline     *big.Int       `json:"deadline"`
+	Value        *hexutil.Big   `json:"value"`
+	Gas          *hexutil.Big   `json:"gas"`
+	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas"`
+	Deadline     *hexutil.Big   `json:"deadline"`
 	Solver       common.Address `json:"solver"`
 	Control      common.Address `json:"control"`
 	UserOpHash   common.Hash    `json:"userOpHash"`
 	BidToken     common.Address `json:"bidToken"`
-	BidAmount    *big.Int       `json:"bidAmount"`
-	Data         []byte         `json:"data"`
-	Signature    []byte         `json:"signature"`
+	BidAmount    *hexutil.Big   `json:"bidAmount"`
+	Data         hexutil.Bytes  `json:"data"`
+	Signature    hexutil.Bytes  `json:"signature"`
+}
+
+func (s *SolverOperationRaw) Decode() *SolverOperation {
+	return &SolverOperation{
+		From:         s.From,
+		To:           s.To,
+		Value:        s.Value.ToInt(),
+		Gas:          s.Gas.ToInt(),
+		MaxFeePerGas: s.MaxFeePerGas.ToInt(),
+		Deadline:     s.Deadline.ToInt(),
+		Solver:       s.Solver,
+		Control:      s.Control,
+		UserOpHash:   s.UserOpHash,
+		BidToken:     s.BidToken,
+		BidAmount:    s.BidAmount.ToInt(),
+		Data:         s.Data,
+		Signature:    s.Signature,
+	}
+}
+
+// Internal representation of a solver operation
+type SolverOperation struct {
+	From         common.Address
+	To           common.Address
+	Value        *big.Int
+	Gas          *big.Int
+	MaxFeePerGas *big.Int
+	Deadline     *big.Int
+	Solver       common.Address
+	Control      common.Address
+	UserOpHash   common.Hash
+	BidToken     common.Address
+	BidAmount    *big.Int
+	Data         []byte
+	Signature    []byte
+}
+
+func (s *SolverOperation) EncodeToRaw() *SolverOperationRaw {
+	return &SolverOperationRaw{
+		From:         s.From,
+		To:           s.To,
+		Value:        (*hexutil.Big)(s.Value),
+		Gas:          (*hexutil.Big)(s.Gas),
+		MaxFeePerGas: (*hexutil.Big)(s.MaxFeePerGas),
+		Deadline:     (*hexutil.Big)(s.Deadline),
+		Solver:       s.Solver,
+		Control:      s.Control,
+		UserOpHash:   s.UserOpHash,
+		BidToken:     s.BidToken,
+		BidAmount:    (*hexutil.Big)(s.BidAmount),
+		Data:         hexutil.Bytes(s.Data),
+		Signature:    hexutil.Bytes(s.Signature),
+	}
 }
 
 func (s *SolverOperation) Validate(userOp *UserOperation, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {

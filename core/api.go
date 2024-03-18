@@ -100,13 +100,13 @@ func writeResponseData(w http.ResponseWriter, data interface{}) {
 }
 
 func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
-	userOp := &operation.UserOperation{}
-	if relayErr := getPostRequestData(r, userOp); relayErr != nil {
+	userOpRaw := &operation.UserOperationRaw{}
+	if relayErr := getPostRequestData(r, userOpRaw); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
 	}
-	userOpHash, relayErr := api.relay.submitUserOperation(userOp)
+	userOpHash, relayErr := api.relay.submitUserOperation(userOpRaw.Decode())
 	if relayErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())
@@ -145,14 +145,14 @@ func (api *Api) GetSolverOperations(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) SubmitBundleOperations(w http.ResponseWriter, r *http.Request) {
-	bundleOps := &operation.BundleOperations{}
-	if relayErr := getPostRequestData(r, bundleOps); relayErr != nil {
+	bundleOpsRaw := &operation.BundleOperationsRaw{}
+	if relayErr := getPostRequestData(r, bundleOpsRaw); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
 	}
 
-	result, relayErr := api.relay.submitBundleOperations(bundleOps)
+	result, relayErr := api.relay.submitBundleOperations(bundleOpsRaw.Decode())
 	if relayErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())
@@ -197,14 +197,14 @@ func (api *Api) GetBundleHash(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) SubmitSolverOperation(w http.ResponseWriter, r *http.Request) {
-	solverOp := &operation.SolverOperation{}
-	if relayErr := getPostRequestData(r, solverOp); relayErr != nil {
+	solverOpRaw := &operation.SolverOperationRaw{}
+	if relayErr := getPostRequestData(r, solverOpRaw); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
 	}
 
-	result, relayErr := api.relay.submitSolverOperation(solverOp)
+	result, relayErr := api.relay.submitSolverOperation(solverOpRaw.Decode())
 	if relayErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())

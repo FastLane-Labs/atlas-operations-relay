@@ -9,6 +9,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -67,19 +68,71 @@ var (
 	}
 )
 
-type UserOperation struct {
+// External representation of a user operation,
+// the relay receives and broadcasts user operations in this format
+type UserOperationRaw struct {
 	From         common.Address `json:"from"`
 	To           common.Address `json:"to"`
-	Value        *big.Int       `json:"value"`
-	Gas          *big.Int       `json:"gas"`
-	MaxFeePerGas *big.Int       `json:"maxFeePerGas"`
-	Nonce        *big.Int       `json:"nonce"`
-	Deadline     *big.Int       `json:"deadline"`
+	Value        *hexutil.Big   `json:"value"`
+	Gas          *hexutil.Big   `json:"gas"`
+	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas"`
+	Nonce        *hexutil.Big   `json:"nonce"`
+	Deadline     *hexutil.Big   `json:"deadline"`
 	Dapp         common.Address `json:"dapp"`
 	Control      common.Address `json:"control"`
 	SessionKey   common.Address `json:"sessionKey"`
-	Data         []byte         `json:"data"`
-	Signature    []byte         `json:"signature"`
+	Data         hexutil.Bytes  `json:"data"`
+	Signature    hexutil.Bytes  `json:"signature"`
+}
+
+func (u *UserOperationRaw) Decode() *UserOperation {
+	return &UserOperation{
+		From:         u.From,
+		To:           u.To,
+		Value:        u.Value.ToInt(),
+		Gas:          u.Gas.ToInt(),
+		MaxFeePerGas: u.MaxFeePerGas.ToInt(),
+		Nonce:        u.Nonce.ToInt(),
+		Deadline:     u.Deadline.ToInt(),
+		Dapp:         u.Dapp,
+		Control:      u.Control,
+		SessionKey:   u.SessionKey,
+		Data:         u.Data,
+		Signature:    u.Signature,
+	}
+}
+
+// Internal representation of a user operation
+type UserOperation struct {
+	From         common.Address
+	To           common.Address
+	Value        *big.Int
+	Gas          *big.Int
+	MaxFeePerGas *big.Int
+	Nonce        *big.Int
+	Deadline     *big.Int
+	Dapp         common.Address
+	Control      common.Address
+	SessionKey   common.Address
+	Data         []byte
+	Signature    []byte
+}
+
+func (u *UserOperation) EncodeToRaw() *UserOperationRaw {
+	return &UserOperationRaw{
+		From:         u.From,
+		To:           u.To,
+		Value:        (*hexutil.Big)(u.Value),
+		Gas:          (*hexutil.Big)(u.Gas),
+		MaxFeePerGas: (*hexutil.Big)(u.MaxFeePerGas),
+		Nonce:        (*hexutil.Big)(u.Nonce),
+		Deadline:     (*hexutil.Big)(u.Deadline),
+		Dapp:         u.Dapp,
+		Control:      u.Control,
+		SessionKey:   u.SessionKey,
+		Data:         hexutil.Bytes(u.Data),
+		Signature:    hexutil.Bytes(u.Signature),
+	}
 }
 
 func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
