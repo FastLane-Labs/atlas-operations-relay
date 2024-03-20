@@ -2,6 +2,7 @@ package auction
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -100,8 +101,10 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []com
 	}
 
 	if !validOp[0].(bool) {
-		log.Info("user operation failed simulation", "userOpHash", userOpHash.Hex())
-		return common.Hash{}, nil, ErrUserOpFailedSimulation
+		result := validOp[1].(uint8)
+		validCallResult := validOp[2].(*big.Int)
+		log.Info("user operation failed simulation", "userOpHash", userOpHash.Hex(), "result", result, "validCallResult", validCallResult.String())
+		return common.Hash{}, nil, ErrUserOpFailedSimulation.AddMessage(fmt.Sprintf("result: %d, validCallResult: %s", result, validCallResult.String()))
 	}
 
 	am.mu.Lock()
@@ -189,8 +192,10 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 	}
 
 	if !validOp[0].(bool) {
-		log.Info("solver operation failed simulation", "userOpHash", auction.userOpHash.Hex())
-		return ErrSolverOpFailedSimulation
+		result := validOp[1].(uint8)
+		solverOutcomeResult := validOp[2].(*big.Int)
+		log.Info("solver operation failed simulation", "userOpHash", auction.userOpHash.Hex(), "result", result, "solverOutcomeResult", solverOutcomeResult.String())
+		return ErrSolverOpFailedSimulation.AddMessage(fmt.Sprintf("result: %d, solverOutcomeResult: %s", result, solverOutcomeResult.String()))
 	}
 
 	return auction.addSolverOp(solverOp)
