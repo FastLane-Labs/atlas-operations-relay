@@ -79,12 +79,14 @@ func sendUserRequest() (*operation.UserOperation, error) {
 		return nil, relayErr
 	}
 
-	userOpJSON, err := json.Marshal(userOp.EncodeToRaw())
+	userOpWithHints := operation.NewUserOperationWithHintsRaw(userOp.EncodeToRaw(), []common.Address{})
+
+	reqJSON, err := json.Marshal(userOpWithHints)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal userOp: %w", err)
 	}
 
-	resp, err := http.Post("http://localhost:8080/userOperation", "application/json", bytes.NewReader(userOpJSON))
+	resp, err := http.Post("http://localhost:8080/userOperation", "application/json", bytes.NewReader(reqJSON))
 	if err != nil {
 		return nil, fmt.Errorf("failed to send userOp: %w", err)
 	}

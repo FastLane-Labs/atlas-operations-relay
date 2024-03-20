@@ -100,13 +100,13 @@ func writeResponseData(w http.ResponseWriter, data interface{}) {
 }
 
 func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
-	userOpRaw := &operation.UserOperationRaw{}
-	if relayErr := getPostRequestData(r, userOpRaw); relayErr != nil {
+	userOpWithHintsRaw := &operation.UserOperationWithHintsRaw{}
+	if relayErr := getPostRequestData(r, userOpWithHintsRaw); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
 	}
-	userOpHash, relayErr := api.relay.submitUserOperation(userOpRaw.Decode())
+	userOpHash, relayErr := api.relay.submitUserOperation(userOpWithHintsRaw.Decode())
 	if relayErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())

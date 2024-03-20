@@ -118,7 +118,7 @@ func (r *Response) Marshal() []byte {
 }
 
 type BroadcastParams struct {
-	UserOperation *operation.UserOperationRaw `json:"userOperation,omitempty"`
+	SolverInput *operation.SolverInput `json:"solverInput,omitempty"`
 }
 
 type Broadcast struct {
@@ -308,12 +308,12 @@ func (s *Server) unregisterBundler(conn *Conn) {
 	delete(s.bundlers, conn.bundler)
 }
 
-func (s *Server) BroadcastUserOperation(userOp *operation.UserOperation) {
+func (s *Server) BroadcastSolverInput(solverInput *operation.SolverInput) {
 	broadcast := &Broadcast{
 		Event: EventUpdate,
 		Topic: TopicNewUserOperations,
 		Data: &BroadcastParams{
-			UserOperation: userOp.EncodeToRaw(),
+			SolverInput: solverInput,
 		},
 	}
 	s.publish(broadcast)

@@ -100,12 +100,12 @@ func runSolver(sendMsgOnWs bool) {
 		return
 	}
 
-	userOp := broadcast.Data.UserOperation.Decode()
-	userOpHash, _ := userOp.Hash()
+	solverInp := broadcast.Data.SolverInput
+	userOpHash := solverInp.UserOpHash
 	log.Info("solver received userOp", "userOpHash", userOpHash.Hex())
 
-	ee := executionEnvironment(userOp.From, userOp.Control)
-	solverOp := solveUserOperation(userOp, ee)
+	ee := executionEnvironment(solverInp.From, solverInp.Control)
+	solverOp := solveUserOperation(solverInp, ee)
 
 	if sendMsgOnWs {
 		requestId, err := sendSolverOpWs(solverOp, conn)
@@ -125,13 +125,12 @@ func runSolver(sendMsgOnWs bool) {
 	log.Info("solver sent solverOp", "userOpHash", solverOp.UserOpHash.Hex())
 }
 
-func solveUserOperation(userOp *operation.UserOperation, executionEnvironment common.Address) *operation.SolverOperation {
-	userOpHash, relayErr := userOp.Hash()
-	if relayErr != nil {
-		panic(relayErr)
+func solveUserOperation(solverInput *operation.SolverInput, executionEnvironment common.Address) *operation.SolverOperation {
+	if solverInput.Data == nil {
+		panic("need solverInput.Data for this test")
 	}
 
-	swapIntent, err := swapIntentAbiDecode(userOp.Data)
+	swapIntent, err := swapIntentAbiDecode(solverInput.Data)
 	if err != nil {
 		panic(err)
 	}
@@ -146,11 +145,11 @@ func solveUserOperation(userOp *operation.UserOperation, executionEnvironment co
 		To:           conf.Contracts.Atlas,
 		Value:        big.NewInt(0),
 		Gas:          big.NewInt(100000),
-		MaxFeePerGas: big.NewInt(0).Add(userOp.MaxFeePerGas, big.NewInt(1e9)),
-		Deadline:     userOp.Deadline,
+		MaxFeePerGas: big.NewInt(0).Add(solverInput.MaxFeePerGas.ToInt(), big.NewInt(1e9)),
+		Deadline:     solverInput.Deadline.ToInt(),
 		Solver:       simpleRfqSolver,
-		Control:      userOp.Control,
-		UserOpHash:   userOpHash,
+		Control:      solverInput.Control,
+		UserOpHash:   solverInput.UserOpHash,
 		BidToken:     common.Address{},
 		BidAmount:    big.NewInt(1e13),
 		Data:         data,
@@ -164,7 +163,7 @@ func solveUserOperation(userOp *operation.UserOperation, executionEnvironment co
 
 	solverOp.Signature = signEip712(atlasDomainSeparator, proofHash, solverPk)
 
-	if err := solverOp.Validate(userOp, conf.Contracts.Atlas, atlasDomainSeparator, conf.Relay.Gas.MaxPerSolverOperation); err != nil {
+	if err := solverOp.Validate(solverInput, conf.Contracts.Atlas, atlasDomainSeparator, conf.Relay.Gas.MaxPerSolverOperation); err != nil {
 		panic(err)
 	}
 

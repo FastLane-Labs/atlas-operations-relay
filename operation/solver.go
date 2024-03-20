@@ -68,6 +68,42 @@ var (
 	}
 )
 
+type SolverInput struct {
+	UserOpHash   common.Hash      `json:"userOpHash"`
+	From         common.Address   `json:"from"`
+	To           common.Address   `json:"to"`
+	Value        hexutil.Big      `json:"value"`
+	Gas          hexutil.Big      `json:"gas"`
+	MaxFeePerGas hexutil.Big      `json:"maxFeePerGas"`
+	Deadline     hexutil.Big      `json:"deadline"`
+	Dapp         common.Address   `json:"dapp"`
+	Control      common.Address   `json:"control"`
+	Hints        []common.Address `json:"hints,omitempty"`
+	Data         hexutil.Bytes    `json:"data,omitempty"`
+}
+
+func NewSolverInput(userOp *UserOperation, hints []common.Address) *SolverInput {
+	userOpHash, _ := userOp.Hash()
+	solverInput := &SolverInput{
+		UserOpHash:   userOpHash,
+		To:           userOp.To,
+		Value:        hexutil.Big(*userOp.Value),
+		Gas:          hexutil.Big(*userOp.Gas),
+		MaxFeePerGas: hexutil.Big(*userOp.MaxFeePerGas),
+		Deadline:     hexutil.Big(*userOp.Deadline),
+		Dapp:         userOp.Dapp,
+		Control:      userOp.Control,
+	}
+
+	if len(hints) > 0 {
+		solverInput.Hints = hints
+	} else {
+		solverInput.Data = hexutil.Bytes(userOp.Data)
+	}
+
+	return solverInput
+}
+
 // External representation of a solver operation,
 // the relay receives and broadcasts solver operations in this format
 type SolverOperationRaw struct {
@@ -139,7 +175,7 @@ func (s *SolverOperation) EncodeToRaw() *SolverOperationRaw {
 	}
 }
 
-func (s *SolverOperation) Validate(userOp *UserOperation, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
+func (s *SolverOperation) Validate(solverInput *SolverInput, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
 	if s.To != atlas {
 		return ErrSolverOpInvalidToField
 	}
@@ -148,15 +184,15 @@ func (s *SolverOperation) Validate(userOp *UserOperation, atlas common.Address, 
 		return ErrSolverOpGasLimitExceeded
 	}
 
-	if s.MaxFeePerGas.Cmp(userOp.MaxFeePerGas) < 0 {
+	if s.MaxFeePerGas.Cmp(solverInput.MaxFeePerGas.ToInt()) < 0 {
 		return ErrSolverOpMaxFeePerGasTooLow
 	}
 
-	if s.Deadline.Cmp(userOp.Deadline) < 0 {
+	if s.Deadline.Cmp(solverInput.Deadline.ToInt()) < 0 {
 		return ErrSolverOpDeadlineTooLow
 	}
 
-	if s.Control != userOp.Control {
+	if s.Control != solverInput.Control {
 		return ErrSolverOpDAppControlMismatch
 	}
 

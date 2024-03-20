@@ -102,6 +102,22 @@ func (u *UserOperationRaw) Decode() *UserOperation {
 	}
 }
 
+type UserOperationWithHintsRaw struct {
+	UserOperation *UserOperationRaw `json:"userOperation"`
+	Hints         []common.Address  `json:"hints,omitempty"`
+}
+
+func NewUserOperationWithHintsRaw(userOp *UserOperationRaw, hints []common.Address) *UserOperationWithHintsRaw {
+	return &UserOperationWithHintsRaw{
+		UserOperation: userOp,
+		Hints:         hints,
+	}
+}
+
+func (uop *UserOperationWithHintsRaw) Decode() (*UserOperation, []common.Address) {
+	return uop.UserOperation.Decode(), uop.Hints
+}
+
 // Internal representation of a user operation
 type UserOperation struct {
 	From         common.Address
