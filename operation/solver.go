@@ -86,6 +86,7 @@ func NewSolverInput(userOp *UserOperation, hints []common.Address) *SolverInput 
 	userOpHash, _ := userOp.Hash()
 	solverInput := &SolverInput{
 		UserOpHash:   userOpHash,
+		From:         userOp.From,
 		To:           userOp.To,
 		Value:        hexutil.Big(*userOp.Value),
 		Gas:          hexutil.Big(*userOp.Gas),
