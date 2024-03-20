@@ -211,6 +211,11 @@ func (s *SolverOperation) ProofHash() (common.Hash, error) {
 }
 
 func (s *SolverOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
+	if len(s.Signature) != 65 {
+		log.Info("invalid user operation signature length", "length", len(s.Signature))
+		return ErrUserOpInvalidSignature
+	}
+
 	proofHash, err := s.ProofHash()
 	if err != nil {
 		log.Info("failed to compute solver proof hash", "err", err)
