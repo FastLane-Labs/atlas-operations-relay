@@ -108,6 +108,15 @@ func NewSolverInput(userOp *UserOperation, hints []common.Address) *SolverInput 
 	return solverInput
 }
 
+func (si *SolverInput) Validate() error {
+	isHinted := si.Hints != nil && len(si.Hints) > 0
+	isDirect := si.Data != nil || si.From != common.Address{} || si.Value.ToInt().Cmp(big.NewInt(0)) > 0
+	if isHinted && isDirect {
+		return relayerror.NewError(2000, "solver input cannot contain both (hints) and (value or from or data) ")
+	}
+	return nil
+}
+
 // External representation of a solver operation,
 // the relay receives and broadcasts solver operations in this format
 type SolverOperationRaw struct {

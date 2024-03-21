@@ -90,17 +90,22 @@ func runSolver(sendMsgOnWs bool) {
 	log.Info("solver subscribed to", "topic", req.Params.Topic)
 
 	//wait for userOp to be received
-	userOpBroadcastBytes := <-userOpReceivedChan
+	solverInpBroadcastBytes := <-userOpReceivedChan
 
 	broadcast := &core.Broadcast{}
 
-	err = json.Unmarshal(userOpBroadcastBytes, broadcast)
+	err = json.Unmarshal(solverInpBroadcastBytes, broadcast)
 	if err != nil {
 		log.Error("failed to unmarshal userOpBroadcastBytes:", err)
 		return
 	}
 
 	solverInp := broadcast.Data.SolverInput
+	if err := solverInp.Validate(); err != nil {
+		log.Error("solverInp validation failed:", err)
+		return
+	}
+
 	userOpHash := solverInp.UserOpHash
 	log.Info("solver received userOp", "userOpHash", userOpHash.Hex())
 
