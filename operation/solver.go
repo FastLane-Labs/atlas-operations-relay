@@ -69,26 +69,27 @@ var (
 )
 
 type SolverInput struct {
-	UserOpHash   common.Hash      `json:"userOpHash"`
-	From         common.Address   `json:"from"`
-	To           common.Address   `json:"to"`
-	Value        hexutil.Big      `json:"value"`
-	Gas          hexutil.Big      `json:"gas"`
-	MaxFeePerGas hexutil.Big      `json:"maxFeePerGas"`
-	Deadline     hexutil.Big      `json:"deadline"`
-	Dapp         common.Address   `json:"dapp"`
-	Control      common.Address   `json:"control"`
-	Hints        []common.Address `json:"hints,omitempty"`
-	Data         hexutil.Bytes    `json:"data,omitempty"`
+	UserOpHash   common.Hash    `json:"userOpHash"`
+	To           common.Address `json:"to"`
+	Gas          hexutil.Big    `json:"gas"`
+	MaxFeePerGas hexutil.Big    `json:"maxFeePerGas"`
+	Deadline     hexutil.Big    `json:"deadline"`
+	Dapp         common.Address `json:"dapp"`
+	Control      common.Address `json:"control"`
+
+	//Exactly one of 1. Hints  2. (Value, Data, From) must be set
+	Hints []common.Address `json:"hints,omitempty"`
+
+	Value hexutil.Big    `json:"value"`
+	Data  hexutil.Bytes  `json:"data,omitempty"`
+	From  common.Address `json:"from"`
 }
 
 func NewSolverInput(userOp *UserOperation, hints []common.Address) *SolverInput {
 	userOpHash, _ := userOp.Hash()
 	solverInput := &SolverInput{
 		UserOpHash:   userOpHash,
-		From:         userOp.From,
 		To:           userOp.To,
-		Value:        hexutil.Big(*userOp.Value),
 		Gas:          hexutil.Big(*userOp.Gas),
 		MaxFeePerGas: hexutil.Big(*userOp.MaxFeePerGas),
 		Deadline:     hexutil.Big(*userOp.Deadline),
@@ -100,6 +101,8 @@ func NewSolverInput(userOp *UserOperation, hints []common.Address) *SolverInput 
 		solverInput.Hints = hints
 	} else {
 		solverInput.Data = hexutil.Bytes(userOp.Data)
+		solverInput.From = userOp.From
+		solverInput.Value = hexutil.Big(*userOp.Value)
 	}
 
 	return solverInput
