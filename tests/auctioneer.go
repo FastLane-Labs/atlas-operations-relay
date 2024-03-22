@@ -72,23 +72,22 @@ func newDemoUserOperation() *operation.UserOperation {
 	return userOp
 }
 
-func sendUserRequest() (*operation.UserOperation, error) {
-	userOp := newDemoUserOperation()
+func sendUserRequest(userOp *operation.UserOperation) error {
 	userOpHash, relayErr := userOp.Hash()
 	if relayErr != nil {
-		return nil, relayErr
+		return relayErr
 	}
 
 	userOpWithHints := operation.NewUserOperationWithHintsRaw(userOp.EncodeToRaw(), []common.Address{})
 
 	reqJSON, err := json.Marshal(userOpWithHints)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal userOp: %w", err)
+		return fmt.Errorf("failed to marshal userOp: %w", err)
 	}
 
 	resp, err := http.Post("http://localhost:8080/userOperation", "application/json", bytes.NewReader(reqJSON))
 	if err != nil {
-		return nil, fmt.Errorf("failed to send userOp: %w", err)
+		return fmt.Errorf("failed to send userOp: %w", err)
 	}
 
 	log.Info("user sent userOp", "userOpHash", userOpHash.Hex())
@@ -96,21 +95,21 @@ func sendUserRequest() (*operation.UserOperation, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("expected status code 200, got %d", resp.StatusCode)
+		return fmt.Errorf("expected status code 200, got %d", resp.StatusCode)
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	userOpHashInResp := common.HexToHash(strings.Trim(string(bodyBytes), "\""))
 
 	if userOpHashInResp != userOpHash {
-		return nil, fmt.Errorf("expected userOpHash %s, got %s", userOpHash, userOpHashInResp)
+		return fmt.Errorf("expected userOpHash %s, got %s", userOpHash, userOpHashInResp)
 	}
 
-	return userOp, nil
+	return nil
 }
 
 func retreiveSolverOps(userOpHash common.Hash, wait bool) ([]*operation.SolverOperation, error) {

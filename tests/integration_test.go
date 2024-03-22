@@ -47,7 +47,8 @@ func TestIntegration(t *testing.T) {
 	go runBundler(bundlerPk, bundlerReceiveChan, bundlerSendChan)
 
 	//send user request
-	userOp, err := sendUserRequest()
+	userOp := newDemoUserOperation()
+	err := sendUserRequest(userOp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +106,8 @@ func TestSolverHttp(t *testing.T) {
 	go runSolver(false)
 
 	//send user request
-	userOp, err := sendUserRequest()
+	userOp := newDemoUserOperation()
+	err := sendUserRequest(userOp)
 	if err != nil {
 		t.Fatal(err)
 	}
