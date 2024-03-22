@@ -2,6 +2,7 @@ package operation
 
 import (
 	"math/big"
+	"math/rand"
 
 	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
@@ -98,6 +99,9 @@ func NewSolverInput(userOp *UserOperation, hints []common.Address) *SolverInput 
 	}
 
 	if len(hints) > 0 {
+		//randomize hints
+		rand.Shuffle(len(hints), func(i, j int) { hints[i], hints[j] = hints[j], hints[i] })
+
 		solverInput.Hints = hints
 	} else {
 		solverInput.Data = hexutil.Bytes(userOp.Data)
