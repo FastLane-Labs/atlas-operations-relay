@@ -31,7 +31,7 @@ const (
 	MethodSubmitSolverOperation = "submitSolverOperation"
 
 	// Subscriptions topics
-	TopicNewUserOperations = "newUserOperations"
+	TopicnewSolverInputs = "newSolverInputs"
 
 	// Events
 	EventUpdate    = "update"
@@ -71,7 +71,7 @@ var (
 	}
 
 	Topics = map[string]struct{}{
-		TopicNewUserOperations: {},
+		TopicnewSolverInputs: {},
 	}
 
 	upgrader = websocket.Upgrader{
@@ -311,7 +311,7 @@ func (s *Server) unregisterBundler(conn *Conn) {
 func (s *Server) BroadcastSolverInput(solverInput *operation.SolverInput) {
 	broadcast := &Broadcast{
 		Event: EventUpdate,
-		Topic: TopicNewUserOperations,
+		Topic: TopicnewSolverInputs,
 		Data: &BroadcastParams{
 			SolverInput: solverInput,
 		},

@@ -143,7 +143,7 @@ components:
             id: 1
             method: subscribe
             params:
-              topic: newUserOperations
+              topic: newSolverInputs
       x-response:
         anyOf:
           - $ref: '#/components/messages/Success'
@@ -158,7 +158,7 @@ components:
             id: 1
             method: unsubscribe
             params:
-              topic: newUserOperations
+              topic: newSolverInputs
       x-response:
         anyOf:
           - $ref: '#/components/messages/Success'
@@ -248,7 +248,7 @@ components:
           properties:
             topic:
               type: string
-              enum: ['newUserOperations']
+              enum: ['newSolverInputs']
       required:
         - id
         - method
@@ -267,7 +267,7 @@ components:
           properties:
             topic:
               type: string
-              enum: ['newUserOperations']
+              enum: ['newSolverInputs']
       required:
         - id
         - method
@@ -281,12 +281,12 @@ components:
           const: update
         topic:
           type: string
-          enum: ['newUserOperations']
+          enum: ['newSolverInputs']
         data:
           type: object
           properties:
             userOperation:
-              $ref: '#/components/schemas/UserOperation'
+              $ref: '#/components/schemas/SolverInput'
       required:
         - event
         - topic

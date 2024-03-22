@@ -31,7 +31,7 @@ func runSolver(sendMsgOnWs bool) {
 
 	//track what's being received
 	responseChan := make(chan string)
-	userOpReceivedChan := make(chan []byte)
+	solverInputReceiveChan := make(chan []byte)
 
 	//start listening on connection
 	go func() {
@@ -58,17 +58,17 @@ func runSolver(sendMsgOnWs bool) {
 				responseChan <- response.Id
 			}
 			if broadcast.Topic != "" {
-				userOpReceivedChan <- message
+				solverInputReceiveChan <- message
 			}
 		}
 	}()
 
-	//subscribe to newUserOperations topic
+	//subscribe to newSolverInputs topic
 	req := core.Request{
 		Id:     subscriptionId,
 		Method: "subscribe",
 		Params: &core.RequestParams{
-			Topic: "newUserOperations",
+			Topic: "newSolverInputs",
 		},
 	}
 	msg, err := json.Marshal(req)
@@ -90,7 +90,7 @@ func runSolver(sendMsgOnWs bool) {
 	log.Info("solver subscribed to", "topic", req.Params.Topic)
 
 	//wait for userOp to be received
-	solverInpBroadcastBytes := <-userOpReceivedChan
+	solverInpBroadcastBytes := <-solverInputReceiveChan
 
 	broadcast := &core.Broadcast{}
 
