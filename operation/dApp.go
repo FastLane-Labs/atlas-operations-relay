@@ -38,6 +38,7 @@ var (
 		{Name: "nonce", Type: "uint256", InternalType: "uint256"},
 		{Name: "deadline", Type: "uint256", InternalType: "uint256"},
 		{Name: "control", Type: "address", InternalType: "address"},
+		{Name: "bundler", Type: "address", InternalType: "address"},
 		{Name: "userOpHash", Type: "bytes32", InternalType: "bytes32"},
 		{Name: "callChainHash", Type: "bytes32", InternalType: "bytes32"},
 	})
@@ -174,6 +175,7 @@ func (d *DAppOperation) ProofHash() (common.Hash, error) {
 		Nonce         *big.Int
 		Deadline      *big.Int
 		Control       common.Address
+		Bundler       common.Address
 		UserOpHash    common.Hash
 		CallChainHash common.Hash
 	}{
@@ -185,6 +187,7 @@ func (d *DAppOperation) ProofHash() (common.Hash, error) {
 		d.Nonce,
 		d.Deadline,
 		d.Control,
+		d.Bundler,
 		d.UserOpHash,
 		d.CallChainHash,
 	}

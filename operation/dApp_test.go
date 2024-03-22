@@ -27,7 +27,7 @@ func TestDAppOperationProofHash(t *testing.T) {
 	t.Parallel()
 
 	dAppOp := generateDAppOperation()
-	want := common.HexToHash("0x408d435740d89283a7971ca84aa32bf4c2e134d8b50dde7693ea3c6359bec74a")
+	want := common.HexToHash("0x3b041ae0e931009f49b824007dd38b60c636ee64e1a5c33774ea8328d1c119a8")
 
 	result, err := dAppOp.ProofHash()
 	if err != nil {
