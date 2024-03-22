@@ -265,8 +265,8 @@ func (s *SolverOperation) ProofHash() (common.Hash, error) {
 
 func (s *SolverOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
 	if len(s.Signature) != 65 {
-		log.Info("invalid user operation signature length", "length", len(s.Signature))
-		return ErrUserOpInvalidSignature
+		log.Info("invalid solver operation signature length", "length", len(s.Signature))
+		return ErrSolverOpSignatureInvalid
 	}
 
 	proofHash, err := s.ProofHash()

@@ -17,7 +17,12 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func runSolver(sendMsgOnWs bool) {
+type solveUserOpFunc func(*operation.SolverInput, common.Address) *operation.SolverOperation
+
+func runSolver(sendMsgOnWs bool,
+	solveUserOpFunc solveUserOpFunc,
+	doneChan chan struct{}) {
+
 	//solver ws connection
 	conn, solverResp := getSolverWsConnection()
 
@@ -36,29 +41,34 @@ func runSolver(sendMsgOnWs bool) {
 	//start listening on connection
 	go func() {
 		for {
-			_, message, err := conn.ReadMessage()
-			if err != nil {
-				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					log.Error("error:", err)
+			select {
+			case <-doneChan:
+				return
+			default:
+				_, message, err := conn.ReadMessage()
+				if err != nil {
+					if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+						log.Error("error:", err)
+					}
+					break
 				}
-				break
-			}
 
-			response := &core.Response{}
-			broadcast := &core.Broadcast{}
+				response := &core.Response{}
+				broadcast := &core.Broadcast{}
 
-			json.Unmarshal(message, response)
-			json.Unmarshal(message, broadcast)
+				json.Unmarshal(message, response)
+				json.Unmarshal(message, broadcast)
 
-			//if response and broadcast are both empty, panic
-			if response.Id == "" && broadcast.Topic == "" {
-				panic("cannot handle msg " + string(message))
-			}
-			if response.Id != "" {
-				responseChan <- response.Id
-			}
-			if broadcast.Topic != "" {
-				solverInputReceiveChan <- message
+				//if response and broadcast are both empty, panic
+				if response.Id == "" && broadcast.Topic == "" {
+					panic("cannot handle msg " + string(message))
+				}
+				if response.Id != "" {
+					responseChan <- response.Id
+				}
+				if broadcast.Topic != "" {
+					solverInputReceiveChan <- message
+				}
 			}
 		}
 	}()
@@ -107,10 +117,10 @@ func runSolver(sendMsgOnWs bool) {
 	}
 
 	userOpHash := solverInp.UserOpHash
-	log.Info("solver received userOp", "userOpHash", userOpHash.Hex())
+	log.Info("solver received solverInput", "userOpHash", userOpHash.Hex())
 
 	ee := executionEnvironment(solverInp.From, solverInp.Control)
-	solverOp := solveUserOperation(solverInp, ee)
+	solverOp := solveUserOpFunc(solverInp, ee)
 
 	if sendMsgOnWs {
 		requestId, err := sendSolverOpWs(solverOp, conn)
@@ -121,7 +131,6 @@ func runSolver(sendMsgOnWs bool) {
 		if responseId != requestId {
 			log.Error("expected response id", "expected", requestId, "got", responseId)
 		}
-
 	} else {
 		if err := sendSolverOpHttp(solverOp); err != nil {
 			log.Error("failed to send solverOp on http:", err)
