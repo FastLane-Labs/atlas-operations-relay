@@ -27,6 +27,7 @@ func TestErrorHandling(t *testing.T) {
 
 	badSolverOpTest(t, solveUserOperationBadSignature)
 	badSolverOpTest(t, solveUserOperationBadGas)
+	badSolverOpTest(t, solveUserOperationBadData)
 }
 
 func badSolverOpTest(t *testing.T, solveUserOpFunc solveUserOpFunc) {
