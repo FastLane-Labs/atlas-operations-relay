@@ -107,14 +107,15 @@ Note that all simulations referenced here can be easily done by calling view fun
 **30xx** **(API error):**
 - 3000: malformed request
 - 3001: malformed json
-- 3002: invalid parameter
-- 3003: server corrupted data
-- 3004: invalid user operation hash
-- 3005: invalid bundler address
-- 3006: invalid timestamp
-- 3007: expired signature
-- 3008: bad signature (decode/recover error)
-- 3009: signature mismatch
+- 3002: unexpected json
+- 3003: invalid parameter
+- 3004: server corrupted data
+- 3005: invalid user operation hash
+- 3006: invalid bundler address
+- 3007: invalid timestamp
+- 3008: expired signature
+- 3009: bad signature (decode/recover error)
+- 3010: signature mismatch
 
 **31xx** **(Relay error):**
 - 3100: failed to forward bundle
