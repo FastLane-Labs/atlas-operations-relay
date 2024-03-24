@@ -31,7 +31,7 @@ const (
 	MethodSubmitSolverOperation = "submitSolverOperation"
 
 	// Subscriptions topics
-	TopicnewSolverInputs = "newSolverInputs"
+	TopicNewUserOperations = "newUserOperations"
 
 	// Events
 	EventUpdate    = "update"
@@ -71,7 +71,7 @@ var (
 	}
 
 	Topics = map[string]struct{}{
-		TopicnewSolverInputs: {},
+		TopicNewUserOperations: {},
 	}
 
 	upgrader = websocket.Upgrader{
@@ -118,7 +118,7 @@ func (r *Response) Marshal() []byte {
 }
 
 type BroadcastParams struct {
-	SolverInput *operation.SolverInput `json:"solverInput,omitempty"`
+	UserOperationPartial *operation.UserOperationPartial `json:"userOperationPartial,omitempty"`
 }
 
 type Broadcast struct {
@@ -308,12 +308,12 @@ func (s *Server) unregisterBundler(conn *Conn) {
 	delete(s.bundlers, conn.bundler)
 }
 
-func (s *Server) BroadcastSolverInput(solverInput *operation.SolverInput) {
+func (s *Server) BroadcastUserOperationPartial(userOperationPartial *operation.UserOperationPartial) {
 	broadcast := &Broadcast{
 		Event: EventUpdate,
-		Topic: TopicnewSolverInputs,
+		Topic: TopicNewUserOperations,
 		Data: &BroadcastParams{
-			SolverInput: solverInput,
+			UserOperationPartial: userOperationPartial,
 		},
 	}
 	s.publish(broadcast)

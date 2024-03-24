@@ -70,7 +70,7 @@ func (am *Manager) auctionsCleaner() {
 	}
 }
 
-func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []common.Address) (common.Hash, *operation.SolverInput, *relayerror.Error) {
+func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []common.Address) (common.Hash, *operation.UserOperationPartial, *relayerror.Error) {
 	userOpHash, relayErr := userOp.Hash()
 	if relayErr != nil {
 		log.Info("failed to compute user operation hash", "err", relayErr.Message)
@@ -115,10 +115,10 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []com
 		return common.Hash{}, nil, ErrAuctionAlreadyStarted
 	}
 
-	solverInput := operation.NewSolverInput(userOp, hints)
+	userOperationPartial := operation.NewUserOperationPartial(userOp, hints)
 
-	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, userOp, solverInput, userOpHash)
-	return userOpHash, solverInput, nil
+	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, userOp, userOperationPartial, userOpHash)
+	return userOpHash, userOperationPartial, nil
 }
 
 func (am *Manager) GetSolverOperations(userOpHash common.Hash, completionChan chan []*operation.SolverOperation) ([]*operation.SolverOperation, *relayerror.Error) {
@@ -153,7 +153,7 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 		return ErrAuctionNotFound
 	}
 
-	relayErr := solverOp.Validate(auction.solverInput, am.config.Contracts.Atlas, am.atlasDomainSeparator, am.config.Relay.Gas.MaxPerSolverOperation)
+	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator, am.config.Relay.Gas.MaxPerSolverOperation)
 	if relayErr != nil {
 		log.Info("invalid solver operation", "err", relayErr.Message, "userOpHash", auction.userOpHash.Hex())
 		return relayErr

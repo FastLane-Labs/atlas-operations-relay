@@ -1,7 +1,10 @@
 package tests
 
 import (
+	"bytes"
+	"encoding/json"
 	"math/big"
+	"net/http"
 	"testing"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
@@ -28,6 +31,44 @@ func TestErrorHandling(t *testing.T) {
 	badSolverOpTest(t, solveUserOperationBadSignature)
 	badSolverOpTest(t, solveUserOperationBadGas)
 	badSolverOpTest(t, solveUserOperationBadData)
+}
+
+func TestBadPostReqJson(t *testing.T) {
+	badJson := map[string]string{
+		"ab": "cd",
+	}
+
+	reqJSON, err := json.Marshal(badJson)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp1, err := http.Post("http://localhost:8080/userOperation", "application/json", bytes.NewReader(reqJSON))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp1.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected status code %d, got %d", http.StatusBadRequest, resp1.StatusCode)
+	}
+
+	resp2, err := http.Post("http://localhost:8080/solverOperation", "application/json", bytes.NewReader(reqJSON))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp2.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected status code %d, got %d", http.StatusBadRequest, resp2.StatusCode)
+	}
+
+	resp3, err := http.Post("http://localhost:8080/bundleOperations", "application/json", bytes.NewReader(reqJSON))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp3.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected status code %d, got %d", http.StatusBadRequest, resp3.StatusCode)
+	}
 }
 
 func badSolverOpTest(t *testing.T, solveUserOpFunc solveUserOpFunc) {
@@ -77,20 +118,20 @@ func faultyUserOpBadData() *operation.UserOperation {
 	return userOp
 }
 
-func solveUserOperationBadSignature(solverInput *operation.SolverInput, executionEnvironment common.Address) *operation.SolverOperation {
-	solverOp := solveUserOperation(solverInput, executionEnvironment)
+func solveUserOperationBadSignature(userOperationPartial *operation.UserOperationPartial, executionEnvironment common.Address) *operation.SolverOperation {
+	solverOp := solveUserOperation(userOperationPartial, executionEnvironment)
 	solverOp.Signature = []byte("bad signature")
 	return solverOp
 }
 
-func solveUserOperationBadGas(solverInput *operation.SolverInput, executionEnvironment common.Address) *operation.SolverOperation {
-	solverOp := solveUserOperation(solverInput, executionEnvironment)
+func solveUserOperationBadGas(userOperationPartial *operation.UserOperationPartial, executionEnvironment common.Address) *operation.SolverOperation {
+	solverOp := solveUserOperation(userOperationPartial, executionEnvironment)
 	solverOp.MaxFeePerGas = big.NewInt(0)
 	return solverOp
 }
 
-func solveUserOperationBadData(solverInput *operation.SolverInput, executionEnvironment common.Address) *operation.SolverOperation {
-	solverOp := solveUserOperation(solverInput, executionEnvironment)
+func solveUserOperationBadData(userOperationPartial *operation.UserOperationPartial, executionEnvironment common.Address) *operation.SolverOperation {
+	solverOp := solveUserOperation(userOperationPartial, executionEnvironment)
 	solverOp.Data = []byte("bad data")
 	return solverOp
 }

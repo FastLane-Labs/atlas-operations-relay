@@ -3,6 +3,7 @@ package operation
 import (
 	"context"
 	"math/big"
+	"reflect"
 
 	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
@@ -112,6 +113,10 @@ func NewUserOperationWithHintsRaw(userOp *UserOperationRaw, hints []common.Addre
 		UserOperation: userOp,
 		Hints:         hints,
 	}
+}
+
+func (u *UserOperationWithHintsRaw) IsZero() bool {
+	return reflect.DeepEqual(*u, UserOperationWithHintsRaw{})
 }
 
 func (uop *UserOperationWithHintsRaw) Decode() (*UserOperation, []common.Address) {

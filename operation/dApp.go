@@ -197,6 +197,11 @@ func (d *DAppOperation) ProofHash() (common.Hash, error) {
 }
 
 func (d *DAppOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
+	if len(d.Signature) != 65 {
+		log.Info("invalid dappOp signature length", "length", len(d.Signature))
+		return ErrDappOpSignatureInvalid
+	}
+
 	proofHash, err := d.ProofHash()
 	if err != nil {
 		log.Info("failed to compute dApp proof hash", "err", err)

@@ -21,6 +21,10 @@ type BundleOperationsRaw struct {
 	DAppOperation    *DAppOperationRaw     `json:"dAppOperation"`
 }
 
+func (bor *BundleOperationsRaw) IsZero() bool {
+	return bor.UserOperation == nil && len(bor.SolverOperations) == 0 && bor.DAppOperation == nil
+}
+
 func (args *BundleOperationsRaw) Decode() *BundleOperations {
 	var solverOps []*SolverOperation
 	for _, solverOpArgs := range args.SolverOperations {

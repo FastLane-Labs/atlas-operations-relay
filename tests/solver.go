@@ -17,7 +17,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type solveUserOpFunc func(*operation.SolverInput, common.Address) *operation.SolverOperation
+type solveUserOpFunc func(*operation.UserOperationPartial, common.Address) *operation.SolverOperation
 
 func runSolver(sendMsgOnWs bool,
 	solveUserOpFunc solveUserOpFunc,
@@ -36,7 +36,7 @@ func runSolver(sendMsgOnWs bool,
 
 	//track what's being received
 	responseChan := make(chan string)
-	solverInputReceiveChan := make(chan []byte)
+	userOperationPartialReceiveChan := make(chan []byte)
 
 	//start listening on connection
 	go func() {
@@ -67,18 +67,18 @@ func runSolver(sendMsgOnWs bool,
 					responseChan <- response.Id
 				}
 				if broadcast.Topic != "" {
-					solverInputReceiveChan <- message
+					userOperationPartialReceiveChan <- message
 				}
 			}
 		}
 	}()
 
-	//subscribe to newSolverInputs topic
+	//subscribe to newUserOperations topic
 	req := core.Request{
 		Id:     subscriptionId,
 		Method: "subscribe",
 		Params: &core.RequestParams{
-			Topic: "newSolverInputs",
+			Topic: "newUserOperations",
 		},
 	}
 	msg, err := json.Marshal(req)
@@ -100,7 +100,7 @@ func runSolver(sendMsgOnWs bool,
 	log.Info("solver subscribed to", "topic", req.Params.Topic)
 
 	//wait for userOp to be received
-	solverInpBroadcastBytes := <-solverInputReceiveChan
+	solverInpBroadcastBytes := <-userOperationPartialReceiveChan
 
 	broadcast := &core.Broadcast{}
 
@@ -110,14 +110,14 @@ func runSolver(sendMsgOnWs bool,
 		return
 	}
 
-	solverInp := broadcast.Data.SolverInput
+	solverInp := broadcast.Data.UserOperationPartial
 	if err := solverInp.Validate(); err != nil {
 		log.Error("solverInp validation failed:", err)
 		return
 	}
 
 	userOpHash := solverInp.UserOpHash
-	log.Info("solver received solverInput", "userOpHash", userOpHash.Hex())
+	log.Info("solver received userOperationPartial", "userOpHash", userOpHash.Hex())
 
 	ee := executionEnvironment(solverInp.From, solverInp.Control)
 	solverOp := solveUserOpFunc(solverInp, ee)
@@ -139,12 +139,12 @@ func runSolver(sendMsgOnWs bool,
 	log.Info("solver sent solverOp", "userOpHash", solverOp.UserOpHash.Hex())
 }
 
-func solveUserOperation(solverInput *operation.SolverInput, executionEnvironment common.Address) *operation.SolverOperation {
-	if solverInput.Data == nil {
-		panic("need solverInput.Data for this test")
+func solveUserOperation(userOperationPartial *operation.UserOperationPartial, executionEnvironment common.Address) *operation.SolverOperation {
+	if userOperationPartial.Data == nil {
+		panic("need userOperationPartial.Data for this test")
 	}
 
-	swapIntent, err := swapIntentAbiDecode(solverInput.Data)
+	swapIntent, err := swapIntentAbiDecode(userOperationPartial.Data)
 	if err != nil {
 		panic(err)
 	}
@@ -159,11 +159,11 @@ func solveUserOperation(solverInput *operation.SolverInput, executionEnvironment
 		To:           conf.Contracts.Atlas,
 		Value:        big.NewInt(0),
 		Gas:          big.NewInt(100000),
-		MaxFeePerGas: big.NewInt(0).Add(solverInput.MaxFeePerGas.ToInt(), big.NewInt(1e9)),
-		Deadline:     solverInput.Deadline.ToInt(),
+		MaxFeePerGas: big.NewInt(0).Add(userOperationPartial.MaxFeePerGas.ToInt(), big.NewInt(1e9)),
+		Deadline:     userOperationPartial.Deadline.ToInt(),
 		Solver:       simpleRfqSolver,
-		Control:      solverInput.Control,
-		UserOpHash:   solverInput.UserOpHash,
+		Control:      userOperationPartial.Control,
+		UserOpHash:   userOperationPartial.UserOpHash,
 		BidToken:     common.Address{},
 		BidAmount:    big.NewInt(1e13),
 		Data:         data,
@@ -176,10 +176,6 @@ func solveUserOperation(solverInput *operation.SolverInput, executionEnvironment
 	}
 
 	solverOp.Signature = signEip712(atlasDomainSeparator, proofHash, solverPk)
-
-	if err := solverOp.Validate(solverInput, conf.Contracts.Atlas, atlasDomainSeparator, conf.Relay.Gas.MaxPerSolverOperation); err != nil {
-		panic(err)
-	}
 
 	return solverOp
 }

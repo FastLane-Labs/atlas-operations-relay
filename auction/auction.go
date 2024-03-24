@@ -19,9 +19,9 @@ type Auction struct {
 	open       bool
 	userOpHash common.Hash
 
-	userOp      *operation.UserOperation
-	solverInput *operation.SolverInput
-	solverOps   []*operation.SolverOperation
+	userOp               *operation.UserOperation
+	userOperationPartial *operation.UserOperationPartial
+	solverOps            []*operation.SolverOperation
 
 	completionSubs []chan []*operation.SolverOperation
 
@@ -30,15 +30,15 @@ type Auction struct {
 	mu sync.RWMutex
 }
 
-func NewAuction(duration time.Duration, userOp *operation.UserOperation, solverInput *operation.SolverInput, userOpHash common.Hash) *Auction {
+func NewAuction(duration time.Duration, userOp *operation.UserOperation, userOperationPartial *operation.UserOperationPartial, userOpHash common.Hash) *Auction {
 	auction := &Auction{
-		open:           true,
-		userOpHash:     userOpHash,
-		userOp:         userOp,
-		solverInput:    solverInput,
-		solverOps:      make([]*operation.SolverOperation, 0),
-		completionSubs: make([]chan []*operation.SolverOperation, 0),
-		createdAt:      time.Now(),
+		open:                 true,
+		userOpHash:           userOpHash,
+		userOp:               userOp,
+		userOperationPartial: userOperationPartial,
+		solverOps:            make([]*operation.SolverOperation, 0),
+		completionSubs:       make([]chan []*operation.SolverOperation, 0),
+		createdAt:            time.Now(),
 	}
 
 	time.AfterFunc(duration, auction.close)

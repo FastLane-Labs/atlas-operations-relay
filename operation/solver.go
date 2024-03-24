@@ -3,6 +3,7 @@ package operation
 import (
 	"math/big"
 	"math/rand"
+	"reflect"
 
 	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
@@ -14,13 +15,15 @@ import (
 )
 
 var (
-	ErrSolverOpInvalidToField      = relayerror.NewError(2100, "solver operation's 'to' field must be atlas contract address")
-	ErrSolverOpGasLimitExceeded    = relayerror.NewError(2101, "solver operation's gas limit exceeded")
-	ErrSolverOpMaxFeePerGasTooLow  = relayerror.NewError(2102, "solver operation's maxFeePerGas must be equal or higher the user operation")
-	ErrSolverOpDeadlineTooLow      = relayerror.NewError(2103, "solver operation's deadline exceeded or lower than user operation's")
-	ErrSolverOpDAppControlMismatch = relayerror.NewError(2104, "solver operation's dApp control does not match the user operation's")
-	ErrSolverOpComputeProofHash    = relayerror.NewError(2105, "failed to compute solver proof hash")
-	ErrSolverOpSignatureInvalid    = relayerror.NewError(2106, "solver operation has invalid signature")
+	ErrSolverOpInvalidToField             = relayerror.NewError(2100, "solver operation's 'to' field must be atlas contract address")
+	ErrSolverOpGasLimitExceeded           = relayerror.NewError(2101, "solver operation's gas limit exceeded")
+	ErrSolverOpMaxFeePerGasTooLow         = relayerror.NewError(2102, "solver operation's maxFeePerGas must be equal or higher the user operation")
+	ErrSolverOpDeadlineTooLow             = relayerror.NewError(2103, "solver operation's deadline exceeded or lower than user operation's")
+	ErrSolverOpDAppControlMismatch        = relayerror.NewError(2104, "solver operation's dApp control does not match the user operation's")
+	ErrSolverOpComputeProofHash           = relayerror.NewError(2105, "failed to compute solver proof hash")
+	ErrSolverOpSignatureInvalid           = relayerror.NewError(2106, "solver operation has invalid signature")
+	ErrUserOpPartialInvalidOverpopulated  = relayerror.NewError(2107, "UserOperationPartial cannot contain both (hints) and (value or from or data) ")
+	ErrUserOpPartialInvalidUnderpopulated = relayerror.NewError(2108, "UserOperationPartial muat contain at least one of (hints) and (value or from or data) ")
 )
 
 var (
@@ -69,7 +72,7 @@ var (
 	}
 )
 
-type SolverInput struct {
+type UserOperationPartial struct {
 	UserOpHash   common.Hash    `json:"userOpHash"`
 	To           common.Address `json:"to"`
 	Gas          hexutil.Big    `json:"gas"`
@@ -81,14 +84,14 @@ type SolverInput struct {
 	//Exactly one of 1. Hints  2. (Value, Data, From) must be set
 	Hints []common.Address `json:"hints,omitempty"`
 
-	Value hexutil.Big    `json:"value"`
+	Value hexutil.Big    `json:"value,omitempty"`
 	Data  hexutil.Bytes  `json:"data,omitempty"`
-	From  common.Address `json:"from"`
+	From  common.Address `json:"from,omitempty"`
 }
 
-func NewSolverInput(userOp *UserOperation, hints []common.Address) *SolverInput {
+func NewUserOperationPartial(userOp *UserOperation, hints []common.Address) *UserOperationPartial {
 	userOpHash, _ := userOp.Hash()
-	solverInput := &SolverInput{
+	userOperationPartial := &UserOperationPartial{
 		UserOpHash:   userOpHash,
 		To:           userOp.To,
 		Gas:          hexutil.Big(*userOp.Gas),
@@ -102,22 +105,25 @@ func NewSolverInput(userOp *UserOperation, hints []common.Address) *SolverInput 
 		//randomize hints
 		rand.Shuffle(len(hints), func(i, j int) { hints[i], hints[j] = hints[j], hints[i] })
 
-		solverInput.Hints = hints
+		userOperationPartial.Hints = hints
 	} else {
-		solverInput.Data = hexutil.Bytes(userOp.Data)
-		solverInput.From = userOp.From
-		solverInput.Value = hexutil.Big(*userOp.Value)
+		userOperationPartial.Data = hexutil.Bytes(userOp.Data)
+		userOperationPartial.From = userOp.From
+		userOperationPartial.Value = hexutil.Big(*userOp.Value)
 	}
 
-	return solverInput
+	return userOperationPartial
 }
 
-func (si *SolverInput) Validate() error {
-	isHinted := si.Hints != nil && len(si.Hints) > 0
-	isDirect := si.Data != nil || si.From != common.Address{} || si.Value.ToInt().Cmp(big.NewInt(0)) > 0
+func (uop *UserOperationPartial) Validate() error {
+	isHinted := uop.Hints != nil && len(uop.Hints) > 0
+	isDirect := uop.Data != nil || uop.From != common.Address{} || uop.Value.ToInt().Cmp(big.NewInt(0)) > 0
 	if isHinted && isDirect {
-		return relayerror.NewError(2000, "solver input cannot contain both (hints) and (value or from or data) ")
+		return ErrUserOpPartialInvalidOverpopulated
+	} else if !isHinted && !isDirect {
+		return ErrUserOpPartialInvalidUnderpopulated
 	}
+
 	return nil
 }
 
@@ -157,6 +163,10 @@ func (s *SolverOperationRaw) Decode() *SolverOperation {
 	}
 }
 
+func (s *SolverOperationRaw) IsZero() bool {
+	return reflect.DeepEqual(*s, SolverOperationRaw{})
+}
+
 // Internal representation of a solver operation
 type SolverOperation struct {
 	From         common.Address
@@ -192,7 +202,7 @@ func (s *SolverOperation) EncodeToRaw() *SolverOperationRaw {
 	}
 }
 
-func (s *SolverOperation) Validate(solverInput *SolverInput, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
+func (s *SolverOperation) Validate(userOperation *UserOperation, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
 	if s.To != atlas {
 		return ErrSolverOpInvalidToField
 	}
@@ -201,15 +211,15 @@ func (s *SolverOperation) Validate(solverInput *SolverInput, atlas common.Addres
 		return ErrSolverOpGasLimitExceeded
 	}
 
-	if s.MaxFeePerGas.Cmp(solverInput.MaxFeePerGas.ToInt()) < 0 {
+	if s.MaxFeePerGas.Cmp(userOperation.MaxFeePerGas) < 0 {
 		return ErrSolverOpMaxFeePerGasTooLow
 	}
 
-	if s.Deadline.Cmp(solverInput.Deadline.ToInt()) < 0 {
+	if s.Deadline.Cmp(userOperation.Deadline) < 0 {
 		return ErrSolverOpDeadlineTooLow
 	}
 
-	if s.Control != solverInput.Control {
+	if s.Control != userOperation.Control {
 		return ErrSolverOpDAppControlMismatch
 	}
 

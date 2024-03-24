@@ -13,7 +13,7 @@ The operations relay for Atlas serves as an infrastructure layer facilitating co
 ## Lifecycle
 
 1. The frontend calls `/userOperation` endpoint to submit a new user operation. The endpoint returns the `userOpHash` in case of success, or an error.
-2. The relay broadcasts the user operation to solvers via websocket (solvers connect to the relay and subscribe to the `newSolverInputs` topic). When the operation is broadcast, the relay must also start the auction timer for this operation.
+2. The relay broadcasts the user operation to solvers via websocket (solvers connect to the relay and subscribe to the `newUserOperations` topic). When the operation is broadcast, the relay must also start the auction timer for this operation.
 3. Solvers send solver operations to the relay in response to the user operation (via REST or websocket API).
 4. The relay stops collecting solver operations after the auction timer hits 500ms.
 5. The frontend calls the `/solverOperations` endpoint, specifying the `userOpHash` as a parameter, to retrieve the solver operations tied to a particular user operation. If it calls this endpoint before the end of the auction duration (500ms), the endpoint returns an error. If the frontend sets the `wait` parameter to `true` when calling, the relay will hold the request until the auction’s completion then return the results.
@@ -88,6 +88,8 @@ Note that all simulations referenced here can be easily done by calling view fun
 - 2104: solver operation's dApp control does not match the user operation's
 - 2105: failed to compute solver proof hash
 - 2106: solver operation has invalid signature
+- 2107: user operation partial is overpopulated, both (hints) and (value,from, data) cannot be set
+- 2108: user operation partial is underpopulated, at lease one of (hints) or (value, data) must be set
 
 **22xx** **(DApp operation error):**
 - 2200: dApp operation's 'from' field does not match user operation's session key
