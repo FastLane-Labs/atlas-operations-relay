@@ -3,6 +3,7 @@ package operation
 import (
 	"context"
 	"math/big"
+	"math/rand"
 
 	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
@@ -71,18 +72,18 @@ var (
 // External representation of a user operation,
 // the relay receives and broadcasts user operations in this format
 type UserOperationRaw struct {
-	From         common.Address `json:"from"`
-	To           common.Address `json:"to"`
-	Value        *hexutil.Big   `json:"value"`
-	Gas          *hexutil.Big   `json:"gas"`
-	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas"`
-	Nonce        *hexutil.Big   `json:"nonce"`
-	Deadline     *hexutil.Big   `json:"deadline"`
-	Dapp         common.Address `json:"dapp"`
-	Control      common.Address `json:"control"`
-	SessionKey   common.Address `json:"sessionKey"`
-	Data         hexutil.Bytes  `json:"data"`
-	Signature    hexutil.Bytes  `json:"signature"`
+	From         common.Address `json:"from" validate:"required"`
+	To           common.Address `json:"to" validate:"required"`
+	Value        *hexutil.Big   `json:"value" validate:"required"`
+	Gas          *hexutil.Big   `json:"gas" validate:"required"`
+	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas" validate:"required"`
+	Nonce        *hexutil.Big   `json:"nonce" validate:"required"`
+	Deadline     *hexutil.Big   `json:"deadline" validate:"required"`
+	Dapp         common.Address `json:"dapp" validate:"required"`
+	Control      common.Address `json:"control" validate:"required"`
+	SessionKey   common.Address `json:"sessionKey"` // Optional
+	Data         hexutil.Bytes  `json:"data" validate:"required"`
+	Signature    hexutil.Bytes  `json:"signature" validate:"required"`
 }
 
 func (u *UserOperationRaw) Decode() *UserOperation {
@@ -100,6 +101,15 @@ func (u *UserOperationRaw) Decode() *UserOperation {
 		Data:         u.Data,
 		Signature:    u.Signature,
 	}
+}
+
+type UserOperationWithHintsRaw struct {
+	UserOperation *UserOperationRaw `json:"userOperation" validate:"required"`
+	Hints         []common.Address  `json:"hints"` // Optional
+}
+
+func (uop *UserOperationWithHintsRaw) Decode() (*UserOperation, []common.Address) {
+	return uop.UserOperation.Decode(), uop.Hints
 }
 
 // Internal representation of a user operation
@@ -211,6 +221,11 @@ func (u *UserOperation) ProofHash() (common.Hash, error) {
 }
 
 func (u *UserOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
+	if len(u.Signature) != 65 {
+		log.Info("invalid user operation signature length", "length", len(u.Signature))
+		return ErrUserOpInvalidSignature
+	}
+
 	proofHash, err := u.ProofHash()
 	if err != nil {
 		log.Info("failed to compute user proof hash", "err", err)
@@ -229,4 +244,46 @@ func (u *UserOperation) checkSignature(domainSeparator common.Hash) *relayerror.
 	}
 
 	return nil
+}
+
+type UserOperationPartial struct {
+	UserOpHash   common.Hash    `json:"userOpHash"`
+	To           common.Address `json:"to"`
+	Gas          *hexutil.Big   `json:"gas"`
+	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas"`
+	Deadline     *hexutil.Big   `json:"deadline"`
+	Dapp         common.Address `json:"dapp"`
+	Control      common.Address `json:"control"`
+
+	//Exactly one of 1. Hints  2. (Value, Data, From) must be set
+	Hints []common.Address `json:"hints,omitempty"`
+
+	Value *hexutil.Big   `json:"value,omitempty"`
+	Data  hexutil.Bytes  `json:"data,omitempty"`
+	From  common.Address `json:"from,omitempty"`
+}
+
+func NewUserOperationPartial(userOp *UserOperation, hints []common.Address) *UserOperationPartial {
+	userOpHash, _ := userOp.Hash()
+	userOpPartial := &UserOperationPartial{
+		UserOpHash:   userOpHash,
+		To:           userOp.To,
+		Gas:          (*hexutil.Big)(userOp.Gas),
+		MaxFeePerGas: (*hexutil.Big)(userOp.MaxFeePerGas),
+		Deadline:     (*hexutil.Big)(userOp.Deadline),
+		Dapp:         userOp.Dapp,
+		Control:      userOp.Control,
+	}
+
+	if len(hints) > 0 {
+		//randomize hints
+		rand.Shuffle(len(hints), func(i, j int) { hints[i], hints[j] = hints[j], hints[i] })
+		userOpPartial.Hints = hints
+	} else {
+		userOpPartial.Data = hexutil.Bytes(userOp.Data)
+		userOpPartial.From = userOp.From
+		userOpPartial.Value = (*hexutil.Big)(userOp.Value)
+	}
+
+	return userOpPartial
 }

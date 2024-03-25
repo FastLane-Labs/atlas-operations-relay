@@ -16,9 +16,13 @@ import (
 // External representation of a bundle of operations,
 // the relay receives and broadcasts bundles in this format
 type BundleOperationsRaw struct {
-	UserOperation    *UserOperationRaw     `json:"userOperation"`
-	SolverOperations []*SolverOperationRaw `json:"solverOperations"`
-	DAppOperation    *DAppOperationRaw     `json:"dAppOperation"`
+	UserOperation    *UserOperationRaw     `json:"userOperation" validate:"required"`
+	SolverOperations []*SolverOperationRaw `json:"solverOperations" validate:"required"`
+	DAppOperation    *DAppOperationRaw     `json:"dAppOperation" validate:"required"`
+}
+
+func (bor *BundleOperationsRaw) IsZero() bool {
+	return bor.UserOperation == nil && len(bor.SolverOperations) == 0 && bor.DAppOperation == nil
 }
 
 func (args *BundleOperationsRaw) Decode() *BundleOperations {

@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 
 func TestIntegration(t *testing.T) {
 	//start solver
-	go runSolver(true)
+	go runSolver(true, solveUserOperation, make(chan struct{}))
 
 	//start bundler
 	bundlerReceiveChan := make(chan []byte)
@@ -47,7 +47,8 @@ func TestIntegration(t *testing.T) {
 	go runBundler(bundlerPk, bundlerReceiveChan, bundlerSendChan)
 
 	//send user request
-	userOp, err := sendUserRequest()
+	userOp := newDemoUserOperation()
+	err := sendUserRequest(userOp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,10 +103,11 @@ func TestIntegration(t *testing.T) {
 
 func TestSolverHttp(t *testing.T) {
 	//start solver
-	go runSolver(false)
+	go runSolver(false, solveUserOperation, make(chan struct{}))
 
 	//send user request
-	userOp, err := sendUserRequest()
+	userOp := newDemoUserOperation()
+	err := sendUserRequest(userOp)
 	if err != nil {
 		t.Fatal(err)
 	}

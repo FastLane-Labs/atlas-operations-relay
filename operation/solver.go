@@ -71,19 +71,19 @@ var (
 // External representation of a solver operation,
 // the relay receives and broadcasts solver operations in this format
 type SolverOperationRaw struct {
-	From         common.Address `json:"from"`
-	To           common.Address `json:"to"`
-	Value        *hexutil.Big   `json:"value"`
-	Gas          *hexutil.Big   `json:"gas"`
-	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas"`
-	Deadline     *hexutil.Big   `json:"deadline"`
-	Solver       common.Address `json:"solver"`
-	Control      common.Address `json:"control"`
-	UserOpHash   common.Hash    `json:"userOpHash"`
-	BidToken     common.Address `json:"bidToken"`
-	BidAmount    *hexutil.Big   `json:"bidAmount"`
-	Data         hexutil.Bytes  `json:"data"`
-	Signature    hexutil.Bytes  `json:"signature"`
+	From         common.Address `json:"from" validate:"required"`
+	To           common.Address `json:"to" validate:"required"`
+	Value        *hexutil.Big   `json:"value" validate:"required"`
+	Gas          *hexutil.Big   `json:"gas" validate:"required"`
+	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas" validate:"required"`
+	Deadline     *hexutil.Big   `json:"deadline" validate:"required"`
+	Solver       common.Address `json:"solver" validate:"required"`
+	Control      common.Address `json:"control" validate:"required"`
+	UserOpHash   common.Hash    `json:"userOpHash" validate:"required"`
+	BidToken     common.Address `json:"bidToken"` // Optional (address(0) = ETH)
+	BidAmount    *hexutil.Big   `json:"bidAmount" validate:"required"`
+	Data         hexutil.Bytes  `json:"data" validate:"required"`
+	Signature    hexutil.Bytes  `json:"signature" validate:"required"`
 }
 
 func (s *SolverOperationRaw) Decode() *SolverOperation {
@@ -139,7 +139,7 @@ func (s *SolverOperation) EncodeToRaw() *SolverOperationRaw {
 	}
 }
 
-func (s *SolverOperation) Validate(userOp *UserOperation, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
+func (s *SolverOperation) Validate(userOperation *UserOperation, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
 	if s.To != atlas {
 		return ErrSolverOpInvalidToField
 	}
@@ -148,15 +148,15 @@ func (s *SolverOperation) Validate(userOp *UserOperation, atlas common.Address, 
 		return ErrSolverOpGasLimitExceeded
 	}
 
-	if s.MaxFeePerGas.Cmp(userOp.MaxFeePerGas) < 0 {
+	if s.MaxFeePerGas.Cmp(userOperation.MaxFeePerGas) < 0 {
 		return ErrSolverOpMaxFeePerGasTooLow
 	}
 
-	if s.Deadline.Cmp(userOp.Deadline) < 0 {
+	if s.Deadline.Cmp(userOperation.Deadline) < 0 {
 		return ErrSolverOpDeadlineTooLow
 	}
 
-	if s.Control != userOp.Control {
+	if s.Control != userOperation.Control {
 		return ErrSolverOpDAppControlMismatch
 	}
 
@@ -211,6 +211,11 @@ func (s *SolverOperation) ProofHash() (common.Hash, error) {
 }
 
 func (s *SolverOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
+	if len(s.Signature) != 65 {
+		log.Info("invalid solver operation signature length", "length", len(s.Signature))
+		return ErrSolverOpSignatureInvalid
+	}
+
 	proofHash, err := s.ProofHash()
 	if err != nil {
 		log.Info("failed to compute solver proof hash", "err", err)

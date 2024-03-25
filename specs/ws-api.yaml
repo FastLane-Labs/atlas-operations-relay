@@ -286,7 +286,7 @@ components:
           type: object
           properties:
             userOperation:
-              $ref: '#/components/schemas/UserOperation'
+              $ref: '#/components/schemas/UserOperationPartial'
       required:
         - event
         - topic
@@ -551,3 +551,62 @@ components:
         - userOperation
         - solverOperations
         - dAppOperation
+    
+    UserOperationPartial:
+      type: object
+      properties:
+        userOpHash:
+          type: string
+          description: Solidity type bytes32
+          pattern: '^0x[0-9a-f]{64}$'
+        to:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        gas:
+          type: string
+          description: Solidity type uint256 represented in hex
+          pattern: '^0x[0-9a-f]{1,64}$'
+        maxFeePerGas:
+          type: string
+          description: Solidity type uint256 represented in hex
+          pattern: '^0x[0-9a-f]{1,64}$'
+        deadline:
+          type: string
+          description: Solidity type uint256 represented in hex
+          pattern: '^0x[0-9a-f]{1,64}$'
+        dapp:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        control:
+          type: string
+          description: Solidity type address
+          pattern: '^0x[0-9a-f]{40}$'
+        hints:
+          type: array
+          items:
+            type: string
+            description: Solidity type address
+            pattern: '^0x[0-9a-f]{40}$'
+          description: "An array of addresses used as hints for the operation. Exactly one of 'Hints' or the combination of 'Value', 'Data', 'From' must be set."
+        value:
+          type: string
+          description: "Solidity type uint256 represented in hex. Required if 'Hints' is not set."
+          pattern: '^0x[0-9a-f]{1,64}$'
+        data:
+          type: string
+          description: "Solidity type bytes. Required if 'Hints' is not set."
+          pattern: '^0x([0-9a-f][0-9a-f])*$'
+        from:
+          type: string
+          description: "Solidity type address. Required if 'Hints' is not set."
+          pattern: '^0x[0-9a-f]{40}$'
+      required:
+        - userOpHash
+        - to
+        - gas
+        - maxFeePerGas
+        - deadline
+        - dapp
+        - control

@@ -34,7 +34,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserOperation'
+              $ref: '#/components/schemas/UserOperationWithHints'
       responses:
         '200':
           description: The hash of the user operation
@@ -260,6 +260,22 @@ components:
         - message
       xml:
         name: Error
+
+    UserOperationWithHints:
+      type: object
+      properties:
+        userOperation:
+          $ref: '#/components/schemas/UserOperation'
+          description: An embedded UserOperation object containing specific transaction details.
+        hints:
+          type: array
+          items:
+            type: string
+            description: Solidity type address
+            pattern: '^0x[0-9a-f]{40}$'
+          description: An optional array of addresses used as hints for the operation. This field can be omitted if no hints are provided.
+      required:
+        - userOperation
 
     UserOperation:
       type: object

@@ -70,41 +70,41 @@ func (am *Manager) auctionsCleaner() {
 	}
 }
 
-func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Hash, *relayerror.Error) {
+func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []common.Address) (common.Hash, *operation.UserOperationPartial, *relayerror.Error) {
 	userOpHash, relayErr := userOp.Hash()
 	if relayErr != nil {
 		log.Info("failed to compute user operation hash", "err", relayErr.Message)
-		return common.Hash{}, relayErr
+		return common.Hash{}, nil, relayErr
 	}
 
 	if relayErr := userOp.Validate(am.ethClient, am.config.Contracts.Atlas, am.atlasDomainSeparator, am.config.Relay.Gas.MaxPerUserOperation); relayErr != nil {
 		log.Info("invalid user operation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
-		return common.Hash{}, relayErr
+		return common.Hash{}, nil, relayErr
 	}
 
 	pData, err := contract.SimulatorAbi.Pack("simUserOperation", *userOp)
 	if err != nil {
 		log.Info("failed to pack user operation", "err", err, "userOpHash", userOpHash.Hex())
-		return common.Hash{}, relayerror.ErrServerInternal
+		return common.Hash{}, nil, relayerror.ErrServerInternal
 	}
 
 	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &am.config.Contracts.Simulator, Data: pData}, nil)
 	if err != nil {
 		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.Hex())
-		return common.Hash{}, relayerror.ErrServerInternal
+		return common.Hash{}, nil, relayerror.ErrServerInternal
 	}
 
 	validOp, err := contract.SimulatorAbi.Unpack("simUserOperation", bData)
 	if err != nil {
 		log.Info("failed to unpack simUserOperation return data", "err", err, "userOpHash", userOpHash.Hex())
-		return common.Hash{}, relayerror.ErrServerInternal
+		return common.Hash{}, nil, relayerror.ErrServerInternal
 	}
 
 	if !validOp[0].(bool) {
 		result := validOp[1].(uint8)
 		validCallResult := validOp[2].(*big.Int)
 		log.Info("user operation failed simulation", "userOpHash", userOpHash.Hex(), "result", result, "validCallResult", validCallResult.String())
-		return common.Hash{}, ErrUserOpFailedSimulation.AddMessage(fmt.Sprintf("result: %d, validCallResult: %s", result, validCallResult.String()))
+		return common.Hash{}, nil, ErrUserOpFailedSimulation.AddMessage(fmt.Sprintf("result: %d, validCallResult: %s", result, validCallResult.String()))
 	}
 
 	am.mu.Lock()
@@ -112,11 +112,13 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation) (common.Has
 
 	if _, alreadyStarted := am.auctions[userOpHash]; alreadyStarted {
 		log.Info("auction for this user operation has already started", "userOpHash", userOpHash.Hex())
-		return common.Hash{}, ErrAuctionAlreadyStarted
+		return common.Hash{}, nil, ErrAuctionAlreadyStarted
 	}
 
-	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, userOp, userOpHash)
-	return userOpHash, nil
+	userOperationPartial := operation.NewUserOperationPartial(userOp, hints)
+
+	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, userOp, userOperationPartial, userOpHash)
+	return userOpHash, userOperationPartial, nil
 }
 
 func (am *Manager) GetSolverOperations(userOpHash common.Hash, completionChan chan []*operation.SolverOperation) ([]*operation.SolverOperation, *relayerror.Error) {

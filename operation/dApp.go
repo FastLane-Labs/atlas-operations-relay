@@ -50,17 +50,17 @@ var (
 // External representation of a dApp operation,
 // the relay receives and broadcasts dApp operations in this format
 type DAppOperationRaw struct {
-	From          common.Address `json:"from"`
-	To            common.Address `json:"to"`
-	Value         *hexutil.Big   `json:"value"`
-	Gas           *hexutil.Big   `json:"gas"`
-	Nonce         *hexutil.Big   `json:"nonce"`
-	Deadline      *hexutil.Big   `json:"deadline"`
-	Control       common.Address `json:"control"`
-	Bundler       common.Address `json:"bundler"`
-	UserOpHash    common.Hash    `json:"userOpHash"`
-	CallChainHash common.Hash    `json:"callChainHash"`
-	Signature     hexutil.Bytes  `json:"signature"`
+	From          common.Address `json:"from" validate:"required"`
+	To            common.Address `json:"to" validate:"required"`
+	Value         *hexutil.Big   `json:"value" validate:"required"`
+	Gas           *hexutil.Big   `json:"gas" validate:"required"`
+	Nonce         *hexutil.Big   `json:"nonce" validate:"required"`
+	Deadline      *hexutil.Big   `json:"deadline" validate:"required"`
+	Control       common.Address `json:"control" validate:"required"`
+	Bundler       common.Address `json:"bundler"` // Optional (address(0) = any bundler)
+	UserOpHash    common.Hash    `json:"userOpHash" validate:"required"`
+	CallChainHash common.Hash    `json:"callChainHash" validate:"required"`
+	Signature     hexutil.Bytes  `json:"signature" validate:"required"`
 }
 
 func (d *DAppOperationRaw) Decode() *DAppOperation {
@@ -197,6 +197,11 @@ func (d *DAppOperation) ProofHash() (common.Hash, error) {
 }
 
 func (d *DAppOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
+	if len(d.Signature) != 65 {
+		log.Info("invalid dappOp signature length", "length", len(d.Signature))
+		return ErrDappOpSignatureInvalid
+	}
+
 	proofHash, err := d.ProofHash()
 	if err != nil {
 		log.Info("failed to compute dApp proof hash", "err", err)

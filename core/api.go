@@ -14,6 +14,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-playground/validator/v10"
 )
 
 var (
@@ -84,6 +85,11 @@ func getPostRequestData(r *http.Request, v interface{}) *relayerror.Error {
 		return ErrMalformedJson.AddError(err)
 	}
 
+	validate := validator.New()
+	if err := validate.Struct(v); err != nil {
+		return ErrInvalidParameter.AddError(err)
+	}
+
 	return nil
 }
 
@@ -100,13 +106,14 @@ func writeResponseData(w http.ResponseWriter, data interface{}) {
 }
 
 func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
-	userOpRaw := &operation.UserOperationRaw{}
-	if relayErr := getPostRequestData(r, userOpRaw); relayErr != nil {
+	userOpWithHintsRaw := &operation.UserOperationWithHintsRaw{}
+	if relayErr := getPostRequestData(r, userOpWithHintsRaw); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
 		return
 	}
-	userOpHash, relayErr := api.relay.submitUserOperation(userOpRaw.Decode())
+
+	userOpHash, relayErr := api.relay.submitUserOperation(userOpWithHintsRaw.Decode())
 	if relayErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())

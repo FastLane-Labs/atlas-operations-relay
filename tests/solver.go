@@ -17,7 +17,12 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func runSolver(sendMsgOnWs bool) {
+type solveUserOpFunc func(*operation.UserOperationPartial, common.Address) *operation.SolverOperation
+
+func runSolver(sendMsgOnWs bool,
+	solveUserOpFunc solveUserOpFunc,
+	doneChan chan struct{}) {
+
 	//solver ws connection
 	conn, solverResp := getSolverWsConnection()
 
@@ -31,34 +36,39 @@ func runSolver(sendMsgOnWs bool) {
 
 	//track what's being received
 	responseChan := make(chan string)
-	userOpReceivedChan := make(chan []byte)
+	userOperationPartialReceiveChan := make(chan []byte)
 
 	//start listening on connection
 	go func() {
 		for {
-			_, message, err := conn.ReadMessage()
-			if err != nil {
-				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					log.Error("error:", err)
+			select {
+			case <-doneChan:
+				return
+			default:
+				_, message, err := conn.ReadMessage()
+				if err != nil {
+					if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+						log.Error("error:", err)
+					}
+					break
 				}
-				break
-			}
 
-			response := &core.Response{}
-			broadcast := &core.Broadcast{}
+				response := &core.Response{}
+				broadcast := &core.Broadcast{}
 
-			json.Unmarshal(message, response)
-			json.Unmarshal(message, broadcast)
+				json.Unmarshal(message, response)
+				json.Unmarshal(message, broadcast)
 
-			//if response and broadcast are both empty, panic
-			if response.Id == "" && broadcast.Topic == "" {
-				panic("cannot handle msg " + string(message))
-			}
-			if response.Id != "" {
-				responseChan <- response.Id
-			}
-			if broadcast.Topic != "" {
-				userOpReceivedChan <- message
+				//if response and broadcast are both empty, panic
+				if response.Id == "" && broadcast.Topic == "" {
+					panic("cannot handle msg " + string(message))
+				}
+				if response.Id != "" {
+					responseChan <- response.Id
+				}
+				if broadcast.Topic != "" {
+					userOperationPartialReceiveChan <- message
+				}
 			}
 		}
 	}()
@@ -90,22 +100,32 @@ func runSolver(sendMsgOnWs bool) {
 	log.Info("solver subscribed to", "topic", req.Params.Topic)
 
 	//wait for userOp to be received
-	userOpBroadcastBytes := <-userOpReceivedChan
+	solverInpBroadcastBytes := <-userOperationPartialReceiveChan
 
 	broadcast := &core.Broadcast{}
 
-	err = json.Unmarshal(userOpBroadcastBytes, broadcast)
+	err = json.Unmarshal(solverInpBroadcastBytes, broadcast)
 	if err != nil {
 		log.Error("failed to unmarshal userOpBroadcastBytes:", err)
 		return
 	}
 
-	userOp := broadcast.Data.UserOperation.Decode()
-	userOpHash, _ := userOp.Hash()
-	log.Info("solver received userOp", "userOpHash", userOpHash.Hex())
+	userOpPartial := broadcast.Data.UserOperationPartial
+	isHinted := len(userOpPartial.Hints) > 0
+	isDirect := userOpPartial.Data != nil || userOpPartial.From != common.Address{} || userOpPartial.Value != nil
 
-	ee := executionEnvironment(userOp.From, userOp.Control)
-	solverOp := solveUserOperation(userOp, ee)
+	if isHinted && isDirect {
+		log.Error("userOpPartial is both hinted and direct")
+		return
+	} else if !isHinted && !isDirect {
+		log.Error("userOpPartial is neither hinted nor direct")
+	}
+
+	userOpHash := userOpPartial.UserOpHash
+	log.Info("solver received userOperationPartial", "userOpHash", userOpHash.Hex())
+
+	ee := executionEnvironment(userOpPartial.From, userOpPartial.Control)
+	solverOp := solveUserOpFunc(userOpPartial, ee)
 
 	if sendMsgOnWs {
 		requestId, err := sendSolverOpWs(solverOp, conn)
@@ -116,7 +136,6 @@ func runSolver(sendMsgOnWs bool) {
 		if responseId != requestId {
 			log.Error("expected response id", "expected", requestId, "got", responseId)
 		}
-
 	} else {
 		if err := sendSolverOpHttp(solverOp); err != nil {
 			log.Error("failed to send solverOp on http:", err)
@@ -125,13 +144,12 @@ func runSolver(sendMsgOnWs bool) {
 	log.Info("solver sent solverOp", "userOpHash", solverOp.UserOpHash.Hex())
 }
 
-func solveUserOperation(userOp *operation.UserOperation, executionEnvironment common.Address) *operation.SolverOperation {
-	userOpHash, relayErr := userOp.Hash()
-	if relayErr != nil {
-		panic(relayErr)
+func solveUserOperation(userOperationPartial *operation.UserOperationPartial, executionEnvironment common.Address) *operation.SolverOperation {
+	if userOperationPartial.Data == nil {
+		panic("need userOperationPartial.Data for this test")
 	}
 
-	swapIntent, err := swapIntentAbiDecode(userOp.Data)
+	swapIntent, err := swapIntentAbiDecode(userOperationPartial.Data)
 	if err != nil {
 		panic(err)
 	}
@@ -146,11 +164,11 @@ func solveUserOperation(userOp *operation.UserOperation, executionEnvironment co
 		To:           conf.Contracts.Atlas,
 		Value:        big.NewInt(0),
 		Gas:          big.NewInt(100000),
-		MaxFeePerGas: big.NewInt(0).Add(userOp.MaxFeePerGas, big.NewInt(1e9)),
-		Deadline:     userOp.Deadline,
+		MaxFeePerGas: big.NewInt(0).Add(userOperationPartial.MaxFeePerGas.ToInt(), big.NewInt(1e9)),
+		Deadline:     userOperationPartial.Deadline.ToInt(),
 		Solver:       simpleRfqSolver,
-		Control:      userOp.Control,
-		UserOpHash:   userOpHash,
+		Control:      userOperationPartial.Control,
+		UserOpHash:   userOperationPartial.UserOpHash,
 		BidToken:     common.Address{},
 		BidAmount:    big.NewInt(1e13),
 		Data:         data,
@@ -163,10 +181,6 @@ func solveUserOperation(userOp *operation.UserOperation, executionEnvironment co
 	}
 
 	solverOp.Signature = signEip712(atlasDomainSeparator, proofHash, solverPk)
-
-	if err := solverOp.Validate(userOp, conf.Contracts.Atlas, atlasDomainSeparator, conf.Relay.Gas.MaxPerSolverOperation); err != nil {
-		panic(err)
-	}
 
 	return solverOp
 }
