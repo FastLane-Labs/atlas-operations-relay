@@ -110,17 +110,22 @@ func runSolver(sendMsgOnWs bool,
 		return
 	}
 
-	solverInp := broadcast.Data.UserOperationPartial
-	if err := solverInp.Validate(); err != nil {
-		log.Error("solverInp validation failed:", err)
+	userOpPartial := broadcast.Data.UserOperationPartial
+	isHinted := len(userOpPartial.Hints) > 0
+	isDirect := userOpPartial.Data != nil || userOpPartial.From != common.Address{} || userOpPartial.Value != nil
+
+	if isHinted && isDirect {
+		log.Error("userOpPartial is both hinted and direct")
 		return
+	} else if !isHinted && !isDirect {
+		log.Error("userOpPartial is neither hinted nor direct")
 	}
 
-	userOpHash := solverInp.UserOpHash
+	userOpHash := userOpPartial.UserOpHash
 	log.Info("solver received userOperationPartial", "userOpHash", userOpHash.Hex())
 
-	ee := executionEnvironment(solverInp.From, solverInp.Control)
-	solverOp := solveUserOpFunc(solverInp, ee)
+	ee := executionEnvironment(userOpPartial.From, userOpPartial.Control)
+	solverOp := solveUserOpFunc(userOpPartial, ee)
 
 	if sendMsgOnWs {
 		requestId, err := sendSolverOpWs(solverOp, conn)

@@ -12,6 +12,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -95,15 +96,15 @@ type setAtlasTxHashFn func(common.Hash) *relayerror.Error
 type setRelayErrorFn func(*relayerror.Error) *relayerror.Error
 
 type RequestParams struct {
-	Topic           string                         `json:"topic,omitempty"`
-	SolverOperation *operation.SolverOperationRaw  `json:"solverOperation,omitempty"`
-	Bundle          *operation.BundleOperationsRaw `json:"bundle,omitempty"`
+	Topic           string                         `json:"topic"`
+	SolverOperation *operation.SolverOperationRaw  `json:"solverOperation"`
+	Bundle          *operation.BundleOperationsRaw `json:"bundle"`
 }
 
 type Request struct {
-	Id     string         `json:"id"`
-	Method string         `json:"method"`
-	Params *RequestParams `json:"params,omitempty"`
+	Id     string         `json:"id" validate:"required"`
+	Method string         `json:"method" validate:"required"`
+	Params *RequestParams `json:"params" validate:"required"`
 }
 
 type Response struct {
@@ -118,7 +119,7 @@ func (r *Response) Marshal() []byte {
 }
 
 type BroadcastParams struct {
-	UserOperationPartial *operation.UserOperationPartial `json:"userOperationPartial,omitempty"`
+	UserOperationPartial *operation.UserOperationPartial `json:"userOperation,omitempty"`
 }
 
 type Broadcast struct {
@@ -144,9 +145,9 @@ func (br *BundleRequest) Marshal() []byte {
 }
 
 type BundleResponse struct {
-	Id     string      `json:"id"`
-	Result common.Hash `json:"result,omitempty"`
-	Error  string      `json:"error,omitempty"`
+	Id     string      `json:"id" validate:"required"`
+	Result common.Hash `json:"result"`
+	Error  string      `json:"error"`
 }
 
 type Marshaler interface {
@@ -427,6 +428,13 @@ func (s *Server) processSolverMessage(conn *Conn, msg []byte) {
 		return
 	}
 
+	validate := validator.New()
+	if err := validate.Struct(req); err != nil {
+		log.Info("invalid solver message", "err", err)
+		conn.sendString(fmt.Sprintf("%s: %s", InvalidMessage, err.Error()))
+		return
+	}
+
 	resp := &Response{
 		Id: req.Id,
 	}
@@ -461,6 +469,12 @@ func (s *Server) processBundlerMessage(msg []byte) {
 	var resp *BundleResponse
 	if err := json.Unmarshal(msg, &resp); err != nil {
 		log.Info("failed to unmarshal bundler message", "err", err)
+		return
+	}
+
+	validate := validator.New()
+	if err := validate.Struct(resp); err != nil {
+		log.Info("invalid bundler message", "err", err)
 		return
 	}
 

@@ -83,12 +83,12 @@ func (r *Relay) Run(serverReadyChan chan struct{}) {
 }
 
 func (r *Relay) submitUserOperation(userOp *operation.UserOperation, hints []common.Address) (common.Hash, *relayerror.Error) {
-	userOpHash, userOperationPartial, relayErr := r.auctionManager.NewUserOperation(userOp, hints)
+	userOpHash, userOpPartial, relayErr := r.auctionManager.NewUserOperation(userOp, hints)
 	if relayErr != nil {
 		return common.Hash{}, relayErr
 	}
 
-	go r.server.BroadcastUserOperationPartial(userOperationPartial)
+	go r.server.BroadcastUserOperationPartial(userOpPartial)
 	return userOpHash, nil
 }
 

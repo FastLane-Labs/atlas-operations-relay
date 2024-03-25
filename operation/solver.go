@@ -2,8 +2,6 @@ package operation
 
 import (
 	"math/big"
-	"math/rand"
-	"reflect"
 
 	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
@@ -15,15 +13,13 @@ import (
 )
 
 var (
-	ErrSolverOpInvalidToField             = relayerror.NewError(2100, "solver operation's 'to' field must be atlas contract address")
-	ErrSolverOpGasLimitExceeded           = relayerror.NewError(2101, "solver operation's gas limit exceeded")
-	ErrSolverOpMaxFeePerGasTooLow         = relayerror.NewError(2102, "solver operation's maxFeePerGas must be equal or higher the user operation")
-	ErrSolverOpDeadlineTooLow             = relayerror.NewError(2103, "solver operation's deadline exceeded or lower than user operation's")
-	ErrSolverOpDAppControlMismatch        = relayerror.NewError(2104, "solver operation's dApp control does not match the user operation's")
-	ErrSolverOpComputeProofHash           = relayerror.NewError(2105, "failed to compute solver proof hash")
-	ErrSolverOpSignatureInvalid           = relayerror.NewError(2106, "solver operation has invalid signature")
-	ErrUserOpPartialInvalidOverpopulated  = relayerror.NewError(2107, "UserOperationPartial cannot contain both (hints) and (value or from or data) ")
-	ErrUserOpPartialInvalidUnderpopulated = relayerror.NewError(2108, "UserOperationPartial muat contain at least one of (hints) and (value or from or data) ")
+	ErrSolverOpInvalidToField      = relayerror.NewError(2100, "solver operation's 'to' field must be atlas contract address")
+	ErrSolverOpGasLimitExceeded    = relayerror.NewError(2101, "solver operation's gas limit exceeded")
+	ErrSolverOpMaxFeePerGasTooLow  = relayerror.NewError(2102, "solver operation's maxFeePerGas must be equal or higher the user operation")
+	ErrSolverOpDeadlineTooLow      = relayerror.NewError(2103, "solver operation's deadline exceeded or lower than user operation's")
+	ErrSolverOpDAppControlMismatch = relayerror.NewError(2104, "solver operation's dApp control does not match the user operation's")
+	ErrSolverOpComputeProofHash    = relayerror.NewError(2105, "failed to compute solver proof hash")
+	ErrSolverOpSignatureInvalid    = relayerror.NewError(2106, "solver operation has invalid signature")
 )
 
 var (
@@ -72,77 +68,22 @@ var (
 	}
 )
 
-type UserOperationPartial struct {
-	UserOpHash   common.Hash    `json:"userOpHash"`
-	To           common.Address `json:"to"`
-	Gas          hexutil.Big    `json:"gas"`
-	MaxFeePerGas hexutil.Big    `json:"maxFeePerGas"`
-	Deadline     hexutil.Big    `json:"deadline"`
-	Dapp         common.Address `json:"dapp"`
-	Control      common.Address `json:"control"`
-
-	//Exactly one of 1. Hints  2. (Value, Data, From) must be set
-	Hints []common.Address `json:"hints,omitempty"`
-
-	Value hexutil.Big    `json:"value,omitempty"`
-	Data  hexutil.Bytes  `json:"data,omitempty"`
-	From  common.Address `json:"from,omitempty"`
-}
-
-func NewUserOperationPartial(userOp *UserOperation, hints []common.Address) *UserOperationPartial {
-	userOpHash, _ := userOp.Hash()
-	userOperationPartial := &UserOperationPartial{
-		UserOpHash:   userOpHash,
-		To:           userOp.To,
-		Gas:          hexutil.Big(*userOp.Gas),
-		MaxFeePerGas: hexutil.Big(*userOp.MaxFeePerGas),
-		Deadline:     hexutil.Big(*userOp.Deadline),
-		Dapp:         userOp.Dapp,
-		Control:      userOp.Control,
-	}
-
-	if len(hints) > 0 {
-		//randomize hints
-		rand.Shuffle(len(hints), func(i, j int) { hints[i], hints[j] = hints[j], hints[i] })
-
-		userOperationPartial.Hints = hints
-	} else {
-		userOperationPartial.Data = hexutil.Bytes(userOp.Data)
-		userOperationPartial.From = userOp.From
-		userOperationPartial.Value = hexutil.Big(*userOp.Value)
-	}
-
-	return userOperationPartial
-}
-
-func (uop *UserOperationPartial) Validate() error {
-	isHinted := uop.Hints != nil && len(uop.Hints) > 0
-	isDirect := uop.Data != nil || uop.From != common.Address{} || uop.Value.ToInt().Cmp(big.NewInt(0)) > 0
-	if isHinted && isDirect {
-		return ErrUserOpPartialInvalidOverpopulated
-	} else if !isHinted && !isDirect {
-		return ErrUserOpPartialInvalidUnderpopulated
-	}
-
-	return nil
-}
-
 // External representation of a solver operation,
 // the relay receives and broadcasts solver operations in this format
 type SolverOperationRaw struct {
-	From         common.Address `json:"from"`
-	To           common.Address `json:"to"`
-	Value        *hexutil.Big   `json:"value"`
-	Gas          *hexutil.Big   `json:"gas"`
-	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas"`
-	Deadline     *hexutil.Big   `json:"deadline"`
-	Solver       common.Address `json:"solver"`
-	Control      common.Address `json:"control"`
-	UserOpHash   common.Hash    `json:"userOpHash"`
-	BidToken     common.Address `json:"bidToken"`
-	BidAmount    *hexutil.Big   `json:"bidAmount"`
-	Data         hexutil.Bytes  `json:"data"`
-	Signature    hexutil.Bytes  `json:"signature"`
+	From         common.Address `json:"from" validate:"required"`
+	To           common.Address `json:"to" validate:"required"`
+	Value        *hexutil.Big   `json:"value" validate:"required"`
+	Gas          *hexutil.Big   `json:"gas" validate:"required"`
+	MaxFeePerGas *hexutil.Big   `json:"maxFeePerGas" validate:"required"`
+	Deadline     *hexutil.Big   `json:"deadline" validate:"required"`
+	Solver       common.Address `json:"solver" validate:"required"`
+	Control      common.Address `json:"control" validate:"required"`
+	UserOpHash   common.Hash    `json:"userOpHash" validate:"required"`
+	BidToken     common.Address `json:"bidToken"` // Optional (address(0) = ETH)
+	BidAmount    *hexutil.Big   `json:"bidAmount" validate:"required"`
+	Data         hexutil.Bytes  `json:"data" validate:"required"`
+	Signature    hexutil.Bytes  `json:"signature" validate:"required"`
 }
 
 func (s *SolverOperationRaw) Decode() *SolverOperation {
@@ -161,10 +102,6 @@ func (s *SolverOperationRaw) Decode() *SolverOperation {
 		Data:         s.Data,
 		Signature:    s.Signature,
 	}
-}
-
-func (s *SolverOperationRaw) IsZero() bool {
-	return reflect.DeepEqual(*s, SolverOperationRaw{})
 }
 
 // Internal representation of a solver operation

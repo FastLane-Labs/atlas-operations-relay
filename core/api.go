@@ -14,20 +14,20 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/go-playground/validator/v10"
 )
 
 var (
 	ErrMalformedRequest      = relayerror.NewError(3000, "malformed request")
 	ErrMalformedJson         = relayerror.NewError(3001, "malformed json")
-	ErrUnexpectedJson        = relayerror.NewError(3002, "unexpected json")
-	ErrInvalidParameter      = relayerror.NewError(3003, "invalid parameter")
-	ErrServerCorruptedData   = relayerror.NewError(3004, "server corrupted data")
-	ErrInvalidUserOpHash     = relayerror.NewError(3005, "invalid user operation hash")
-	ErrInvalidBundlerAddress = relayerror.NewError(3006, "invalid bundler address")
-	ErrInvalidTimestamp      = relayerror.NewError(3007, "invalid timestamp")
-	ErrExpiredSignature      = relayerror.NewError(3008, "expired signature")
-	ErrBadSignature          = relayerror.NewError(3009, "bad signature (decode/recover error)")
-	ErrSignatureMismatch     = relayerror.NewError(3010, "signature mismatch")
+	ErrInvalidParameter      = relayerror.NewError(3002, "invalid parameter")
+	ErrServerCorruptedData   = relayerror.NewError(3003, "server corrupted data")
+	ErrInvalidUserOpHash     = relayerror.NewError(3004, "invalid user operation hash")
+	ErrInvalidBundlerAddress = relayerror.NewError(3005, "invalid bundler address")
+	ErrInvalidTimestamp      = relayerror.NewError(3006, "invalid timestamp")
+	ErrExpiredSignature      = relayerror.NewError(3007, "expired signature")
+	ErrBadSignature          = relayerror.NewError(3008, "bad signature (decode/recover error)")
+	ErrSignatureMismatch     = relayerror.NewError(3009, "signature mismatch")
 )
 
 type RetrieveRequest struct {
@@ -85,6 +85,11 @@ func getPostRequestData(r *http.Request, v interface{}) *relayerror.Error {
 		return ErrMalformedJson.AddError(err)
 	}
 
+	validate := validator.New()
+	if err := validate.Struct(v); err != nil {
+		return ErrInvalidParameter.AddError(err)
+	}
+
 	return nil
 }
 
@@ -105,12 +110,6 @@ func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
 	if relayErr := getPostRequestData(r, userOpWithHintsRaw); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
-		return
-	}
-
-	if userOpWithHintsRaw.IsZero() {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(ErrUnexpectedJson.Marshal())
 		return
 	}
 
@@ -157,12 +156,6 @@ func (api *Api) SubmitBundleOperations(w http.ResponseWriter, r *http.Request) {
 	if relayErr := getPostRequestData(r, bundleOpsRaw); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
-		return
-	}
-
-	if bundleOpsRaw.IsZero() {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(ErrUnexpectedJson.Marshal())
 		return
 	}
 
@@ -215,12 +208,6 @@ func (api *Api) SubmitSolverOperation(w http.ResponseWriter, r *http.Request) {
 	if relayErr := getPostRequestData(r, solverOpRaw); relayErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(relayErr.Marshal())
-		return
-	}
-
-	if solverOpRaw.IsZero() {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(ErrUnexpectedJson.Marshal())
 		return
 	}
 

@@ -78,7 +78,10 @@ func sendUserRequest(userOp *operation.UserOperation) error {
 		return relayErr
 	}
 
-	userOpWithHints := operation.NewUserOperationWithHintsRaw(userOp.EncodeToRaw(), []common.Address{})
+	userOpWithHints := &operation.UserOperationWithHintsRaw{
+		UserOperation: userOp.EncodeToRaw(),
+		Hints:         []common.Address{},
+	}
 
 	reqJSON, err := json.Marshal(userOpWithHints)
 	if err != nil {
