@@ -27,5 +27,3 @@ jobs:
         tags: |
           fastlanelabs/ops-relay:${{ github.event.release.tag_name }}
           fastlanelabs/ops-relay:latest
-        build-args: |
-          VERSION=${{ github.event.release.tag_name }}
