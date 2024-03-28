@@ -1,0 +1,31 @@
+name: Docker Image CI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v2
+      
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: |
+          fastlanelabs/ops-relay:${{ github.event.release.tag_name }}
+          fastlanelabs/ops-relay:latest
+        build-args: |
+          VERSION=${{ github.event.release.tag_name }}
