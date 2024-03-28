@@ -25,5 +25,5 @@ jobs:
         file: ./Dockerfile
         push: true
         tags: |
-          fastlanelabs/ops-relay:${{ github.event.release.tag_name }}
-          fastlanelabs/ops-relay:latest
+          fastlanelabs/atlas-operations-relay:${{ github.event.release.tag_name }}
+          fastlanelabs/atlas-operations-relay:latest
