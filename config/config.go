@@ -31,9 +31,8 @@ type configJson struct {
 			Duration uint64 `json:"duration,omitempty"`
 		} `json:"auction,omitempty"`
 		Gas struct {
-			MaxPerUserOperation   uint64 `json:"max_per_user_operation,omitempty"`
-			MaxPerSolverOperation uint64 `json:"max_per_solver_operation,omitempty"`
-			MaxPerDAppOperation   uint64 `json:"max_per_dApp_operation,omitempty"`
+			MaxPerUserOperation uint64 `json:"max_per_user_operation,omitempty"`
+			MaxPerDAppOperation uint64 `json:"max_per_dApp_operation,omitempty"`
 		} `json:"gas,omitempty"`
 	} `json:"relay,omitempty"`
 }
@@ -53,9 +52,8 @@ type Auction struct {
 }
 
 type Gas struct {
-	MaxPerUserOperation   *big.Int
-	MaxPerSolverOperation *big.Int
-	MaxPerDAppOperation   *big.Int
+	MaxPerUserOperation *big.Int
+	MaxPerDAppOperation *big.Int
 }
 
 type Relay struct {
@@ -122,7 +120,6 @@ func (c *Config) parseConfigFile() {
 	c.Relay.Auction.Duration = time.Duration(configJson.Relay.Auction.Duration * uint64(time.Millisecond))
 
 	c.Relay.Gas.MaxPerUserOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerUserOperation)
-	c.Relay.Gas.MaxPerSolverOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerSolverOperation)
 	c.Relay.Gas.MaxPerDAppOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerDAppOperation)
 }
 
@@ -133,7 +130,6 @@ func (c *Config) parseFlags() {
 	contractsSimulatorPtr := flag.String("contracts.simulator", "", "Simulator contract address")
 	relayAuctionDurationPtr := flag.Uint64("relay.auction.duration", 0, "Auction duration in milliseconds")
 	relayGasMaxPerUserOperationPtr := flag.Uint64("relay.gas.max_per_user_operation", 0, "Max gas per user operation")
-	relayGasMaxPerSolverOperationPtr := flag.Uint64("relay.gas.max_per_solver_operation", 0, "Max gas per solver operation")
 	relayGasMaxPerDAppOperationPtr := flag.Uint64("relay.gas.max_per_dApp_operation", 0, "Max gas per dApp operation")
 	flag.Parse()
 
@@ -170,10 +166,6 @@ func (c *Config) parseFlags() {
 		c.Relay.Gas.MaxPerUserOperation = new(big.Int).SetUint64(*relayGasMaxPerUserOperationPtr)
 	}
 
-	if *relayGasMaxPerSolverOperationPtr > 0 {
-		c.Relay.Gas.MaxPerSolverOperation = new(big.Int).SetUint64(*relayGasMaxPerSolverOperationPtr)
-	}
-
 	if *relayGasMaxPerDAppOperationPtr > 0 {
 		c.Relay.Gas.MaxPerDAppOperation = new(big.Int).SetUint64(*relayGasMaxPerDAppOperationPtr)
 	}
@@ -208,10 +200,6 @@ func (c *Config) Validate() {
 
 	if c.Relay.Gas.MaxPerUserOperation == nil || c.Relay.Gas.MaxPerUserOperation.Cmp(common.Big0) == 0 {
 		c.Relay.Gas.MaxPerUserOperation = new(big.Int).Set(defaultOperationGasLimit)
-	}
-
-	if c.Relay.Gas.MaxPerSolverOperation == nil || c.Relay.Gas.MaxPerSolverOperation.Cmp(common.Big0) == 0 {
-		c.Relay.Gas.MaxPerSolverOperation = new(big.Int).Set(defaultOperationGasLimit)
 	}
 
 	if c.Relay.Gas.MaxPerDAppOperation == nil || c.Relay.Gas.MaxPerDAppOperation.Cmp(common.Big0) == 0 {

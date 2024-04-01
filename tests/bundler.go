@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlas"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
@@ -116,13 +117,20 @@ func newAtlasTx(bundleRequest *operation.BundleOperations) (*types.Transaction, 
 		return nil, fmt.Errorf("can't get gas price suggestion: %w", err)
 	}
 
+	solverGasLimit, err := auction.SolverGasLimit(bundleRequest.DAppOperation.Control, ethClient)
+	if err != nil {
+		return nil, fmt.Errorf("can't get solver gas limit: %w", err)
+	}
+
+	validationGasLimit := uint64(500_000)
+
 	opts := &bind.TransactOpts{
 		From:     bundlerEoa,
 		GasPrice: gasPrice,
 		Signer:   signFn,
 		Nonce:    nil,
 		Value:    nil,
-		GasLimit: uint64(2_000_000), // > SOLVER_GAS_LIMIT(1m) + VALIDATION_GAS_LIMIT(500k)
+		GasLimit: validationGasLimit + uint64(solverGasLimit),
 		NoSend:   !sendAtlasTx,
 	}
 

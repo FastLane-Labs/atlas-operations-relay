@@ -9,6 +9,7 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
@@ -153,7 +154,13 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 		return ErrAuctionNotFound
 	}
 
-	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator, am.config.Relay.Gas.MaxPerSolverOperation)
+	solverGasLimit, err := SolverGasLimit(solverOp.Control, am.ethClient)
+	if err != nil {
+		log.Info("failed to get solver gas limit", "err", err, "userOpHash", solverOp.UserOpHash.Hex())
+		return relayerror.ErrServerInternal
+	}
+
+	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator, solverGasLimit)
 	if relayErr != nil {
 		log.Info("invalid solver operation", "err", relayErr.Message, "userOpHash", auction.userOpHash.Hex())
 		return relayErr
@@ -199,4 +206,18 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 	}
 
 	return auction.addSolverOp(solverOp)
+}
+
+func SolverGasLimit(dAppControlAddress common.Address, ethClient *ethclient.Client) (uint32, error) {
+	dAppControlContract, err := dAppControl.NewDAppControl(dAppControlAddress, ethClient)
+	if err != nil {
+		return 0, err
+	}
+
+	solverGasLimit, err := dAppControlContract.GetSolverGasLimit(nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return solverGasLimit, nil
 }
