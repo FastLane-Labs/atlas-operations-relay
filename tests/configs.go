@@ -19,8 +19,8 @@ var (
 
 	tokenA                = common.HexToAddress("0x7439E9Bb6D8a84dd3A23fe621A30F95403F87fB9")
 	tokenB                = common.HexToAddress("0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9")
-	swapIntentDAppControl = common.HexToAddress("0xAFc62D0645D71A3ad1d4dC411C6D5d9f90E2255F")
-	simpleRfqSolver       = common.HexToAddress("0x3706E6a03C745ca2825DBC4361B279D6600728E9")
+	swapIntentDAppControl = common.HexToAddress("0x632767B79E67E30914c221CdE4383d1FeaE4768E")
+	simpleRfqSolver       = common.HexToAddress("0x8729a958873d1B44B5A089d654bb9112A33cE624")
 
 	userPk, _ = crypto.ToECDSA(common.FromHex("0d3414024a8d727a824933d47460fd9ea5d65f88feec92761a476405cf2d5922"))
 	userEoa   = crypto.PubkeyToAddress(userPk.PublicKey) // 0xeA402251DA4365c12BF9A3C9d88029A04988A712
@@ -36,9 +36,9 @@ var (
 			RpcUrl: "https://rpc.sepolia.org/",
 		},
 		Contracts: config.Contracts{
-			Atlas:             common.HexToAddress("0x79d1379195f1Ed373eF8c58aC36F9C1045f8684d"),
-			AtlasVerification: common.HexToAddress("0xf8e760554aB5c7E1Da51fFeD9C48de78bddD4c53"),
-			Simulator:         common.HexToAddress("0x165877D0E2646bf7B42621D1551a23b94B14EfF9"),
+			Atlas:             common.HexToAddress("0xa892eb9F79E0D1b6277B3456b0a8FE770386f6DB"),
+			AtlasVerification: common.HexToAddress("0xeeB91b2d317e3A747E88c1CA542ae31E32B87FDF"),
+			Simulator:         common.HexToAddress("0xAAdF6272cCE4121Db92da224C28d1B59C9feF4d5"),
 		},
 		Relay: config.Relay{
 			Auction: config.Auction{
