@@ -31,9 +31,8 @@ type configJson struct {
 			Duration uint64 `json:"duration,omitempty"`
 		} `json:"auction,omitempty"`
 		Gas struct {
-			MaxPerUserOperation   uint64 `json:"max_per_user_operation,omitempty"`
-			MaxPerSolverOperation uint64 `json:"max_per_solver_operation,omitempty"`
-			MaxPerDAppOperation   uint64 `json:"max_per_dApp_operation,omitempty"`
+			MaxPerUserOperation uint64 `json:"max_per_user_operation,omitempty"`
+			MaxPerDAppOperation uint64 `json:"max_per_dApp_operation,omitempty"`
 		} `json:"gas,omitempty"`
 	} `json:"relay,omitempty"`
 }
@@ -122,7 +121,6 @@ func (c *Config) parseConfigFile() {
 	c.Relay.Auction.Duration = time.Duration(configJson.Relay.Auction.Duration * uint64(time.Millisecond))
 
 	c.Relay.Gas.MaxPerUserOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerUserOperation)
-	c.Relay.Gas.MaxPerSolverOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerSolverOperation)
 	c.Relay.Gas.MaxPerDAppOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerDAppOperation)
 }
 
