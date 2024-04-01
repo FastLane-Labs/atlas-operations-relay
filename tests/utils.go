@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlas"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -21,6 +22,20 @@ func executionEnvironment(user common.Address, dAppControl common.Address) commo
 	}
 
 	return executionEnvironment.ExecutionEnvironment
+}
+
+func solverGasLimit(dAppControlAddress common.Address) (uint32, error) {
+	dAppControlContract, err := dAppControl.NewDAppControl(dAppControlAddress, ethClient)
+	if err != nil {
+		return 0, err
+	}
+
+	solverGasLimit, err := dAppControlContract.GetSolverGasLimit(nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return solverGasLimit, nil
 }
 
 func signMessage(data []byte, privKey *ecdsa.PrivateKey) ([]byte, error) {

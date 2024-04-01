@@ -159,11 +159,16 @@ func solveUserOperation(userOperationPartial *operation.UserOperationPartial, ex
 		panic(err)
 	}
 
+	gasLimit, err := solverGasLimit(userOperationPartial.Control)
+	if err != nil {
+		panic(err)
+	}
+
 	solverOp := &operation.SolverOperation{
 		From:         solverEoa,
 		To:           conf.Contracts.Atlas,
 		Value:        big.NewInt(0),
-		Gas:          big.NewInt(100000),
+		Gas:          big.NewInt(int64(gasLimit)),
 		MaxFeePerGas: big.NewInt(0).Add(userOperationPartial.MaxFeePerGas.ToInt(), big.NewInt(1e9)),
 		Deadline:     userOperationPartial.Deadline.ToInt(),
 		Solver:       simpleRfqSolver,
