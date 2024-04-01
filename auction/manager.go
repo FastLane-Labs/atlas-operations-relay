@@ -9,6 +9,7 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
@@ -23,6 +24,7 @@ var (
 	ErrUserOpFailedSimulation   = relayerror.NewError(4002, "user operation failed simulation")
 	ErrSolverOpFailedSimulation = relayerror.NewError(4003, "solver operation failed simulation")
 	ErrNotEnoughBondedBalance   = relayerror.NewError(4004, "not enough atlEth bonded balance")
+	ErrInvalidSolverGas         = relayerror.NewError(4005, "solver operation gas is more than solver gas limit")
 )
 
 var (
@@ -171,6 +173,17 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 		return ErrNotEnoughBondedBalance
 	}
 
+	solverGasLimit, err := SolverGasLimit(solverOp.Control, am.ethClient)
+	if err != nil {
+		log.Info("failed to get solver gas limit", "err", err, "userOpHash", solverOp.UserOpHash.Hex())
+		return relayerror.ErrServerInternal
+	}
+
+	if solverOp.Gas.Cmp(big.NewInt(int64(solverGasLimit))) > 0 {
+		log.Info("solver operation gas is more than solver gas limit", "userOpHash", solverOp.UserOpHash.Hex(), "solverGasLimit", solverGasLimit, "solverOpGas", solverOp.Gas.String())
+		return ErrInvalidSolverGas
+	}
+
 	dAppOp := operation.GenerateSimulationDAppOperation(auction.userOp)
 
 	pData, err := contract.SimulatorAbi.Pack("simSolverCall", *auction.userOp, *solverOp, *dAppOp)
@@ -199,4 +212,18 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 	}
 
 	return auction.addSolverOp(solverOp)
+}
+
+func SolverGasLimit(dAppControlAddress common.Address, ethClient *ethclient.Client) (uint32, error) {
+	dAppControlContract, err := dAppControl.NewDAppControl(dAppControlAddress, ethClient)
+	if err != nil {
+		return 0, err
+	}
+
+	solverGasLimit, err := dAppControlContract.GetSolverGasLimit(nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return solverGasLimit, nil
 }

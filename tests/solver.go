@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
@@ -159,7 +160,7 @@ func solveUserOperation(userOperationPartial *operation.UserOperationPartial, ex
 		panic(err)
 	}
 
-	gasLimit, err := solverGasLimit(userOperationPartial.Control)
+	gasLimit, err := auction.SolverGasLimit(userOperationPartial.Control, ethClient)
 	if err != nil {
 		panic(err)
 	}
