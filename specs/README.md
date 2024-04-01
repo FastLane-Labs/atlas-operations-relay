@@ -132,7 +132,6 @@ Note that all simulations referenced here can be easily done by calling view fun
 - 4002: user operation failed simulation
 - 4003: solver operation failed simulation
 - 4004: not enough atlEth bonded balance
-- 4005: solver operation gas limit more than solverGasLimit defined by dAppControl
 
 **41xx** **(Auction other error):**
 - 4100: auction for this user operation has already ended

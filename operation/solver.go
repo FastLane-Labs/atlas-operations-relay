@@ -139,12 +139,12 @@ func (s *SolverOperation) EncodeToRaw() *SolverOperationRaw {
 	}
 }
 
-func (s *SolverOperation) Validate(userOperation *UserOperation, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
+func (s *SolverOperation) Validate(userOperation *UserOperation, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit uint32) *relayerror.Error {
 	if s.To != atlas {
 		return ErrSolverOpInvalidToField
 	}
 
-	if s.Gas.Cmp(gasLimit) > 0 {
+	if s.Gas.Cmp(big.NewInt(int64(gasLimit))) > 0 {
 		return ErrSolverOpGasLimitExceeded
 	}
 

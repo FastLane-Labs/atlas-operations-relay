@@ -24,7 +24,6 @@ var (
 	ErrUserOpFailedSimulation   = relayerror.NewError(4002, "user operation failed simulation")
 	ErrSolverOpFailedSimulation = relayerror.NewError(4003, "solver operation failed simulation")
 	ErrNotEnoughBondedBalance   = relayerror.NewError(4004, "not enough atlEth bonded balance")
-	ErrInvalidSolverGas         = relayerror.NewError(4005, "solver operation gas is more than solver gas limit")
 )
 
 var (
@@ -155,7 +154,13 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 		return ErrAuctionNotFound
 	}
 
-	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator, am.config.Relay.Gas.MaxPerSolverOperation)
+	solverGasLimit, err := SolverGasLimit(solverOp.Control, am.ethClient)
+	if err != nil {
+		log.Info("failed to get solver gas limit", "err", err, "userOpHash", solverOp.UserOpHash.Hex())
+		return relayerror.ErrServerInternal
+	}
+
+	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator, solverGasLimit)
 	if relayErr != nil {
 		log.Info("invalid solver operation", "err", relayErr.Message, "userOpHash", auction.userOpHash.Hex())
 		return relayErr
@@ -171,17 +176,6 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 	if bondedBalance.Cmp(atlEthRequired) < 0 {
 		log.Info("not enough bonded balance", "userOpHash", solverOp.UserOpHash.Hex(), "from", solverOp.From.Hex(), "bondedBalance", bondedBalance.String(), "atlEthRequired", atlEthRequired.String())
 		return ErrNotEnoughBondedBalance
-	}
-
-	solverGasLimit, err := SolverGasLimit(solverOp.Control, am.ethClient)
-	if err != nil {
-		log.Info("failed to get solver gas limit", "err", err, "userOpHash", solverOp.UserOpHash.Hex())
-		return relayerror.ErrServerInternal
-	}
-
-	if solverOp.Gas.Cmp(big.NewInt(int64(solverGasLimit))) > 0 {
-		log.Info("solver operation gas is more than solver gas limit", "userOpHash", solverOp.UserOpHash.Hex(), "solverGasLimit", solverGasLimit, "solverOpGas", solverOp.Gas.String())
-		return ErrInvalidSolverGas
 	}
 
 	dAppOp := operation.GenerateSimulationDAppOperation(auction.userOp)

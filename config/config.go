@@ -52,9 +52,8 @@ type Auction struct {
 }
 
 type Gas struct {
-	MaxPerUserOperation   *big.Int
-	MaxPerSolverOperation *big.Int
-	MaxPerDAppOperation   *big.Int
+	MaxPerUserOperation *big.Int
+	MaxPerDAppOperation *big.Int
 }
 
 type Relay struct {
@@ -201,10 +200,6 @@ func (c *Config) Validate() {
 
 	if c.Relay.Gas.MaxPerUserOperation == nil || c.Relay.Gas.MaxPerUserOperation.Cmp(common.Big0) == 0 {
 		c.Relay.Gas.MaxPerUserOperation = new(big.Int).Set(defaultOperationGasLimit)
-	}
-
-	if c.Relay.Gas.MaxPerSolverOperation == nil || c.Relay.Gas.MaxPerSolverOperation.Cmp(common.Big0) == 0 {
-		c.Relay.Gas.MaxPerSolverOperation = new(big.Int).Set(defaultOperationGasLimit)
 	}
 
 	if c.Relay.Gas.MaxPerDAppOperation == nil || c.Relay.Gas.MaxPerDAppOperation.Cmp(common.Big0) == 0 {
