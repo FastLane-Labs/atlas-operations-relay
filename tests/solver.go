@@ -170,7 +170,7 @@ func solveUserOperation(userOperationPartial *operation.UserOperationPartial, ex
 		Control:      userOperationPartial.Control,
 		UserOpHash:   userOperationPartial.UserOpHash,
 		BidToken:     common.Address{},
-		BidAmount:    big.NewInt(1e13),
+		BidAmount:    big.NewInt(1e10),
 		Data:         data,
 		Signature:    nil,
 	}

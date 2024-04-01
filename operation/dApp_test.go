@@ -27,7 +27,7 @@ func TestDAppOperationProofHash(t *testing.T) {
 	t.Parallel()
 
 	dAppOp := generateDAppOperation()
-	want := common.HexToHash("0x408d435740d89283a7971ca84aa32bf4c2e134d8b50dde7693ea3c6359bec74a")
+	want := common.HexToHash("0x3b041ae0e931009f49b824007dd38b60c636ee64e1a5c33774ea8328d1c119a8")
 
 	result, err := dAppOp.ProofHash()
 	if err != nil {
@@ -44,7 +44,7 @@ func TestDAppOperationCheckSignature(t *testing.T) {
 
 	dAppOp := generateDAppOperation()
 	dAppOp.From = common.HexToAddress("0x4af08B2fA648F2f2B0A6805f37516050353d83dc")
-	dAppOp.Signature = common.FromHex("0x0ee6e7b9c532f1091efcac2b08fe7e631c22ba718bc4bf26bda5e6316461e9633c3f4fa50c8be1feec30a184b7844718ac957a10fe33fa8323e81eb7d9dfcf5e1c")
+	dAppOp.Signature = common.FromHex("0xd74aa4d9a165dbd4582dff35bdd4951757596628b73a3feb71062806e4dee5a92954b2c863ed2546f4c3ae8df6853b6d78a70a67218972acabfd9db96c70344c1b")
 	domainSeparator := common.HexToHash("0x82b5c47bb09eca2c93143f36f8fde6567050d39f3611535aab530d4f15fa5d0f")
 
 	relayErr := dAppOp.checkSignature(domainSeparator)
