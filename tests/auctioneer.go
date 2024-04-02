@@ -88,7 +88,9 @@ func sendUserRequest(userOp *operation.UserOperation) error {
 		return fmt.Errorf("failed to marshal userOp: %w", err)
 	}
 
-	resp, err := http.Post("http://localhost:8080/userOperation", "application/json", bytes.NewReader(reqJSON))
+	fmt.Println("reqJSON", string(reqJSON))
+
+	resp, err := http.Post(fmt.Sprintf("%s/userOperation", baseUrl), "application/json", bytes.NewReader(reqJSON))
 	if err != nil {
 		return fmt.Errorf("failed to send userOp: %w", err)
 	}
@@ -116,9 +118,13 @@ func sendUserRequest(userOp *operation.UserOperation) error {
 }
 
 func retreiveSolverOps(userOpHash common.Hash, wait bool) ([]*operation.SolverOperation, error) {
+	baseUrlParsed, err := url.Parse(baseUrl)
+	if err != nil {
+		panic(err)
+	}
 	u := url.URL{
 		Scheme: "http",
-		Host:   "localhost:8080",
+		Host:   baseUrlParsed.Host,
 		Path:   "/solverOperations",
 		RawQuery: url.Values{
 			"userOpHash": []string{userOpHash.Hex()},
@@ -162,7 +168,7 @@ func sendBundleOperation(userOp *operation.UserOperation, solverOps []*operation
 		return err
 	}
 
-	resp, err := http.Post("http://localhost:8080/bundleOperations", "application/json", bytes.NewReader(bundleOpsJSON))
+	resp, err := http.Post(fmt.Sprintf("%s/bundleOperations", baseUrl), "application/json", bytes.NewReader(bundleOpsJSON))
 	if err != nil {
 		return err
 	}
@@ -183,9 +189,13 @@ func sendBundleOperation(userOp *operation.UserOperation, solverOps []*operation
 }
 
 func retrieveAtlasTxHash(userOpHash common.Hash, wait bool) (common.Hash, error) {
+	baseUrlParsed, err := url.Parse(baseUrl)
+	if err != nil {
+		panic(err)
+	}
 	u := url.URL{
 		Scheme: "http",
-		Host:   "localhost:8080",
+		Host:   baseUrlParsed.Host,
 		Path:   "/bundleHash",
 		RawQuery: url.Values{
 			"userOpHash": []string{userOpHash.Hex()},

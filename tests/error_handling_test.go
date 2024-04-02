@@ -3,6 +3,7 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"net/http"
 	"testing"
@@ -43,7 +44,7 @@ func TestBadPostReqJson(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resp1, err := http.Post("http://localhost:8080/userOperation", "application/json", bytes.NewReader(reqJSON))
+	resp1, err := http.Post(fmt.Sprintf("%s/userOperation", baseUrl), "application/json", bytes.NewReader(reqJSON))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +53,7 @@ func TestBadPostReqJson(t *testing.T) {
 		t.Fatalf("expected status code %d, got %d", http.StatusBadRequest, resp1.StatusCode)
 	}
 
-	resp2, err := http.Post("http://localhost:8080/solverOperation", "application/json", bytes.NewReader(reqJSON))
+	resp2, err := http.Post(fmt.Sprintf("%s/solverOperation", baseUrl), "application/json", bytes.NewReader(reqJSON))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +62,7 @@ func TestBadPostReqJson(t *testing.T) {
 		t.Fatalf("expected status code %d, got %d", http.StatusBadRequest, resp2.StatusCode)
 	}
 
-	resp3, err := http.Post("http://localhost:8080/bundleOperations", "application/json", bytes.NewReader(reqJSON))
+	resp3, err := http.Post(fmt.Sprintf("%s/bundleOperations", baseUrl), "application/json", bytes.NewReader(reqJSON))
 	if err != nil {
 		t.Fatal(err)
 	}

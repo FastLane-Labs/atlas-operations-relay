@@ -206,7 +206,12 @@ func solverData(swapIntent *SwapIntent, executionEnvironment common.Address) ([]
 }
 
 func getSolverWsConnection() (*websocket.Conn, *http.Response) {
-	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws/solver"}
+	baseUrlParsed, err := url.Parse(baseUrl)
+	if err != nil {
+		panic(err)
+	}
+
+	u := url.URL{Scheme: "ws", Host: baseUrlParsed.Host, Path: "/ws/solver"}
 
 	conn, solverResp, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -221,7 +226,7 @@ func sendSolverOpHttp(solverOp *operation.SolverOperation) error {
 		return err
 	}
 
-	resp, err := http.Post("http://localhost:8080/solverOperation", "application/json", bytes.NewReader(solverOpJSON))
+	resp, err := http.Post(fmt.Sprintf("%s/solverOperation", baseUrl), "application/json", bytes.NewReader(solverOpJSON))
 	if err != nil {
 		return err
 	}

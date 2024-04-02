@@ -32,9 +32,15 @@ func runBundler(bundlerPk *ecdsa.PrivateKey, bundlerReceiveChan chan []byte, bun
 		return
 	}
 
+	baseUrlParsed, err := url.Parse(baseUrl)
+	if err != nil {
+		log.Error("failed to parse baseUrl:", err)
+		return
+	}
+
 	u := url.URL{
 		Scheme: "ws",
-		Host:   "localhost:8080",
+		Host:   baseUrlParsed.Host,
 		Path:   "/ws/bundler",
 		RawQuery: url.Values{
 			"address":   []string{bundlerAddr.Hex()},

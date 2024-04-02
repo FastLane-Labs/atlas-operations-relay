@@ -13,6 +13,10 @@ import (
 func TestMain(m *testing.M) {
 	conf.Validate()
 
+	if !shouldStartLocalRelay {
+		baseUrl = baseUrlNginxProxy //connect to the nginx proxy
+	}
+
 	var err error
 	ethClient, err = ethclient.Dial(conf.Network.RpcUrl)
 	if err != nil {
@@ -29,11 +33,14 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	serverReadyChan := make(chan struct{})
-	// Start the relay
-	go core.StartRelay(conf, serverReadyChan)
-	// Wait for the server to be ready
-	<-serverReadyChan
+	if shouldStartLocalRelay {
+		serverReadyChan := make(chan struct{})
+		// Start the relay
+		go core.StartRelay(conf, serverReadyChan)
+		// Wait for the server to be ready
+		<-serverReadyChan
+	}
+
 	os.Exit(m.Run())
 }
 
