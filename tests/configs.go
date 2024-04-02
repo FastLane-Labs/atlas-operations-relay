@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	shouldStartLocalRelay = false //true -> start a local instance of relay before testing, false -> connect to a locally running relay in a docker container via nginx proxy
+	shouldStartLocalRelay = true //true -> start a local instance of relay before testing, false -> connect to a locally running relay in a docker container via nginx proxy
 	baseUrl               = "http://localhost:8080"
 	baseUrlNginxProxy     = "http://localhost"
 
