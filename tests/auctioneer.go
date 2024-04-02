@@ -88,8 +88,6 @@ func sendUserRequest(userOp *operation.UserOperation) error {
 		return fmt.Errorf("failed to marshal userOp: %w", err)
 	}
 
-	fmt.Println("reqJSON", string(reqJSON))
-
 	resp, err := http.Post(fmt.Sprintf("%s/userOperation", baseUrl), "application/json", bytes.NewReader(reqJSON))
 	if err != nil {
 		return fmt.Errorf("failed to send userOp: %w", err)
