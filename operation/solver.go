@@ -23,7 +23,7 @@ var (
 )
 
 var (
-	SOLVER_TYPE_HASH = crypto.Keccak256Hash([]byte("SolverOperation(address from,address to,uint256 value,uint256 gas,uint256 maxFeePerGas,uint256 deadline,address dapp,address control,bytes32 userOpHash,address bidToken,uint256 bidAmount,bytes32 data)"))
+	SOLVER_TYPE_HASH = crypto.Keccak256Hash([]byte("SolverOperation(address from,address to,uint256 value,uint256 gas,uint256 maxFeePerGas,uint256 deadline,address dapp,address control,bytes32 userOpHash,address bidToken,uint256 bidAmount,bytes data)"))
 )
 
 var (
