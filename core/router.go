@@ -43,6 +43,12 @@ func NewRouter(api *Api) *mux.Router {
 func buildRoutes(api *Api) []Route {
 	return []Route{
 		{
+			"Ping",
+			http.MethodGet,
+			"/ping",
+			api.Ping,
+		},
+		{
 			"SubmitUserOperation",
 			http.MethodPost,
 			"/userOperation",

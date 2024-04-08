@@ -105,6 +105,10 @@ func writeResponseData(w http.ResponseWriter, data interface{}) {
 	w.Write(b)
 }
 
+func (api *Api) Ping(w http.ResponseWriter, r *http.Request) {
+	writeResponseData(w, "pong")
+}
+
 func (api *Api) SubmitUserOperation(w http.ResponseWriter, r *http.Request) {
 	userOpWithHintsRaw := &operation.UserOperationWithHintsRaw{}
 	if relayErr := getPostRequestData(r, userOpWithHintsRaw); relayErr != nil {
