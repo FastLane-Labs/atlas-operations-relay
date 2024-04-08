@@ -23,6 +23,7 @@ var (
 	ErrForwardBundle          = relayerror.NewError(3100, "failed to forward bundle")
 	ErrCantGetDAppSignatories = relayerror.NewError(3101, "failed to get dapp signatories")
 	ErrCantGetBondedBalance   = relayerror.NewError(3102, "failed to get atlEth bonded balance")
+	ErrRelayIsOffline         = relayerror.NewError(3103, "relay is offline")
 )
 
 type Relay struct {

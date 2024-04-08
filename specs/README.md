@@ -118,6 +118,7 @@ Note that all simulations referenced here can be easily done by calling view fun
 - 3100: failed to forward bundle
 - 3101: failed to get dapp signatories
 - 3102: failed to get atlEth bonded balance
+- 3103: relay is offline
 
 **32xx** **(Server error):**
 - 3200: bundler is offline
