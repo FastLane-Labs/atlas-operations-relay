@@ -2,9 +2,10 @@ package tests
 
 import (
 	"crypto/ecdsa"
-	"fmt"
+	// "fmt"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlas"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -24,12 +25,7 @@ func executionEnvironment(user common.Address, dAppControl common.Address) commo
 }
 
 func signMessage(data []byte, privKey *ecdsa.PrivateKey) ([]byte, error) {
-	prefix := fmt.Sprintf("\x19Ethereum Signed Message:\n%d", len(data))
-	prefixedData := []byte(prefix + string(data))
-
-	hash := crypto.Keccak256Hash(prefixedData)
-
-	signature, err := crypto.Sign(hash.Bytes(), privKey)
+	signature, err := crypto.Sign(accounts.TextHash(data), privKey)
 	if err != nil {
 		return nil, err
 	}
