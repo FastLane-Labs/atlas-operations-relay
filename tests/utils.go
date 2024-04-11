@@ -2,7 +2,6 @@ package tests
 
 import (
 	"crypto/ecdsa"
-	// "fmt"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlas"
 	"github.com/ethereum/go-ethereum/accounts"
