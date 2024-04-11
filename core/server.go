@@ -146,8 +146,13 @@ func (br *BundleRequest) Marshal() []byte {
 
 type BundleResponse struct {
 	Id     string      `json:"id" validate:"required"`
-	Result common.Hash `json:"result"`
-	Error  string      `json:"error"`
+	Result common.Hash `json:"result,omitempty"`
+	Error  string      `json:"error,omitempty"`
+}
+
+func (br *BundleResponse) Marshal() []byte {
+	b, _ := json.Marshal(br)
+	return b
 }
 
 type Marshaler interface {
