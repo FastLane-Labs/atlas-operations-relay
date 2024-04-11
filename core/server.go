@@ -296,6 +296,8 @@ func (s *Server) registerBundler(conn *Conn) {
 		return
 	}
 
+	log.Info("bundler connected", "bundler", conn.bundler.Hex())
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -307,6 +309,8 @@ func (s *Server) unregisterBundler(conn *Conn) {
 		log.Info("invalid bundler connection")
 		return
 	}
+
+	log.Info("bundler disconnected", "bundler", conn.bundler.Hex())
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -624,9 +628,6 @@ func (s *Server) writePump(conn *Conn, doneChan <-chan struct{}) {
 	defer func() {
 		conn.Close()
 		s.removeSubscriber(conn.uuid)
-		if conn.isBundler() {
-			s.unregisterBundler(conn)
-		}
 	}()
 
 	for {
