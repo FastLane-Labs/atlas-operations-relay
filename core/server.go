@@ -16,10 +16,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	"golang.org/x/time/rate"
 )
 
 const (
-	BundlerTimeout = 2 * time.Second
+	BundlerTimeout      = 2 * time.Second
+	websocketRateLimit  = 2
+	websocketBurstLimit = 32
 
 	// Channels
 	ChannelSolver  = "solver"
@@ -50,6 +53,7 @@ const (
 	InvalidMethod          = "invalid method"
 	InvalidTopic           = "invalid topic"
 	InvalidSolverOperation = "invalid solver operation"
+	RateLimitExceeded      = "rate limit exceeded"
 
 	// Websocket config
 	pongWait        = 60 * time.Second
@@ -99,6 +103,10 @@ type RequestParams struct {
 	Topic           string                         `json:"topic"`
 	SolverOperation *operation.SolverOperationRaw  `json:"solverOperation"`
 	Bundle          *operation.BundleOperationsRaw `json:"bundle"`
+}
+
+type BareRequest struct {
+	Id string `json:"id" validate:"required"`
 }
 
 type Request struct {
@@ -594,7 +602,30 @@ func (s *Server) processNewSolverOperation(solverOp *operation.SolverOperation, 
 	resp.Result = SolverOpSuccessfullySubmitted
 }
 
+func (s *Server) rateLimit(conn *Conn, msg []byte) {
+	resp := &Response{
+		Error: RateLimitExceeded,
+	}
+
+	defer conn.send(resp)
+
+	var req *BareRequest
+	if err := json.Unmarshal(msg, &req); err != nil {
+		log.Info("failed to unmarshal rate limited message", "err", err)
+		return
+	}
+
+	validate := validator.New()
+	if err := validate.Struct(req); err != nil {
+		log.Info("invalid rate limited message", "err", err)
+		return
+	}
+
+	resp.Id = req.Id
+}
+
 func (s *Server) readPump(conn *Conn, doneChan chan<- struct{}) {
+	limiter := rate.NewLimiter(rate.Limit(websocketRateLimit), websocketBurstLimit)
 	conn.SetReadLimit(maxMessageSize)
 	conn.SetReadDeadline(time.Now().Add(pongWait))
 	conn.SetPongHandler(func(string) error {
@@ -607,6 +638,11 @@ func (s *Server) readPump(conn *Conn, doneChan chan<- struct{}) {
 		if err != nil {
 			close(doneChan)
 			break
+		}
+
+		if !limiter.Allow() {
+			s.rateLimit(conn, msg)
+			continue
 		}
 
 		if conn.isBundler() {

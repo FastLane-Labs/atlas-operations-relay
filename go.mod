@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.4.2
+	golang.org/x/time v0.3.0
 )
 
 require (
