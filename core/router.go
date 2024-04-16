@@ -21,6 +21,7 @@ func NewRouter(api *Api) *mux.Router {
 	logger := func(inner http.Handler, name string) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
+			w.Header().Set("Access-Control-Allow-Origin", "*")
 			inner.ServeHTTP(w, r)
 			log.Info(fmt.Sprintf("served %s", name), "method", r.Method, "url", r.RequestURI, "duration", time.Since(start))
 		})
