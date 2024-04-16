@@ -164,9 +164,11 @@ func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Addre
 		return ErrUserOpDeadlineExceeded
 	}
 
-	relayErr := u.checkSignature(atlasDomainSeparator)
-	if relayErr != nil {
-		return relayErr
+	// Check the signature only if it's set
+	if len(u.Signature) > 0 {
+		if relayErr := u.checkSignature(atlasDomainSeparator); relayErr != nil {
+			return relayErr
+		}
 	}
 
 	return nil
