@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"golang.org/x/time/rate"
@@ -247,7 +248,7 @@ func NewServer(router *mux.Router, newSolverOperation newSolverOperationFn, getD
 }
 
 func (s *Server) ListenAndServe(serverReadyChan chan struct{}) {
-	httpServer := &http.Server{Addr: ":8080", Handler: s.router}
+	httpServer := &http.Server{Addr: ":8080", Handler: handlers.CORS()(s.router)}
 	ln, err := net.Listen("tcp", httpServer.Addr)
 	if err != nil {
 		panic(err)
