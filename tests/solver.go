@@ -18,7 +18,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type solveUserOpFunc func(*operation.UserOperationPartial, common.Address) *operation.SolverOperation
+type solveUserOpFunc func(*operation.UserOperationPartialRaw, common.Address) *operation.SolverOperation
 
 func runSolver(sendMsgOnWs bool,
 	solveUserOpFunc solveUserOpFunc,
@@ -145,12 +145,12 @@ func runSolver(sendMsgOnWs bool,
 	log.Info("solver sent solverOp", "userOpHash", solverOp.UserOpHash.Hex())
 }
 
-func solveUserOperation(userOperationPartial *operation.UserOperationPartial, executionEnvironment common.Address) *operation.SolverOperation {
-	if userOperationPartial.Data == nil {
-		panic("need userOperationPartial.Data for this test")
+func solveUserOperation(userOperationPartialRaw *operation.UserOperationPartialRaw, executionEnvironment common.Address) *operation.SolverOperation {
+	if userOperationPartialRaw.Data == nil {
+		panic("need userOperationPartialRaw.Data for this test")
 	}
 
-	swapIntent, err := swapIntentAbiDecode(userOperationPartial.Data)
+	swapIntent, err := swapIntentAbiDecode(userOperationPartialRaw.Data)
 	if err != nil {
 		panic(err)
 	}
@@ -160,7 +160,7 @@ func solveUserOperation(userOperationPartial *operation.UserOperationPartial, ex
 		panic(err)
 	}
 
-	gasLimit, err := auction.SolverGasLimit(userOperationPartial.Control, ethClient)
+	gasLimit, err := auction.SolverGasLimit(userOperationPartialRaw.Control, ethClient)
 	if err != nil {
 		panic(err)
 	}
@@ -170,11 +170,11 @@ func solveUserOperation(userOperationPartial *operation.UserOperationPartial, ex
 		To:           conf.Contracts.Atlas,
 		Value:        big.NewInt(0),
 		Gas:          big.NewInt(int64(gasLimit)),
-		MaxFeePerGas: big.NewInt(0).Add(userOperationPartial.MaxFeePerGas.ToInt(), big.NewInt(1e9)),
-		Deadline:     userOperationPartial.Deadline.ToInt(),
+		MaxFeePerGas: big.NewInt(0).Add(userOperationPartialRaw.MaxFeePerGas.ToInt(), big.NewInt(1e9)),
+		Deadline:     userOperationPartialRaw.Deadline.ToInt(),
 		Solver:       simpleRfqSolver,
-		Control:      userOperationPartial.Control,
-		UserOpHash:   userOperationPartial.UserOpHash,
+		Control:      userOperationPartialRaw.Control,
+		UserOpHash:   userOperationPartialRaw.UserOpHash,
 		BidToken:     common.Address{},
 		BidAmount:    big.NewInt(1e10),
 		Data:         data,

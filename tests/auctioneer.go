@@ -140,11 +140,15 @@ func retreiveSolverOps(userOpHash common.Hash, wait bool) ([]*operation.SolverOp
 		return nil, fmt.Errorf("expected status code 200, got %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
-	var solverOps []*operation.SolverOperation
-	err = json.NewDecoder(resp.Body).Decode(&solverOps)
+	var solverOpsWithScoreRaw []*operation.SolverOperationWithScoreRaw
 
-	if err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&solverOpsWithScoreRaw); err != nil {
 		return make([]*operation.SolverOperation, 0), err
+	}
+
+	solverOps := make([]*operation.SolverOperation, 0, len(solverOpsWithScoreRaw))
+	for _, solverOpWithScoreRaw := range solverOpsWithScoreRaw {
+		solverOps = append(solverOps, solverOpWithScoreRaw.SolverOperation.Decode())
 	}
 
 	return solverOps, nil

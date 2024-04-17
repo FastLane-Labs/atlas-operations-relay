@@ -248,7 +248,7 @@ func (u *UserOperation) checkSignature(domainSeparator common.Hash) *relayerror.
 	return nil
 }
 
-type UserOperationPartial struct {
+type UserOperationPartialRaw struct {
 	UserOpHash   common.Hash    `json:"userOpHash"`
 	To           common.Address `json:"to"`
 	Gas          *hexutil.Big   `json:"gas"`
@@ -265,9 +265,9 @@ type UserOperationPartial struct {
 	From  common.Address `json:"from,omitempty"`
 }
 
-func NewUserOperationPartial(userOp *UserOperation, hints []common.Address) *UserOperationPartial {
+func NewUserOperationPartialRaw(userOp *UserOperation, hints []common.Address) *UserOperationPartialRaw {
 	userOpHash, _ := userOp.Hash()
-	userOpPartial := &UserOperationPartial{
+	userOpPartial := &UserOperationPartialRaw{
 		UserOpHash:   userOpHash,
 		To:           userOp.To,
 		Gas:          (*hexutil.Big)(userOp.Gas),

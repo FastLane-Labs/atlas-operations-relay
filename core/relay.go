@@ -1,13 +1,12 @@
 package core
 
 import (
-	"math/big"
-
 	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/bundle"
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlETH"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlasVerification"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/storage"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
@@ -32,6 +31,10 @@ type Relay struct {
 
 	auctionManager *auction.Manager
 	bundleManager  *bundle.Manager
+
+	atlETHContract            *atlETH.AtlETH
+	storageContract           *storage.Storage
+	atlasVerificationContract *atlasVerification.AtlasVerification
 }
 
 func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
@@ -40,12 +43,9 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 		panic(err)
 	}
 
-	balanceOfBonded := func(account common.Address) (*big.Int, *relayerror.Error) {
-		balance, err := atlETHContract.BalanceOfBonded(nil, account)
-		if err != nil {
-			return nil, ErrCantGetBondedBalance.AddError(err)
-		}
-		return balance, nil
+	storageContract, err := storage.NewStorage(config.Contracts.Atlas, ethClient)
+	if err != nil {
+		panic(err)
 	}
 
 	atlasVerificationContract, err := atlasVerification.NewAtlasVerification(config.Contracts.AtlasVerification, ethClient)
@@ -53,30 +53,23 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 		panic(err)
 	}
 
-	getDAppSignatories := func(dAppControl common.Address) ([]common.Address, *relayerror.Error) {
-		signatories, err := atlasVerificationContract.GetDAppSignatories(nil, dAppControl)
-		if err != nil {
-			return []common.Address{}, ErrCantGetDAppSignatories.AddError(err)
-		}
-
-		return signatories, nil
-	}
-
 	atlasDomainSeparator, err := atlasVerificationContract.GetDomainSeparator(nil)
 	if err != nil {
 		panic(err)
 	}
 
-	auctionManager := auction.NewManager(ethClient, config, atlasDomainSeparator, balanceOfBonded)
-
-	relay := &Relay{
-		config:         config,
-		auctionManager: auctionManager,
-		bundleManager:  bundle.NewManager(ethClient, config, atlasDomainSeparator),
+	r := &Relay{
+		config:                    config,
+		atlETHContract:            atlETHContract,
+		storageContract:           storageContract,
+		atlasVerificationContract: atlasVerificationContract,
 	}
 
-	relay.server = NewServer(NewRouter(NewApi(relay)), auctionManager.NewSolverOperation, getDAppSignatories)
-	return relay
+	r.auctionManager = auction.NewManager(ethClient, config, atlasDomainSeparator, r.balanceOfBonded, r.reputationScore)
+	r.bundleManager = bundle.NewManager(ethClient, config, atlasDomainSeparator)
+	r.server = NewServer(NewRouter(NewApi(r)), r.auctionManager.NewSolverOperation, r.getDAppSignatories)
+
+	return r
 }
 
 func (r *Relay) Run(serverReadyChan chan struct{}) {
@@ -84,16 +77,16 @@ func (r *Relay) Run(serverReadyChan chan struct{}) {
 }
 
 func (r *Relay) submitUserOperation(userOp *operation.UserOperation, hints []common.Address) (common.Hash, *relayerror.Error) {
-	userOpHash, userOpPartial, relayErr := r.auctionManager.NewUserOperation(userOp, hints)
+	userOpHash, userOpPartialRaw, relayErr := r.auctionManager.NewUserOperation(userOp, hints)
 	if relayErr != nil {
 		return common.Hash{}, relayErr
 	}
 
-	go r.server.BroadcastUserOperationPartial(userOpPartial)
+	go r.server.BroadcastUserOperationPartial(userOpPartialRaw)
 	return userOpHash, nil
 }
 
-func (r *Relay) getSolverOperations(userOpHash common.Hash, completionChan chan []*operation.SolverOperation) ([]*operation.SolverOperation, *relayerror.Error) {
+func (r *Relay) getSolverOperations(userOpHash common.Hash, completionChan chan []*operation.SolverOperationWithScore) (operation.SolverOperationsWithScore, *relayerror.Error) {
 	return r.auctionManager.GetSolverOperations(userOpHash, completionChan)
 }
 

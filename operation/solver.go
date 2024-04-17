@@ -104,6 +104,33 @@ func (s *SolverOperationRaw) Decode() *SolverOperation {
 	}
 }
 
+type SolverOperationWithScoreRaw struct {
+	SolverOperation *SolverOperationRaw `json:"solverOperation"`
+	Score           int                 `json:"score"`
+}
+
+type SolverOperationWithScore struct {
+	SolverOperation *SolverOperation
+	Score           int
+}
+
+func (sop *SolverOperationWithScore) EncodeToRaw() *SolverOperationWithScoreRaw {
+	return &SolverOperationWithScoreRaw{
+		SolverOperation: sop.SolverOperation.EncodeToRaw(),
+		Score:           sop.Score,
+	}
+}
+
+type SolverOperationsWithScore []*SolverOperationWithScore
+
+func (sops SolverOperationsWithScore) EncodeToRaw() []*SolverOperationWithScoreRaw {
+	sopsRaw := make([]*SolverOperationWithScoreRaw, len(sops))
+	for i, sop := range sops {
+		sopsRaw[i] = sop.EncodeToRaw()
+	}
+	return sopsRaw
+}
+
 // Internal representation of a solver operation
 type SolverOperation struct {
 	From         common.Address
