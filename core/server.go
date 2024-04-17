@@ -248,7 +248,10 @@ func NewServer(router *mux.Router, newSolverOperation newSolverOperationFn, getD
 }
 
 func (s *Server) ListenAndServe(serverReadyChan chan struct{}) {
-	httpServer := &http.Server{Addr: ":8080", Handler: handlers.CORS()(s.router)}
+	httpServer := &http.Server{
+		Addr:    ":8080",
+		Handler: handlers.CORS(handlers.AllowedHeaders([]string{"Content-Type"}))(s.router),
+	}
 	ln, err := net.Listen("tcp", httpServer.Addr)
 	if err != nil {
 		panic(err)
