@@ -27,13 +27,17 @@ func (e *Error) Error() string {
 }
 
 func (e *Error) AddError(err error) *Error {
-	e.Message = fmt.Sprintf("%s: %s", e.Message, err.Error())
-	return e
+	return NewError(
+		e.Code,
+		fmt.Sprintf("%s: %s", e.Message, err.Error()),
+	)
 }
 
 func (e *Error) AddMessage(message string) *Error {
-	e.Message = fmt.Sprintf("%s: %s", e.Message, message)
-	return e
+	return NewError(
+		e.Code,
+		fmt.Sprintf("%s: %s", e.Message, message),
+	)
 }
 
 func (e *Error) Marshal() []byte {
