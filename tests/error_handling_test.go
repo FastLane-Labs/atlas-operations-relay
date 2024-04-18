@@ -118,20 +118,20 @@ func faultyUserOpBadData() *operation.UserOperation {
 	return userOp
 }
 
-func solveUserOperationBadSignature(userOperationPartial *operation.UserOperationPartial, executionEnvironment common.Address) *operation.SolverOperation {
-	solverOp := solveUserOperation(userOperationPartial, executionEnvironment)
+func solveUserOperationBadSignature(userOperationPartialRaw *operation.UserOperationPartialRaw, executionEnvironment common.Address) *operation.SolverOperation {
+	solverOp := solveUserOperation(userOperationPartialRaw, executionEnvironment)
 	solverOp.Signature = []byte("bad signature")
 	return solverOp
 }
 
-func solveUserOperationBadGas(userOperationPartial *operation.UserOperationPartial, executionEnvironment common.Address) *operation.SolverOperation {
-	solverOp := solveUserOperation(userOperationPartial, executionEnvironment)
+func solveUserOperationBadGas(userOperationPartialRaw *operation.UserOperationPartialRaw, executionEnvironment common.Address) *operation.SolverOperation {
+	solverOp := solveUserOperation(userOperationPartialRaw, executionEnvironment)
 	solverOp.MaxFeePerGas = big.NewInt(0)
 	return solverOp
 }
 
-func solveUserOperationBadData(userOperationPartial *operation.UserOperationPartial, executionEnvironment common.Address) *operation.SolverOperation {
-	solverOp := solveUserOperation(userOperationPartial, executionEnvironment)
+func solveUserOperationBadData(userOperationPartialRaw *operation.UserOperationPartialRaw, executionEnvironment common.Address) *operation.SolverOperation {
+	solverOp := solveUserOperation(userOperationPartialRaw, executionEnvironment)
 	solverOp.Data = []byte("bad data")
 	return solverOp
 }

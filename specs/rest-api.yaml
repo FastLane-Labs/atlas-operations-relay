@@ -116,7 +116,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SolverOperations'
+                $ref: '#/components/schemas/SolverOperationsWithScores'
         '400':
           description: Invalid input
           content:
@@ -446,6 +446,29 @@ components:
         $ref: '#/components/schemas/SolverOperation'
       xml:
         name: SolverOperations
+        wrapped: true
+    
+    SolverOperationWithScore:
+      type: object
+      properties:
+        solverOperation:
+          $ref: '#/components/schemas/SolverOperation'
+          description: An embedded SolverOperation object containing specific transaction details.
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: The reputation score for this operation.
+      required:
+        - solverOperation
+        - score
+    
+    SolverOperationsWithScores:
+      type: array
+      items:
+        $ref: '#/components/schemas/SolverOperationWithScore'
+      xml:
+        name: SolverOperationsWithScores
         wrapped: true
 
     DAppOperation:

@@ -31,6 +31,7 @@ var (
 )
 
 type balanceOfBondedFn func(common.Address) (*big.Int, *relayerror.Error)
+type reputationScoreFn func(account common.Address) int
 
 type Manager struct {
 	ethClient *ethclient.Client
@@ -42,17 +43,19 @@ type Manager struct {
 	atlasDomainSeparator common.Hash
 
 	balanceOfBonded balanceOfBondedFn
+	reputationScore reputationScoreFn
 
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, balanceOfBonded balanceOfBondedFn) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, balanceOfBonded balanceOfBondedFn, reputationScore reputationScoreFn) *Manager {
 	am := &Manager{
 		ethClient:            ethClient,
 		config:               config,
 		auctions:             make(map[common.Hash]*Auction),
 		atlasDomainSeparator: atlasDomainSeparator,
 		balanceOfBonded:      balanceOfBonded,
+		reputationScore:      reputationScore,
 	}
 
 	go am.auctionsCleaner()
@@ -71,7 +74,7 @@ func (am *Manager) auctionsCleaner() {
 	}
 }
 
-func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []common.Address) (common.Hash, *operation.UserOperationPartial, *relayerror.Error) {
+func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []common.Address) (common.Hash, *operation.UserOperationPartialRaw, *relayerror.Error) {
 	userOpHash, relayErr := userOp.Hash()
 	if relayErr != nil {
 		log.Info("failed to compute user operation hash", "err", relayErr.Message)
@@ -116,13 +119,13 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []com
 		return common.Hash{}, nil, ErrAuctionAlreadyStarted
 	}
 
-	userOperationPartial := operation.NewUserOperationPartial(userOp, hints)
+	userOperationPartialRaw := operation.NewUserOperationPartialRaw(userOp, hints)
 
-	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, userOp, userOperationPartial, userOpHash)
-	return userOpHash, userOperationPartial, nil
+	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, userOp, userOperationPartialRaw, userOpHash)
+	return userOpHash, userOperationPartialRaw, nil
 }
 
-func (am *Manager) GetSolverOperations(userOpHash common.Hash, completionChan chan []*operation.SolverOperation) ([]*operation.SolverOperation, *relayerror.Error) {
+func (am *Manager) GetSolverOperations(userOpHash common.Hash, completionChan chan []*operation.SolverOperationWithScore) ([]*operation.SolverOperationWithScore, *relayerror.Error) {
 	am.mu.RLock()
 	defer am.mu.RUnlock()
 
@@ -205,7 +208,14 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 		return ErrSolverOpFailedSimulation.AddMessage(fmt.Sprintf("result: %d, solverOutcomeResult: %s", result, solverOutcomeResult.String()))
 	}
 
-	return auction.addSolverOp(solverOp)
+	solverOpWithScore := &operation.SolverOperationWithScore{
+		SolverOperation: solverOp,
+		Score:           am.reputationScore(solverOp.From),
+	}
+
+	log.Info("valid solver operation", "userOpHash", auction.userOpHash.Hex(), "from", solverOp.From.Hex(), "score", solverOpWithScore.Score)
+
+	return auction.addSolverOp(solverOpWithScore)
 }
 
 func SolverGasLimit(dAppControlAddress common.Address, ethClient *ethclient.Client) (uint32, error) {

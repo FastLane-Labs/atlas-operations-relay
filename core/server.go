@@ -128,7 +128,7 @@ func (r *Response) Marshal() []byte {
 }
 
 type BroadcastParams struct {
-	UserOperationPartial *operation.UserOperationPartial `json:"userOperation,omitempty"`
+	UserOperationPartial *operation.UserOperationPartialRaw `json:"userOperation,omitempty"`
 }
 
 type Broadcast struct {
@@ -330,12 +330,12 @@ func (s *Server) unregisterBundler(conn *Conn) {
 	delete(s.bundlers, conn.bundler)
 }
 
-func (s *Server) BroadcastUserOperationPartial(userOperationPartial *operation.UserOperationPartial) {
+func (s *Server) BroadcastUserOperationPartial(userOperationPartialRaw *operation.UserOperationPartialRaw) {
 	broadcast := &Broadcast{
 		Event: EventUpdate,
 		Topic: TopicNewUserOperations,
 		Data: &BroadcastParams{
-			UserOperationPartial: userOperationPartial,
+			UserOperationPartial: userOperationPartialRaw,
 		},
 	}
 	s.publish(broadcast)

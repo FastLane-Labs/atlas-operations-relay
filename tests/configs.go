@@ -42,7 +42,7 @@ var (
 		},
 		Relay: config.Relay{
 			Auction: config.Auction{
-				Duration: 3 * time.Second,
+				Duration: 5 * time.Second,
 			},
 		},
 	}

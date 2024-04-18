@@ -135,24 +135,24 @@ func (api *Api) GetSolverOperations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var completionChan chan []*operation.SolverOperation
+	var completionChan chan []*operation.SolverOperationWithScore
 	if retrieveReq.Wait {
-		completionChan = make(chan []*operation.SolverOperation)
+		completionChan = make(chan []*operation.SolverOperationWithScore)
 	}
 
-	solverOps, relayErr := api.relay.getSolverOperations(retrieveReq.UserOpHash, completionChan)
+	solverOpsWithScore, relayErr := api.relay.getSolverOperations(retrieveReq.UserOpHash, completionChan)
 	if relayErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())
 		return
 	}
 
-	if retrieveReq.Wait && solverOps == nil {
-		solverOps = <-completionChan
+	if retrieveReq.Wait && solverOpsWithScore == nil {
+		solverOpsWithScore = <-completionChan
 		close(completionChan)
 	}
 
-	writeResponseData(w, solverOps)
+	writeResponseData(w, solverOpsWithScore.EncodeToRaw())
 }
 
 func (api *Api) SubmitBundleOperations(w http.ResponseWriter, r *http.Request) {

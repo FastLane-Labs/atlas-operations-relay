@@ -19,26 +19,26 @@ type Auction struct {
 	open       bool
 	userOpHash common.Hash
 
-	userOp               *operation.UserOperation
-	userOperationPartial *operation.UserOperationPartial
-	solverOps            []*operation.SolverOperation
+	userOp                  *operation.UserOperation
+	userOperationPartialRaw *operation.UserOperationPartialRaw
+	solverOpsWithScore      []*operation.SolverOperationWithScore
 
-	completionSubs []chan []*operation.SolverOperation
+	completionSubs []chan []*operation.SolverOperationWithScore
 
 	createdAt time.Time
 
 	mu sync.RWMutex
 }
 
-func NewAuction(duration time.Duration, userOp *operation.UserOperation, userOperationPartial *operation.UserOperationPartial, userOpHash common.Hash) *Auction {
+func NewAuction(duration time.Duration, userOp *operation.UserOperation, userOperationPartialRaw *operation.UserOperationPartialRaw, userOpHash common.Hash) *Auction {
 	auction := &Auction{
-		open:                 true,
-		userOpHash:           userOpHash,
-		userOp:               userOp,
-		userOperationPartial: userOperationPartial,
-		solverOps:            make([]*operation.SolverOperation, 0),
-		completionSubs:       make([]chan []*operation.SolverOperation, 0),
-		createdAt:            time.Now(),
+		open:                    true,
+		userOpHash:              userOpHash,
+		userOp:                  userOp,
+		userOperationPartialRaw: userOperationPartialRaw,
+		solverOpsWithScore:      make([]*operation.SolverOperationWithScore, 0),
+		completionSubs:          make([]chan []*operation.SolverOperationWithScore, 0),
+		createdAt:               time.Now(),
 	}
 
 	time.AfterFunc(duration, auction.close)
@@ -54,34 +54,34 @@ func (a *Auction) close() {
 
 	for _, subChan := range a.completionSubs {
 		select {
-		case subChan <- a.solverOps:
+		case subChan <- a.solverOpsWithScore:
 		default:
 			// Sub isn't listening, don't block
 		}
 	}
 }
 
-func (a *Auction) addCompletionSub(subChan chan []*operation.SolverOperation) {
+func (a *Auction) addCompletionSub(subChan chan []*operation.SolverOperationWithScore) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	a.completionSubs = append(a.completionSubs, subChan)
 }
 
-func (a *Auction) addSolverOp(solverOp *operation.SolverOperation) *relayerror.Error {
+func (a *Auction) addSolverOp(solverOp *operation.SolverOperationWithScore) *relayerror.Error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	if !a.open {
-		log.Info("auction for this user operation has already ended", "userOpHash", solverOp.UserOpHash.Hex())
+		log.Info("auction for this user operation has already ended", "userOpHash", solverOp.SolverOperation.UserOpHash.Hex())
 		return ErrAuctionClosed
 	}
 
-	a.solverOps = append(a.solverOps, solverOp)
+	a.solverOpsWithScore = append(a.solverOpsWithScore, solverOp)
 	return nil
 }
 
-func (a *Auction) getSolverOps(completionChan chan []*operation.SolverOperation) ([]*operation.SolverOperation, *relayerror.Error) {
+func (a *Auction) getSolverOps(completionChan chan []*operation.SolverOperationWithScore) ([]*operation.SolverOperationWithScore, *relayerror.Error) {
 	a.mu.RLock()
 	open := a.open
 	a.mu.RUnlock()
@@ -97,5 +97,5 @@ func (a *Auction) getSolverOps(completionChan chan []*operation.SolverOperation)
 		return nil, ErrAuctionOngoing
 	}
 
-	return a.solverOps, nil
+	return a.solverOpsWithScore, nil
 }
