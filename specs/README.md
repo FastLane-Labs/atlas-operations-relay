@@ -137,6 +137,7 @@ Note that all simulations referenced here can be easily done by calling view fun
 **41xx** **(Auction other error):**
 - 4100: auction for this user operation has already ended
 - 4101: auction for this user operation is ongoing
+- 4102: solver is already participating in this auction
 
 ### 5xxx (Bundle related error)
 
