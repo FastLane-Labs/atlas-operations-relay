@@ -24,6 +24,7 @@ type Auction struct {
 	userOperationPartialRaw *operation.UserOperationPartialRaw
 	solverOpsWithScore      []*operation.SolverOperationWithScore
 	solversParticipating    map[common.Address]struct{}
+	solverGasLimit          uint32
 
 	completionSubs []chan []*operation.SolverOperationWithScore
 
@@ -32,7 +33,7 @@ type Auction struct {
 	mu sync.RWMutex
 }
 
-func NewAuction(duration time.Duration, userOp *operation.UserOperation, userOperationPartialRaw *operation.UserOperationPartialRaw, userOpHash common.Hash) *Auction {
+func NewAuction(duration time.Duration, userOp *operation.UserOperation, userOperationPartialRaw *operation.UserOperationPartialRaw, userOpHash common.Hash, solverGasLimit uint32) *Auction {
 	auction := &Auction{
 		open:                    true,
 		userOpHash:              userOpHash,
@@ -40,6 +41,7 @@ func NewAuction(duration time.Duration, userOp *operation.UserOperation, userOpe
 		userOperationPartialRaw: userOperationPartialRaw,
 		solverOpsWithScore:      make([]*operation.SolverOperationWithScore, 0),
 		solversParticipating:    make(map[common.Address]struct{}),
+		solverGasLimit:          solverGasLimit,
 		completionSubs:          make([]chan []*operation.SolverOperationWithScore, 0),
 		createdAt:               time.Now(),
 	}

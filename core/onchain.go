@@ -3,13 +3,32 @@ package core
 import (
 	"math/big"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
+	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
 )
 
+func (r *Relay) solverGasLimit(dAppControlAddress common.Address) (uint32, *relayerror.Error) {
+	dAppControlContract, err := dAppControl.NewDAppControl(dAppControlAddress, r.ethClient)
+	if err != nil {
+		log.Error("solverGasLimit: failed to create dAppControl contract", "err", err)
+		return 0, relayerror.ErrServerInternal
+	}
+
+	solverGasLimit, err := dAppControlContract.GetSolverGasLimit(nil)
+	if err != nil {
+		log.Error("solverGasLimit: failed to get solver gas limit", "err", err)
+		return 0, relayerror.ErrServerInternal
+	}
+
+	return solverGasLimit, nil
+}
+
 func (r *Relay) balanceOfBonded(account common.Address) (*big.Int, *relayerror.Error) {
 	balance, err := r.atlETHContract.BalanceOfBonded(nil, account)
 	if err != nil {
+		log.Error("balanceOfBonded: failed to get bonded balance", "err", err)
 		return nil, ErrCantGetBondedBalance.AddError(err)
 	}
 	return balance, nil
@@ -18,6 +37,7 @@ func (r *Relay) balanceOfBonded(account common.Address) (*big.Int, *relayerror.E
 func (r *Relay) reputationScore(account common.Address) int {
 	accessData, err := r.storageContract.AccessData(nil, account)
 	if err != nil {
+		log.Error("reputationScore: failed to get access data", "err", err)
 		return 0
 	}
 	wins := accessData.AuctionWins.Int64()
@@ -32,6 +52,7 @@ func (r *Relay) reputationScore(account common.Address) int {
 func (r *Relay) getDAppSignatories(dAppControl common.Address) ([]common.Address, *relayerror.Error) {
 	signatories, err := r.atlasVerificationContract.GetDAppSignatories(nil, dAppControl)
 	if err != nil {
+		log.Error("getDAppSignatories: failed to get dApp signatories", "err", err)
 		return []common.Address{}, ErrCantGetDAppSignatories.AddError(err)
 	}
 

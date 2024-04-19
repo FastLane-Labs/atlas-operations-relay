@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
@@ -160,16 +159,11 @@ func solveUserOperation(userOperationPartialRaw *operation.UserOperationPartialR
 		panic(err)
 	}
 
-	gasLimit, err := auction.SolverGasLimit(userOperationPartialRaw.Control, ethClient)
-	if err != nil {
-		panic(err)
-	}
-
 	solverOp := &operation.SolverOperation{
 		From:         solverEoa,
 		To:           conf.Contracts.Atlas,
 		Value:        big.NewInt(0),
-		Gas:          big.NewInt(int64(gasLimit)),
+		Gas:          big.NewInt(int64(solverGasLimit)),
 		MaxFeePerGas: big.NewInt(0).Add(userOperationPartialRaw.MaxFeePerGas.ToInt(), big.NewInt(1e9)),
 		Deadline:     userOperationPartialRaw.Deadline.ToInt(),
 		Solver:       simpleRfqSolver,

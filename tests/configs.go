@@ -13,9 +13,11 @@ var (
 	ethClient            *ethclient.Client
 	atlasDomainSeparator common.Hash
 
-	chainId int64 = 11155111 //sepolia
+	chainId     int64 = 11155111 //sepolia
+	sendAtlasTx bool  = false    //true -> send tx to the network, false -> do everything apart from sending
 
-	sendAtlasTx bool = false //true -> send tx to the network, false -> do everything apart from sending
+	validationGasLimit = uint64(500_000)
+	solverGasLimit     = uint64(1_000_000)
 
 	tokenA                = common.HexToAddress("0x7439E9Bb6D8a84dd3A23fe621A30F95403F87fB9")
 	tokenB                = common.HexToAddress("0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9")
