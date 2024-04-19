@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	ErrAuctionClosed  = relayerror.NewError(4100, "auction for this user operation has already ended")
-	ErrAuctionOngoing = relayerror.NewError(4101, "auction for this user operation is ongoing")
+	ErrAuctionClosed              = relayerror.NewError(4100, "auction for this user operation has already ended")
+	ErrAuctionOngoing             = relayerror.NewError(4101, "auction for this user operation is ongoing")
+	ErrSolverAlreadyParticipating = relayerror.NewError(4102, "solver is already participating in this auction")
 )
 
 type Auction struct {
@@ -22,6 +23,7 @@ type Auction struct {
 	userOp                  *operation.UserOperation
 	userOperationPartialRaw *operation.UserOperationPartialRaw
 	solverOpsWithScore      []*operation.SolverOperationWithScore
+	solversParticipating    map[common.Address]struct{}
 
 	completionSubs []chan []*operation.SolverOperationWithScore
 
@@ -37,6 +39,7 @@ func NewAuction(duration time.Duration, userOp *operation.UserOperation, userOpe
 		userOp:                  userOp,
 		userOperationPartialRaw: userOperationPartialRaw,
 		solverOpsWithScore:      make([]*operation.SolverOperationWithScore, 0),
+		solversParticipating:    make(map[common.Address]struct{}),
 		completionSubs:          make([]chan []*operation.SolverOperationWithScore, 0),
 		createdAt:               time.Now(),
 	}
@@ -73,11 +76,17 @@ func (a *Auction) addSolverOp(solverOp *operation.SolverOperationWithScore) *rel
 	defer a.mu.Unlock()
 
 	if !a.open {
-		log.Info("auction for this user operation has already ended", "userOpHash", solverOp.SolverOperation.UserOpHash.Hex())
+		log.Info("auction for this user operation has already ended", "userOpHash", a.userOpHash.Hex())
 		return ErrAuctionClosed
 	}
 
+	if _, alreadyParticipating := a.solversParticipating[solverOp.SolverOperation.From]; alreadyParticipating {
+		log.Info("solver is already participating in this auction", "userOpHash", a.userOpHash.Hex(), "solver", solverOp.SolverOperation.From.Hex())
+		return ErrSolverAlreadyParticipating
+	}
+
 	a.solverOpsWithScore = append(a.solverOpsWithScore, solverOp)
+	a.solversParticipating[solverOp.SolverOperation.From] = struct{}{}
 	return nil
 }
 
@@ -92,8 +101,7 @@ func (a *Auction) getSolverOps(completionChan chan []*operation.SolverOperationW
 	}
 
 	if open {
-		userOpHash, _ := a.userOp.Hash()
-		log.Info("auction for this user operation is ongoing", "userOpHash", userOpHash.Hex())
+		log.Info("auction for this user operation is ongoing", "userOpHash", a.userOpHash.Hex())
 		return nil, ErrAuctionOngoing
 	}
 
