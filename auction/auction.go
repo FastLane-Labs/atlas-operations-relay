@@ -23,7 +23,7 @@ type Auction struct {
 	userOp                  *operation.UserOperation
 	userOperationPartialRaw *operation.UserOperationPartialRaw
 	solverOpsWithScore      []*operation.SolverOperationWithScore
-	solverParticipating     map[common.Address]struct{}
+	solversParticipating    map[common.Address]struct{}
 
 	completionSubs []chan []*operation.SolverOperationWithScore
 
@@ -39,7 +39,7 @@ func NewAuction(duration time.Duration, userOp *operation.UserOperation, userOpe
 		userOp:                  userOp,
 		userOperationPartialRaw: userOperationPartialRaw,
 		solverOpsWithScore:      make([]*operation.SolverOperationWithScore, 0),
-		solverParticipating:     make(map[common.Address]struct{}),
+		solversParticipating:    make(map[common.Address]struct{}),
 		completionSubs:          make([]chan []*operation.SolverOperationWithScore, 0),
 		createdAt:               time.Now(),
 	}
@@ -80,13 +80,13 @@ func (a *Auction) addSolverOp(solverOp *operation.SolverOperationWithScore) *rel
 		return ErrAuctionClosed
 	}
 
-	if _, alreadyParticipating := a.solverParticipating[solverOp.SolverOperation.From]; alreadyParticipating {
+	if _, alreadyParticipating := a.solversParticipating[solverOp.SolverOperation.From]; alreadyParticipating {
 		log.Info("solver is already participating in this auction", "userOpHash", a.userOpHash.Hex(), "solver", solverOp.SolverOperation.From.Hex())
 		return ErrSolverAlreadyParticipating
 	}
 
 	a.solverOpsWithScore = append(a.solverOpsWithScore, solverOp)
-	a.solverParticipating[solverOp.SolverOperation.From] = struct{}{}
+	a.solversParticipating[solverOp.SolverOperation.From] = struct{}{}
 	return nil
 }
 
