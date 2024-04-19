@@ -25,6 +25,22 @@ func generateSolverOperation() *SolverOperation {
 	}
 }
 
+func TestSolverOperationHash(t *testing.T) {
+	t.Parallel()
+
+	solverOp := generateSolverOperation()
+	want := common.HexToHash("0xa56fe9ac02f8a4ae19dabe3d31635519cabd843a612210dd7711184e3fc943c3")
+
+	result, err := solverOp.Hash()
+	if err != nil {
+		t.Errorf("SolverOperation.Hash() error = %v", err)
+	}
+
+	if result != want {
+		t.Errorf("SolverOperation.Hash() = %v, want %v", result, want)
+	}
+}
+
 func TestSolverOperationAbiEncode(t *testing.T) {
 	t.Parallel()
 

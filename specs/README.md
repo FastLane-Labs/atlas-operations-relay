@@ -88,6 +88,7 @@ Note that all simulations referenced here can be easily done by calling view fun
 - 2104: solver operation's dApp control does not match the user operation's
 - 2105: failed to compute solver proof hash
 - 2106: solver operation has invalid signature
+- 2107: failed to compute solver operation hash
 
 **22xx** **(DApp operation error):**
 - 2200: dApp operation's 'from' field does not match user operation's session key
