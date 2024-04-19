@@ -9,7 +9,6 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract"
-	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
@@ -30,6 +29,7 @@ var (
 	ATLETH_BONDED_BALANCE_MULTI_REQ = big.NewInt(3)
 )
 
+type solverGasLimitFn func(common.Address) (uint32, *relayerror.Error)
 type balanceOfBondedFn func(common.Address) (*big.Int, *relayerror.Error)
 type reputationScoreFn func(account common.Address) int
 
@@ -42,18 +42,20 @@ type Manager struct {
 
 	atlasDomainSeparator common.Hash
 
+	solverGasLimit  solverGasLimitFn
 	balanceOfBonded balanceOfBondedFn
 	reputationScore reputationScoreFn
 
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, balanceOfBonded balanceOfBondedFn, reputationScore reputationScoreFn) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, solverGasLimit solverGasLimitFn, balanceOfBonded balanceOfBondedFn, reputationScore reputationScoreFn) *Manager {
 	am := &Manager{
 		ethClient:            ethClient,
 		config:               config,
 		auctions:             make(map[common.Hash]*Auction),
 		atlasDomainSeparator: atlasDomainSeparator,
+		solverGasLimit:       solverGasLimit,
 		balanceOfBonded:      balanceOfBonded,
 		reputationScore:      reputationScore,
 	}
@@ -111,6 +113,14 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []com
 		return common.Hash{}, nil, ErrUserOpFailedSimulation.AddMessage(fmt.Sprintf("result: %d, validCallResult: %s", result, validCallResult.String()))
 	}
 
+	solverGasLimit, relayErr := am.solverGasLimit(userOp.Control)
+	if relayErr != nil {
+		log.Info("failed to get solver gas limit", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
+		return common.Hash{}, nil, relayErr
+	}
+
+	userOperationPartialRaw := operation.NewUserOperationPartialRaw(userOp, hints)
+
 	am.mu.Lock()
 	defer am.mu.Unlock()
 
@@ -119,9 +129,7 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []com
 		return common.Hash{}, nil, ErrAuctionAlreadyStarted
 	}
 
-	userOperationPartialRaw := operation.NewUserOperationPartialRaw(userOp, hints)
-
-	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, userOp, userOperationPartialRaw, userOpHash)
+	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, userOp, userOperationPartialRaw, userOpHash, solverGasLimit)
 	return userOpHash, userOperationPartialRaw, nil
 }
 
@@ -157,13 +165,7 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 		return ErrAuctionNotFound
 	}
 
-	solverGasLimit, err := SolverGasLimit(solverOp.Control, am.ethClient)
-	if err != nil {
-		log.Info("failed to get solver gas limit", "err", err, "userOpHash", solverOp.UserOpHash.Hex())
-		return relayerror.ErrServerInternal
-	}
-
-	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator, solverGasLimit)
+	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator, auction.solverGasLimit)
 	if relayErr != nil {
 		log.Info("invalid solver operation", "err", relayErr.Message, "userOpHash", auction.userOpHash.Hex())
 		return relayErr
@@ -216,18 +218,4 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 	log.Info("valid solver operation", "userOpHash", auction.userOpHash.Hex(), "from", solverOp.From.Hex(), "score", solverOpWithScore.Score)
 
 	return auction.addSolverOp(solverOpWithScore)
-}
-
-func SolverGasLimit(dAppControlAddress common.Address, ethClient *ethclient.Client) (uint32, error) {
-	dAppControlContract, err := dAppControl.NewDAppControl(dAppControlAddress, ethClient)
-	if err != nil {
-		return 0, err
-	}
-
-	solverGasLimit, err := dAppControlContract.GetSolverGasLimit(nil)
-	if err != nil {
-		return 0, err
-	}
-
-	return solverGasLimit, nil
 }

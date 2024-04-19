@@ -26,8 +26,9 @@ var (
 )
 
 type Relay struct {
-	config *config.Config
-	server *Server
+	config    *config.Config
+	ethClient *ethclient.Client
+	server    *Server
 
 	auctionManager *auction.Manager
 	bundleManager  *bundle.Manager
@@ -60,12 +61,13 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 
 	r := &Relay{
 		config:                    config,
+		ethClient:                 ethClient,
 		atlETHContract:            atlETHContract,
 		storageContract:           storageContract,
 		atlasVerificationContract: atlasVerificationContract,
 	}
 
-	r.auctionManager = auction.NewManager(ethClient, config, atlasDomainSeparator, r.balanceOfBonded, r.reputationScore)
+	r.auctionManager = auction.NewManager(ethClient, config, atlasDomainSeparator, r.solverGasLimit, r.balanceOfBonded, r.reputationScore)
 	r.bundleManager = bundle.NewManager(ethClient, config, atlasDomainSeparator)
 	r.server = NewServer(NewRouter(NewApi(r)), r.auctionManager.NewSolverOperation, r.getDAppSignatories)
 
