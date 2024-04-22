@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/bundle"
 	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
@@ -22,7 +23,7 @@ var (
 	ErrMalformedJson         = relayerror.NewError(3001, "malformed json")
 	ErrInvalidParameter      = relayerror.NewError(3002, "invalid parameter")
 	ErrServerCorruptedData   = relayerror.NewError(3003, "server corrupted data")
-	ErrInvalidUserOpHash     = relayerror.NewError(3004, "invalid user operation hash")
+	ErrInvalidOpHash         = relayerror.NewError(3004, "invalid operation hash")
 	ErrInvalidBundlerAddress = relayerror.NewError(3005, "invalid bundler address")
 	ErrInvalidTimestamp      = relayerror.NewError(3006, "invalid timestamp")
 	ErrExpiredSignature      = relayerror.NewError(3007, "expired signature")
@@ -31,15 +32,8 @@ var (
 )
 
 type RetrieveRequest struct {
-	UserOpHash common.Hash `json:"userOpHash"`
-	Wait       bool        `json:"wait"`
-}
-
-func NewRetrieveRequest(userOpHash common.Hash, wait bool) *RetrieveRequest {
-	return &RetrieveRequest{
-		UserOpHash: userOpHash,
-		Wait:       wait,
-	}
+	OpHash common.Hash
+	Wait   bool
 }
 
 type Api struct {
@@ -55,12 +49,12 @@ func NewApi(relay *Relay) *Api {
 func getRetrieveRequestData(r *http.Request) (*RetrieveRequest, *relayerror.Error) {
 	q := r.URL.Query()
 
-	userOpHashStr := q.Get("userOpHash")
-	if len(userOpHashStr) < 64 || len(userOpHashStr) > 66 {
-		return nil, ErrInvalidUserOpHash
+	hashStr := q.Get("operationHash")
+	if len(hashStr) < 64 || len(hashStr) > 66 {
+		return nil, ErrInvalidOpHash
 	}
 
-	userOpHash := common.HexToHash(q.Get("userOpHash"))
+	opHash := common.HexToHash(hashStr)
 
 	waitStr := q.Get("wait")
 	if len(waitStr) == 0 {
@@ -71,7 +65,7 @@ func getRetrieveRequestData(r *http.Request) (*RetrieveRequest, *relayerror.Erro
 		return nil, ErrInvalidParameter.AddError(err)
 	}
 
-	return NewRetrieveRequest(userOpHash, wait), nil
+	return &RetrieveRequest{OpHash: opHash, Wait: wait}, nil
 }
 
 func getPostRequestData(r *http.Request, v interface{}) *relayerror.Error {
@@ -140,7 +134,7 @@ func (api *Api) GetSolverOperations(w http.ResponseWriter, r *http.Request) {
 		completionChan = make(chan []*operation.SolverOperationWithScore)
 	}
 
-	solverOpsWithScore, relayErr := api.relay.getSolverOperations(retrieveReq.UserOpHash, completionChan)
+	solverOpsWithScore, relayErr := api.relay.getSolverOperations(retrieveReq.OpHash, completionChan)
 	if relayErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())
@@ -186,7 +180,7 @@ func (api *Api) GetBundleHash(w http.ResponseWriter, r *http.Request) {
 		completionChan = make(chan *bundle.Bundle)
 	}
 
-	atlasTxHash, relayErr := api.relay.getBundleHash(retrieveReq.UserOpHash, completionChan)
+	atlasTxHash, relayErr := api.relay.getBundleHash(retrieveReq.OpHash, completionChan)
 	if relayErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())
@@ -215,14 +209,42 @@ func (api *Api) SubmitSolverOperation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, relayErr := api.relay.submitSolverOperation(solverOpRaw.Decode())
+	solverOpHash, relayErr := api.relay.submitSolverOperation(solverOpRaw.Decode())
 	if relayErr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(relayErr.Marshal())
 		return
 	}
 
-	writeResponseData(w, result)
+	writeResponseData(w, solverOpHash)
+}
+
+func (api *Api) GetSolverOperationStatus(w http.ResponseWriter, r *http.Request) {
+	retrieveReq, relayErr := getRetrieveRequestData(r)
+	if relayErr != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(relayErr.Marshal())
+		return
+	}
+
+	var completionChan chan *auction.SolverStatus
+	if retrieveReq.Wait {
+		completionChan = make(chan *auction.SolverStatus)
+	}
+
+	solverOpsStatus, relayErr := api.relay.getSolverOperationStatus(retrieveReq.OpHash, completionChan)
+	if relayErr != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(relayErr.Marshal())
+		return
+	}
+
+	if retrieveReq.Wait && solverOpsStatus == nil {
+		solverOpsStatus = <-completionChan
+		close(completionChan)
+	}
+
+	writeResponseData(w, solverOpsStatus)
 }
 
 func (api *Api) WebsocketSolver(w http.ResponseWriter, r *http.Request) {

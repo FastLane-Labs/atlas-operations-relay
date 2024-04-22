@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
@@ -34,6 +35,7 @@ const (
 	MethodSubscribe             = "subscribe"
 	MethodUnsubscribe           = "unsubscribe"
 	MethodSubmitSolverOperation = "submitSolverOperation"
+	MethodSolverOperationStatus = "solverOperationStatus"
 
 	// Subscriptions topics
 	TopicNewUserOperations = "newUserOperations"
@@ -72,7 +74,7 @@ var (
 	}
 
 	Methods = map[string]map[string]struct{}{
-		ChannelSolver:  {MethodPing: {}, MethodSubscribe: {}, MethodUnsubscribe: {}, MethodSubmitSolverOperation: {}},
+		ChannelSolver:  {MethodPing: {}, MethodSubscribe: {}, MethodUnsubscribe: {}, MethodSubmitSolverOperation: {}, MethodSolverOperationStatus: {}},
 		ChannelBundler: {MethodPing: {}},
 	}
 
@@ -95,7 +97,8 @@ var (
 	ErrBundlingFailure   = relayerror.NewError(3202, "bundling failure")
 )
 
-type newSolverOperationFn func(*operation.SolverOperation) *relayerror.Error
+type newSolverOperationFn func(*operation.SolverOperation) (common.Hash, *relayerror.Error)
+type getSolverOperationStatusFn func(solverOpHash common.Hash, completionChan chan *auction.SolverStatus) (*auction.SolverStatus, *relayerror.Error)
 type getDAppSignatoriesFn func(common.Address) ([]common.Address, *relayerror.Error)
 type setAtlasTxHashFn func(common.Hash) *relayerror.Error
 type setRelayErrorFn func(*relayerror.Error) *relayerror.Error
@@ -103,6 +106,7 @@ type setRelayErrorFn func(*relayerror.Error) *relayerror.Error
 type RequestParams struct {
 	Topic           string                         `json:"topic"`
 	SolverOperation *operation.SolverOperationRaw  `json:"solverOperation"`
+	OpHash          common.Hash                    `json:"operationHash"`
 	Bundle          *operation.BundleOperationsRaw `json:"bundle"`
 }
 
@@ -230,20 +234,22 @@ type Server struct {
 	// Indexed by [id]
 	bundlingRequests map[string]*bundlingRequest
 
-	newSolverOperation newSolverOperationFn
-	getDAppSignatories getDAppSignatoriesFn
+	newSolverOperation       newSolverOperationFn
+	getSolverOperationStatus getSolverOperationStatusFn
+	getDAppSignatories       getDAppSignatoriesFn
 
 	mu sync.RWMutex
 }
 
-func NewServer(router *mux.Router, newSolverOperation newSolverOperationFn, getDAppSignatories getDAppSignatoriesFn) *Server {
+func NewServer(router *mux.Router, newSolverOperation newSolverOperationFn, getSolverOperationStatus getSolverOperationStatusFn, getDAppSignatories getDAppSignatoriesFn) *Server {
 	return &Server{
-		router:             router,
-		subscriptions:      make(map[string]map[string]*Conn),
-		bundlers:           make(map[common.Address]*Conn),
-		bundlingRequests:   make(map[string]*bundlingRequest),
-		newSolverOperation: newSolverOperation,
-		getDAppSignatories: getDAppSignatories,
+		router:                   router,
+		subscriptions:            make(map[string]map[string]*Conn),
+		bundlers:                 make(map[common.Address]*Conn),
+		bundlingRequests:         make(map[string]*bundlingRequest),
+		newSolverOperation:       newSolverOperation,
+		getSolverOperationStatus: getSolverOperationStatus,
+		getDAppSignatories:       getDAppSignatories,
 	}
 }
 
@@ -479,6 +485,9 @@ func (s *Server) processSolverMessage(conn *Conn, msg []byte) {
 	case MethodSubmitSolverOperation:
 		s.processNewSolverOperation(req.Params.SolverOperation.Decode(), resp)
 
+	case MethodSolverOperationStatus:
+		s.processGetSolverOperationStatus(req.Params.OpHash, resp)
+
 	default:
 		resp.Error = InvalidMethod
 	}
@@ -600,14 +609,25 @@ func (s *Server) processNewSolverOperation(solverOp *operation.SolverOperation, 
 		return
 	}
 
-	relayErr := s.newSolverOperation(solverOp)
+	solverOpHash, relayErr := s.newSolverOperation(solverOp)
 	if relayErr != nil {
 		log.Info("failed to submit solver operation", "err", relayErr.Error())
 		resp.Error = relayErr.Error()
 		return
 	}
 
-	resp.Result = SolverOpSuccessfullySubmitted
+	resp.Result = solverOpHash
+}
+
+func (s *Server) processGetSolverOperationStatus(solverOpHash common.Hash, resp *Response) {
+	solverStatus, relayErr := s.getSolverOperationStatus(solverOpHash, nil)
+	if relayErr != nil {
+		log.Info("failed to get solver operation status", "err", relayErr.Error())
+		resp.Error = relayErr.Error()
+		return
+	}
+
+	resp.Result = solverStatus
 }
 
 func (s *Server) rateLimit(conn *Conn, msg []byte) {

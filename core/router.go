@@ -80,6 +80,12 @@ func buildRoutes(api *Api) []Route {
 			api.SubmitSolverOperation,
 		},
 		{
+			"GetSolverOperationStatus",
+			http.MethodGet,
+			"/solverOperationStatus",
+			api.GetSolverOperationStatus,
+		},
+		{
 			"WebsocketSolver",
 			http.MethodGet,
 			"/ws/solver",

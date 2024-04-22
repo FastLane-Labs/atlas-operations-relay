@@ -108,7 +108,7 @@ Note that all simulations referenced here can be easily done by calling view fun
 - 3001: malformed json
 - 3002: invalid parameter
 - 3003: server corrupted data
-- 3004: invalid user operation hash
+- 3004: invalid operation hash
 - 3005: invalid bundler address
 - 3006: invalid timestamp
 - 3007: expired signature
@@ -139,6 +139,7 @@ Note that all simulations referenced here can be easily done by calling view fun
 - 4100: auction for this user operation has already ended
 - 4101: auction for this user operation is ongoing
 - 4102: solver is already participating in this auction
+- 4103: solver operation not found
 
 ### 5xxx (Bundle related error)
 
