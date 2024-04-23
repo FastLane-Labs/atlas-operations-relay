@@ -132,7 +132,7 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []com
 		return common.Hash{}, nil, ErrAuctionAlreadyStarted
 	}
 
-	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, userOp, userOperationPartialRaw, userOpHash, solverGasLimit)
+	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, am.config.Relay.Auction.MaxSolutions, userOp, userOperationPartialRaw, userOpHash, solverGasLimit, am.simulateSolverOperation)
 	return userOpHash, userOperationPartialRaw, nil
 }
 
@@ -186,33 +186,6 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) (comm
 		return common.Hash{}, ErrNotEnoughBondedBalance
 	}
 
-	dAppOp := operation.GenerateSimulationDAppOperation(auction.userOp)
-
-	pData, err := contract.SimulatorAbi.Pack("simSolverCall", *auction.userOp, *solverOp, *dAppOp)
-	if err != nil {
-		log.Info("failed to pack solver operation", "err", err, "userOpHash", auction.userOpHash.Hex())
-		return common.Hash{}, relayerror.ErrServerInternal
-	}
-
-	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &am.config.Contracts.Simulator, Data: pData}, nil)
-	if err != nil {
-		log.Info("failed to call simulator contract", "err", err, "userOpHash", auction.userOpHash.Hex())
-		return common.Hash{}, relayerror.ErrServerInternal
-	}
-
-	validOp, err := contract.SimulatorAbi.Unpack("simSolverCall", bData)
-	if err != nil {
-		log.Info("failed to unpack simSolverCall return data", "err", err, "userOpHash", auction.userOpHash.Hex())
-		return common.Hash{}, relayerror.ErrServerInternal
-	}
-
-	if !validOp[0].(bool) {
-		result := validOp[1].(uint8)
-		solverOutcomeResult := validOp[2].(*big.Int)
-		log.Info("solver operation failed simulation", "userOpHash", auction.userOpHash.Hex(), "result", result, "solverOutcomeResult", solverOutcomeResult.String())
-		return common.Hash{}, ErrSolverOpFailedSimulation.AddMessage(fmt.Sprintf("result: %d, solverOutcomeResult: %s", result, solverOutcomeResult.String()))
-	}
-
 	solverOpWithScore := &operation.SolverOperationWithScore{
 		SolverOperation: solverOp,
 		Score:           am.reputationScore(solverOp.From),
@@ -225,7 +198,7 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) (comm
 
 	am.solverOpHashToAuction[solverOpHash] = auction
 
-	log.Info("valid solver operation", "userOpHash", auction.userOpHash.Hex(), "solverOpHash", solverOpHash, "from", solverOp.From.Hex(), "score", solverOpWithScore.Score)
+	log.Info("valid solver operation", "userOpHash", auction.userOpHash.Hex(), "solverOpHash", solverOpHash.Hex(), "from", solverOp.From.Hex(), "score", solverOpWithScore.Score)
 
 	return solverOpHash, relayErr
 }
@@ -241,4 +214,35 @@ func (am *Manager) GetSolverOperationStatus(solverOpHash common.Hash, completion
 	}
 
 	return auction.getSolverOpStatus(solverOpHash, completionChan)
+}
+
+func (am *Manager) simulateSolverOperation(userOp *operation.UserOperation, userOpHash common.Hash, solverOp *operation.SolverOperation) *relayerror.Error {
+	dAppOp := operation.GenerateSimulationDAppOperation(userOp)
+
+	pData, err := contract.SimulatorAbi.Pack("simSolverCall", *userOp, *solverOp, *dAppOp)
+	if err != nil {
+		log.Info("failed to pack solver operation", "err", err, "userOpHash", userOpHash.Hex())
+		return relayerror.ErrServerInternal
+	}
+
+	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &am.config.Contracts.Simulator, Data: pData}, nil)
+	if err != nil {
+		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.Hex())
+		return relayerror.ErrServerInternal
+	}
+
+	validOp, err := contract.SimulatorAbi.Unpack("simSolverCall", bData)
+	if err != nil {
+		log.Info("failed to unpack simSolverCall return data", "err", err, "userOpHash", userOpHash.Hex())
+		return relayerror.ErrServerInternal
+	}
+
+	if !validOp[0].(bool) {
+		result := validOp[1].(uint8)
+		solverOutcomeResult := validOp[2].(*big.Int)
+		log.Info("solver operation failed simulation", "userOpHash", userOpHash.Hex(), "result", result, "solverOutcomeResult", solverOutcomeResult.String())
+		return ErrSolverOpFailedSimulation.AddMessage(fmt.Sprintf("result: %d, solverOutcomeResult: %s", result, solverOutcomeResult.String()))
+	}
+
+	return nil
 }

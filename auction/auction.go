@@ -1,6 +1,7 @@
 package auction
 
 import (
+	"sort"
 	"sync"
 	"time"
 
@@ -17,9 +18,12 @@ var (
 	ErrSolverOperationNotFound    = relayerror.NewError(4103, "solver operation not found")
 )
 
+type simulateSolverOperationFn func(*operation.UserOperation, common.Hash, *operation.SolverOperation) *relayerror.Error
+
 type Auction struct {
-	open       bool
-	userOpHash common.Hash
+	open         bool
+	userOpHash   common.Hash
+	maxSolutions uint64
 
 	userOp                  *operation.UserOperation
 	userOperationPartialRaw *operation.UserOperationPartialRaw
@@ -33,15 +37,18 @@ type Auction struct {
 	// Indexed by solverOpHash
 	solverStatusesCompletionSubs map[common.Hash][]chan *SolverStatus
 
+	simulateSolverOperation simulateSolverOperationFn
+
 	createdAt time.Time
 
-	mu sync.RWMutex
+	mu sync.Mutex
 }
 
-func NewAuction(duration time.Duration, userOp *operation.UserOperation, userOperationPartialRaw *operation.UserOperationPartialRaw, userOpHash common.Hash, solverGasLimit uint32) *Auction {
+func NewAuction(duration time.Duration, maxSolutions uint64, userOp *operation.UserOperation, userOperationPartialRaw *operation.UserOperationPartialRaw, userOpHash common.Hash, solverGasLimit uint32, simulateSolverOperation simulateSolverOperationFn) *Auction {
 	auction := &Auction{
 		open:                         true,
 		userOpHash:                   userOpHash,
+		maxSolutions:                 maxSolutions,
 		userOp:                       userOp,
 		userOperationPartialRaw:      userOperationPartialRaw,
 		solverOpsWithScore:           make([]*operation.SolverOperationWithScore, 0),
@@ -50,20 +57,78 @@ func NewAuction(duration time.Duration, userOp *operation.UserOperation, userOpe
 		solverGasLimit:               solverGasLimit,
 		solverOpsCompletionSubs:      make([]chan []*operation.SolverOperationWithScore, 0),
 		solverStatusesCompletionSubs: make(map[common.Hash][]chan *SolverStatus),
+		simulateSolverOperation:      simulateSolverOperation,
 		createdAt:                    time.Now(),
 	}
 
+	log.Info("starting auction", "userOpHash", userOpHash.Hex(), "duration", common.PrettyDuration(duration), "maxSolutions", maxSolutions)
 	time.AfterFunc(duration, auction.close)
+
 	return auction
 }
 
 func (a *Auction) close() {
-	a.mu.RLock()
-	defer a.mu.RUnlock()
+	a.mu.Lock()
+	defer a.mu.Unlock()
 
 	log.Info("closing auction", "userOpHash", a.userOpHash.Hex())
 	a.open = false
 
+	// Sort solverOps by score
+	sort.Slice(a.solverOpsWithScore, func(i, j int) bool {
+		return a.solverOpsWithScore[i].Score > a.solverOpsWithScore[j].Score
+	})
+
+	if len(a.solverOpsWithScore) > int(a.maxSolutions) {
+		// Update status of solvers that didn't make the cut
+		for _, solverOp := range a.solverOpsWithScore[a.maxSolutions:] {
+			a.solverOpsStatus[solverOp.SolverOpHash] = SolverStatusNotIncluded
+		}
+
+		// Truncate solverOps to maxSolutions
+		a.solverOpsWithScore = a.solverOpsWithScore[:a.maxSolutions]
+	}
+
+	var (
+		solverOpsWithScoreTmp = make([]*operation.SolverOperationWithScore, 0)
+		mu                    sync.Mutex
+		wg                    sync.WaitGroup
+	)
+
+	// Simulate competing solver operations
+	for _, solverOpWithScore := range a.solverOpsWithScore {
+		wg.Add(1)
+		go func(solverOpWithScore *operation.SolverOperationWithScore) {
+			defer wg.Done()
+
+			relayErr := a.simulateSolverOperation(a.userOp, a.userOpHash, solverOpWithScore.SolverOperation)
+			if relayErr != nil {
+				// Update status
+				a.solverOpsStatus[solverOpWithScore.SolverOpHash] = SolverStatusFailedSimulation
+				log.Info("solver operation failed simulation", "userOpHash", a.userOpHash.Hex(), "solverOpHash", solverOpWithScore.SolverOpHash.Hex(), "err", relayErr.Message)
+				return
+			}
+
+			mu.Lock()
+			solverOpsWithScoreTmp = append(solverOpsWithScoreTmp, solverOpWithScore)
+			mu.Unlock()
+
+			// Update status
+			a.solverOpsStatus[solverOpWithScore.SolverOpHash] = SolverStatusIncluded
+			log.Info("solver operation added to auction's final list", "userOpHash", a.userOpHash.Hex(), "solverOpHash", solverOpWithScore.SolverOpHash.Hex())
+		}(solverOpWithScore)
+	}
+
+	wg.Wait()
+
+	// Re-sort since simulations were parallelized
+	sort.Slice(solverOpsWithScoreTmp, func(i, j int) bool {
+		return solverOpsWithScoreTmp[i].Score > solverOpsWithScoreTmp[j].Score
+	})
+
+	a.solverOpsWithScore = solverOpsWithScoreTmp
+
+	// Update waiting subscribers
 	for _, subChan := range a.solverOpsCompletionSubs {
 		select {
 		case subChan <- a.solverOpsWithScore:
@@ -114,6 +179,8 @@ func (a *Auction) addSolverOp(solverOp *operation.SolverOperationWithScore) (com
 	if relayErr != nil {
 		return common.Hash{}, relayErr
 	}
+
+	solverOp.SolverOpHash = solverOpHash
 
 	a.solverOpsWithScore = append(a.solverOpsWithScore, solverOp)
 	a.solverOpsStatus[solverOpHash] = SolverStatusAuctionPending

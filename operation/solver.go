@@ -111,6 +111,7 @@ type SolverOperationWithScoreRaw struct {
 }
 
 type SolverOperationWithScore struct {
+	SolverOpHash    common.Hash
 	SolverOperation *SolverOperation
 	Score           int
 }

@@ -98,7 +98,7 @@ var (
 )
 
 type newSolverOperationFn func(*operation.SolverOperation) (common.Hash, *relayerror.Error)
-type getSolverOperationStatusFn func(solverOpHash common.Hash, completionChan chan *auction.SolverStatus) (*auction.SolverStatus, *relayerror.Error)
+type getSolverOperationStatusFn func(common.Hash, chan *auction.SolverStatus) (*auction.SolverStatus, *relayerror.Error)
 type getDAppSignatoriesFn func(common.Address) ([]common.Address, *relayerror.Error)
 type setAtlasTxHashFn func(common.Hash) *relayerror.Error
 type setRelayErrorFn func(*relayerror.Error) *relayerror.Error
