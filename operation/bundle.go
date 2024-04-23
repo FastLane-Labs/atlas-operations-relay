@@ -7,6 +7,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -92,8 +93,7 @@ func (b *BundleOperations) CallChainHash(callConfig uint32, dAppControl common.A
 	counter := big.NewInt(0)
 	var callSequenceHash common.Hash
 
-	if callConfig&4 != 0 {
-		// Require preOps
+	if utils.FlagRequirePreOps(callConfig) {
 		preOpsEncoded, err := contract.DappControlAbi.Pack("preOpsCall", b.UserOperation)
 		if err != nil {
 			return common.Hash{}, err

@@ -1,4 +1,4 @@
-package crypto
+package utils
 
 import (
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
