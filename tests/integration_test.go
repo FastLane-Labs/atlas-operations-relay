@@ -54,7 +54,7 @@ func TestIntegration(t *testing.T) {
 	}
 
 	//user requests solver solutions
-	userOpHash, _ := userOp.Hash()
+	userOpHash, _ := userOp.Hash(false)
 	solverOps, err := retreiveSolverOps(userOpHash, true)
 	if err != nil {
 		t.Fatal(err)
@@ -113,7 +113,7 @@ func TestSolverHttp(t *testing.T) {
 	}
 
 	//user requests solver solutions
-	userOpHash, _ := userOp.Hash()
+	userOpHash, _ := userOp.Hash(false)
 	solverOps, err := retreiveSolverOps(userOpHash, true)
 	if err != nil {
 		t.Fatal(err)

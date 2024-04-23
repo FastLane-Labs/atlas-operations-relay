@@ -95,8 +95,7 @@ type DAppOperation struct {
 	Signature     []byte
 }
 
-func GenerateSimulationDAppOperation(userOp *UserOperation) *DAppOperation {
-	userOpHash, _ := userOp.Hash()
+func GenerateSimulationDAppOperation(userOpHash common.Hash, userOp *UserOperation) *DAppOperation {
 	return &DAppOperation{
 		From:          common.HexToAddress("0x0"),
 		To:            common.HexToAddress("0x0"),

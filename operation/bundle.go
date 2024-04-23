@@ -58,22 +58,10 @@ func (b *BundleOperations) EncodeToRaw() *BundleOperationsRaw {
 	}
 }
 
-func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash common.Hash, atlas common.Address, atlasDomainSeparator common.Hash, userOpGasLimit *big.Int, dAppOpGasLimit *big.Int) *relayerror.Error {
+func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash common.Hash, atlas common.Address, atlasDomainSeparator common.Hash, userOpGasLimit *big.Int, dAppOpGasLimit *big.Int, dAppConfig *dAppControl.DAppConfig) *relayerror.Error {
 	// Re-validate user operation
 	if relayErr := b.UserOperation.Validate(ethClient, atlas, atlasDomainSeparator, userOpGasLimit); relayErr != nil {
 		return relayErr
-	}
-
-	dAppControlContract, err := dAppControl.NewDAppControl(b.DAppOperation.Control, ethClient)
-	if err != nil {
-		log.Info("failed to instantiate dapp control contract", "err", err)
-		return relayerror.ErrServerInternal
-	}
-
-	dAppConfig, err := dAppControlContract.GetDAppConfig(nil, dAppControl.UserOperation(*b.UserOperation))
-	if err != nil {
-		log.Info("failed to get dapp config", "err", err)
-		return relayerror.ErrServerInternal
 	}
 
 	callChainHash, err := b.CallChainHash(dAppConfig.CallConfig, dAppConfig.To)

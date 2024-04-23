@@ -30,7 +30,23 @@ func TestUserOperationHash(t *testing.T) {
 	userOp := generateUserOperation()
 	want := common.HexToHash("0x0e658352ea19af267ebd61688d3056cb0e432713bf4adde58dac46419eb25485")
 
-	result, err := userOp.Hash()
+	result, err := userOp.Hash(false)
+	if err != nil {
+		t.Errorf("UserOperation.Hash() error = %v", err)
+	}
+
+	if result != want {
+		t.Errorf("UserOperation.Hash() = %v, want %v", result, want)
+	}
+}
+
+func TestUserOperationAltHash(t *testing.T) {
+	t.Parallel()
+
+	userOp := generateUserOperation()
+	want := common.HexToHash("0xb715f6dca6a71f65387c6837476bf0ed9f9169a2b93fefed67d2fa82a8e1e1dc")
+
+	result, err := userOp.Hash(true)
 	if err != nil {
 		t.Errorf("UserOperation.Hash() error = %v", err)
 	}

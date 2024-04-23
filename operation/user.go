@@ -1,6 +1,7 @@
 package operation
 
 import (
+	"bytes"
 	"context"
 	"math/big"
 	"math/rand"
@@ -174,11 +175,27 @@ func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Addre
 	return nil
 }
 
-func (u *UserOperation) Hash() (common.Hash, *relayerror.Error) {
-	packed, err := u.AbiEncode()
-	if err != nil {
-		return common.Hash{}, ErrUserOpComputeHash.AddError(err)
+func (u *UserOperation) Hash(altHash bool) (common.Hash, *relayerror.Error) {
+	var (
+		packed []byte
+		err    error
+	)
+
+	if altHash {
+		packed = bytes.Join([][]byte{
+			u.From.Bytes(),
+			u.To.Bytes(),
+			u.Dapp.Bytes(),
+			u.Control.Bytes(),
+			u.SessionKey.Bytes(),
+		}, nil)
+	} else {
+		packed, err = u.AbiEncode()
+		if err != nil {
+			return common.Hash{}, ErrUserOpComputeHash.AddError(err)
+		}
 	}
+
 	return crypto.Keccak256Hash(packed), nil
 }
 
@@ -265,8 +282,7 @@ type UserOperationPartialRaw struct {
 	From  common.Address `json:"from,omitempty"`
 }
 
-func NewUserOperationPartialRaw(userOp *UserOperation, hints []common.Address) *UserOperationPartialRaw {
-	userOpHash, _ := userOp.Hash()
+func NewUserOperationPartialRaw(userOpHash common.Hash, userOp *UserOperation, hints []common.Address) *UserOperationPartialRaw {
 	userOpPartial := &UserOperationPartialRaw{
 		UserOpHash:   userOpHash,
 		To:           userOp.To,
