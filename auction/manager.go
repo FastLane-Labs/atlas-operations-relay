@@ -9,9 +9,11 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -32,6 +34,7 @@ var (
 type solverGasLimitFn func(common.Address) (uint32, *relayerror.Error)
 type balanceOfBondedFn func(common.Address) (*big.Int, *relayerror.Error)
 type reputationScoreFn func(account common.Address) int
+type getDAppConfigFn func(common.Address, *operation.UserOperation) (*dAppControl.DAppConfig, *relayerror.Error)
 
 type Manager struct {
 	ethClient *ethclient.Client
@@ -45,11 +48,12 @@ type Manager struct {
 	solverGasLimit  solverGasLimitFn
 	balanceOfBonded balanceOfBondedFn
 	reputationScore reputationScoreFn
+	getDAppConfig   getDAppConfigFn
 
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, solverGasLimit solverGasLimitFn, balanceOfBonded balanceOfBondedFn, reputationScore reputationScoreFn) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, solverGasLimit solverGasLimitFn, balanceOfBonded balanceOfBondedFn, reputationScore reputationScoreFn, getDAppConfig getDAppConfigFn) *Manager {
 	am := &Manager{
 		ethClient:            ethClient,
 		config:               config,
@@ -58,6 +62,7 @@ func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainS
 		solverGasLimit:       solverGasLimit,
 		balanceOfBonded:      balanceOfBonded,
 		reputationScore:      reputationScore,
+		getDAppConfig:        getDAppConfig,
 	}
 
 	go am.auctionsCleaner()
@@ -77,7 +82,13 @@ func (am *Manager) auctionsCleaner() {
 }
 
 func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []common.Address) (common.Hash, *operation.UserOperationPartialRaw, *relayerror.Error) {
-	userOpHash, relayErr := userOp.Hash()
+	dAppConfig, relayErr := am.getDAppConfig(userOp.Control, userOp)
+	if relayErr != nil {
+		log.Info("failed to get dapp config", "err", relayErr.Message)
+		return common.Hash{}, nil, relayErr
+	}
+
+	userOpHash, relayErr := userOp.Hash(utils.FlagTrustedOpHash(dAppConfig.CallConfig))
 	if relayErr != nil {
 		log.Info("failed to compute user operation hash", "err", relayErr.Message)
 		return common.Hash{}, nil, relayErr
@@ -119,7 +130,7 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []com
 		return common.Hash{}, nil, relayErr
 	}
 
-	userOperationPartialRaw := operation.NewUserOperationPartialRaw(userOp, hints)
+	userOperationPartialRaw := operation.NewUserOperationPartialRaw(userOpHash, userOp, hints)
 
 	am.mu.Lock()
 	defer am.mu.Unlock()
@@ -183,7 +194,7 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) *rela
 		return ErrNotEnoughBondedBalance
 	}
 
-	dAppOp := operation.GenerateSimulationDAppOperation(auction.userOp)
+	dAppOp := operation.GenerateSimulationDAppOperation(auction.userOpHash, auction.userOp)
 
 	pData, err := contract.SimulatorAbi.Pack("simSolverCall", *auction.userOp, *solverOp, *dAppOp)
 	if err != nil {

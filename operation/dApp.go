@@ -3,9 +3,9 @@ package operation
 import (
 	"math/big"
 
-	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -95,8 +95,7 @@ type DAppOperation struct {
 	Signature     []byte
 }
 
-func GenerateSimulationDAppOperation(userOp *UserOperation) *DAppOperation {
-	userOpHash, _ := userOp.Hash()
+func GenerateSimulationDAppOperation(userOpHash common.Hash, userOp *UserOperation) *DAppOperation {
 	return &DAppOperation{
 		From:          common.HexToAddress("0x0"),
 		To:            common.HexToAddress("0x0"),
@@ -211,7 +210,7 @@ func (d *DAppOperation) checkSignature(domainSeparator common.Hash) *relayerror.
 		return ErrDAppOpComputeProofHash.AddError(err)
 	}
 
-	signer, err := relayCrypto.RecoverEip712Signer(domainSeparator, proofHash, d.Signature)
+	signer, err := utils.RecoverEip712Signer(domainSeparator, proofHash, d.Signature)
 	if err != nil {
 		log.Info("failed to recover dApp public key", "err", err)
 		return ErrDappOpSignatureInvalid.AddError(err)

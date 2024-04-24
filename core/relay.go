@@ -67,8 +67,8 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 		atlasVerificationContract: atlasVerificationContract,
 	}
 
-	r.auctionManager = auction.NewManager(ethClient, config, atlasDomainSeparator, r.solverGasLimit, r.balanceOfBonded, r.reputationScore)
-	r.bundleManager = bundle.NewManager(ethClient, config, atlasDomainSeparator)
+	r.auctionManager = auction.NewManager(ethClient, config, atlasDomainSeparator, r.solverGasLimit, r.balanceOfBonded, r.reputationScore, r.getDAppConfig)
+	r.bundleManager = bundle.NewManager(ethClient, config, atlasDomainSeparator, r.getDAppConfig)
 	r.server = NewServer(NewRouter(NewApi(r)), r.auctionManager.NewSolverOperation, r.getDAppSignatories)
 
 	return r
@@ -93,14 +93,13 @@ func (r *Relay) getSolverOperations(userOpHash common.Hash, completionChan chan 
 }
 
 func (r *Relay) submitBundleOperations(bundleOps *operation.BundleOperations) (string, *relayerror.Error) {
-	bundle, relayErr := r.bundleManager.NewBundle(bundleOps)
+	userOpHash, bundle, relayErr := r.bundleManager.NewBundle(bundleOps)
 	if relayErr != nil {
 		return "", relayErr
 	}
 
 	if err := r.server.ForwardBundle(bundleOps, bundle.SetAtlasTxHash, bundle.SetRelayError); err != nil {
-		userOphash, _ := bundleOps.UserOperation.Hash()
-		r.bundleManager.UnregisterBundle(userOphash)
+		r.bundleManager.UnregisterBundle(userOpHash)
 		return "", ErrForwardBundle.AddError(err)
 	}
 

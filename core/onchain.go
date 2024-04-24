@@ -5,6 +5,7 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
+	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -57,4 +58,20 @@ func (r *Relay) getDAppSignatories(dAppControl common.Address) ([]common.Address
 	}
 
 	return signatories, nil
+}
+
+func (r *Relay) getDAppConfig(dAppControlAddress common.Address, userOp *operation.UserOperation) (*dAppControl.DAppConfig, *relayerror.Error) {
+	dAppControlContract, err := dAppControl.NewDAppControl(dAppControlAddress, r.ethClient)
+	if err != nil {
+		log.Info("failed to instantiate dapp control contract", "err", err)
+		return nil, relayerror.ErrServerInternal
+	}
+
+	dAppConfig, err := dAppControlContract.GetDAppConfig(nil, dAppControl.UserOperation(*userOp))
+	if err != nil {
+		log.Info("failed to get dapp config", "err", err)
+		return nil, relayerror.ErrServerInternal
+	}
+
+	return &dAppConfig, nil
 }

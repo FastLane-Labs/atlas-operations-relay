@@ -8,7 +8,7 @@ import (
 )
 
 func newDappOperation(userOp *operation.UserOperation, solverOps []*operation.SolverOperation) *operation.DAppOperation {
-	userOpHash, _ := userOp.Hash()
+	userOpHash, _ := userOp.Hash(false)
 
 	dAppControlContract, err := dAppControl.NewDAppControl(userOp.Control, ethClient)
 	if err != nil {
