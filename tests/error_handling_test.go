@@ -81,7 +81,7 @@ func badSolverOpTest(t *testing.T, solveUserOpFunc solveUserOpFunc) {
 		t.Fatal(err)
 	}
 
-	userOpHash, _ := userOp.Hash()
+	userOpHash, _ := userOp.Hash(false)
 	solverOps, err := retreiveSolverOps(userOpHash, true)
 	if err != nil {
 		t.Fatal(err)

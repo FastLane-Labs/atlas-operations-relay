@@ -7,9 +7,11 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -21,6 +23,8 @@ var (
 	ErrBundleFailedSimulation = relayerror.NewError(5002, "bundle failed simulation")
 )
 
+type getDAppConfigFn func(common.Address, *operation.UserOperation) (*dAppControl.DAppConfig, *relayerror.Error)
+
 type Manager struct {
 	ethClient *ethclient.Client
 	config    *config.Config
@@ -30,15 +34,18 @@ type Manager struct {
 
 	atlasDomainSeparator common.Hash
 
+	getDAppConfig getDAppConfigFn
+
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, getDAppConfig getDAppConfigFn) *Manager {
 	bm := &Manager{
 		ethClient:            ethClient,
 		config:               config,
 		bundles:              make(map[common.Hash]*Bundle),
 		atlasDomainSeparator: atlasDomainSeparator,
+		getDAppConfig:        getDAppConfig,
 	}
 
 	go bm.bundlesCleaner()
@@ -57,17 +64,23 @@ func (bm *Manager) bundlesCleaner() {
 	}
 }
 
-func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (*Bundle, *relayerror.Error) {
-	userOpHash, relayErr := bundleOps.UserOperation.Hash()
+func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash, *Bundle, *relayerror.Error) {
+	dAppConfig, relayErr := bm.getDAppConfig(bundleOps.DAppOperation.Control, bundleOps.UserOperation)
 	if relayErr != nil {
-		log.Info("failed to compute user operation hash", "err", relayErr.Message)
-		return nil, relayErr
+		log.Info("failed to get dapp config", "err", relayErr.Message)
+		return common.Hash{}, nil, relayErr
 	}
 
-	relayErr = bundleOps.Validate(bm.ethClient, userOpHash, bm.config.Contracts.Atlas, bm.atlasDomainSeparator, bm.config.Relay.Gas.MaxPerUserOperation, bm.config.Relay.Gas.MaxPerDAppOperation)
+	userOpHash, relayErr := bundleOps.UserOperation.Hash(utils.FlagTrustedOpHash(dAppConfig.CallConfig))
+	if relayErr != nil {
+		log.Info("failed to compute user operation hash", "err", relayErr.Message)
+		return common.Hash{}, nil, relayErr
+	}
+
+	relayErr = bundleOps.Validate(bm.ethClient, userOpHash, bm.config.Contracts.Atlas, bm.atlasDomainSeparator, bm.config.Relay.Gas.MaxPerUserOperation, bm.config.Relay.Gas.MaxPerDAppOperation, dAppConfig)
 	if relayErr != nil {
 		log.Info("invalid dapp operation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
-		return nil, relayErr
+		return common.Hash{}, nil, relayErr
 	}
 
 	solverOps := make([]operation.SolverOperation, 0, len(bundleOps.SolverOperations))
@@ -78,7 +91,7 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (*Bundle, *r
 	pData, err := contract.AtlasAbi.Pack("metacall", *bundleOps.UserOperation, solverOps, *bundleOps.DAppOperation)
 	if err != nil {
 		log.Info("failed to pack bundle", "err", err, "userOpHash", userOpHash.Hex())
-		return nil, relayerror.ErrServerInternal
+		return common.Hash{}, nil, relayerror.ErrServerInternal
 	}
 
 	_, err = bm.ethClient.CallContract(
@@ -93,19 +106,19 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (*Bundle, *r
 
 	if err != nil {
 		log.Info("metacall simulation failed", "err", err, "userOpHash", userOpHash.Hex())
-		return nil, ErrBundleFailedSimulation.AddError(err)
+		return common.Hash{}, nil, ErrBundleFailedSimulation.AddError(err)
 	}
 
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
 
 	if _, exist := bm.bundles[userOpHash]; exist {
-		return nil, ErrBundleAlreadySubmitted
+		return common.Hash{}, nil, ErrBundleAlreadySubmitted
 	}
 
 	bundle := NewBundle(userOpHash, bundleOps)
 	bm.bundles[userOpHash] = bundle
-	return bundle, nil
+	return userOpHash, bundle, nil
 }
 
 func (bm *Manager) UnregisterBundle(userOpHash common.Hash) {

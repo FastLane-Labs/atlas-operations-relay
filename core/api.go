@@ -10,9 +10,9 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/bundle"
-	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-playground/validator/v10"
@@ -286,7 +286,7 @@ func (api *Api) WebsocketBundler(w http.ResponseWriter, r *http.Request) {
 
 	// Validate the signature
 	signatureContent := fmt.Sprintf("%s:%d", bundler, timestamp)
-	signer, err := relayCrypto.RecoverEthereumSigner(signatureContent, signature)
+	signer, err := utils.RecoverEthereumSigner(signatureContent, signature)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(ErrBadSignature.Marshal())

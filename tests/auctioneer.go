@@ -73,7 +73,7 @@ func newDemoUserOperation() *operation.UserOperation {
 }
 
 func sendUserRequest(userOp *operation.UserOperation) error {
-	userOpHash, relayErr := userOp.Hash()
+	userOpHash, relayErr := userOp.Hash(false)
 	if relayErr != nil {
 		return relayErr
 	}
@@ -180,7 +180,7 @@ func sendBundleOperation(userOp *operation.UserOperation, solverOps []*operation
 		return fmt.Errorf("expected status code 200, got %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
-	userOpHash, _ := userOp.Hash()
+	userOpHash, _ := userOp.Hash(false)
 	log.Info("relay sent bundleOps", "userOpHash", userOpHash.Hex(), "nSolverOps", len(bundleOps.SolverOperations))
 
 	return nil

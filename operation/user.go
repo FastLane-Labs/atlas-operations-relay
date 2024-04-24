@@ -1,13 +1,14 @@
 package operation
 
 import (
+	"bytes"
 	"context"
 	"math/big"
 	"math/rand"
 
-	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -174,11 +175,27 @@ func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Addre
 	return nil
 }
 
-func (u *UserOperation) Hash() (common.Hash, *relayerror.Error) {
-	packed, err := u.AbiEncode()
-	if err != nil {
-		return common.Hash{}, ErrUserOpComputeHash.AddError(err)
+func (u *UserOperation) Hash(altHash bool) (common.Hash, *relayerror.Error) {
+	var (
+		packed []byte
+		err    error
+	)
+
+	if altHash {
+		packed = bytes.Join([][]byte{
+			u.From.Bytes(),
+			u.To.Bytes(),
+			u.Dapp.Bytes(),
+			u.Control.Bytes(),
+			u.SessionKey.Bytes(),
+		}, nil)
+	} else {
+		packed, err = u.AbiEncode()
+		if err != nil {
+			return common.Hash{}, ErrUserOpComputeHash.AddError(err)
+		}
 	}
+
 	return crypto.Keccak256Hash(packed), nil
 }
 
@@ -234,7 +251,7 @@ func (u *UserOperation) checkSignature(domainSeparator common.Hash) *relayerror.
 		return ErrUserOpComputeProofHash.AddError(err)
 	}
 
-	signer, err := relayCrypto.RecoverEip712Signer(domainSeparator, proofHash, u.Signature)
+	signer, err := utils.RecoverEip712Signer(domainSeparator, proofHash, u.Signature)
 	if err != nil {
 		log.Info("failed to recover user public key", "err", err)
 		return ErrUserOpSignatureInvalid.AddError(err)
@@ -265,8 +282,7 @@ type UserOperationPartialRaw struct {
 	From  common.Address `json:"from,omitempty"`
 }
 
-func NewUserOperationPartialRaw(userOp *UserOperation, hints []common.Address) *UserOperationPartialRaw {
-	userOpHash, _ := userOp.Hash()
+func NewUserOperationPartialRaw(userOpHash common.Hash, userOp *UserOperation, hints []common.Address) *UserOperationPartialRaw {
 	userOpPartial := &UserOperationPartialRaw{
 		UserOpHash:   userOpHash,
 		To:           userOp.To,

@@ -3,9 +3,9 @@ package operation
 import (
 	"math/big"
 
-	relayCrypto "github.com/FastLane-Labs/atlas-operations-relay/crypto"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -259,7 +259,7 @@ func (s *SolverOperation) checkSignature(domainSeparator common.Hash) *relayerro
 		return ErrSolverOpComputeProofHash.AddError(err)
 	}
 
-	signer, err := relayCrypto.RecoverEip712Signer(domainSeparator, proofHash, s.Signature)
+	signer, err := utils.RecoverEip712Signer(domainSeparator, proofHash, s.Signature)
 	if err != nil {
 		log.Info("failed to recover solver public key", "err", err)
 		return ErrSolverOpSignatureInvalid.AddError(err)
