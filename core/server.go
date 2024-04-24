@@ -678,8 +678,10 @@ func (s *Server) writePump(conn *Conn, doneChan <-chan struct{}) {
 			}
 
 		case msg := <-conn.sendChan:
-			conn.WriteMessage(websocket.TextMessage, msg)
 			conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+				return
+			}
 
 		case <-doneChan:
 			return
