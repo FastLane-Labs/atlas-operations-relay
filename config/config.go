@@ -12,6 +12,7 @@ import (
 
 var (
 	defaultAuctionDuration   = 500 * time.Millisecond
+	defaultMaxSolutions      = uint64(10)
 	defaultOperationGasLimit = big.NewInt(1000000)
 )
 
@@ -28,7 +29,8 @@ type configJson struct {
 
 	Relay struct {
 		Auction struct {
-			Duration uint64 `json:"duration,omitempty"`
+			Duration     uint64 `json:"duration,omitempty"`
+			MaxSolutions uint64 `json:"max_solutions,omitempty"`
 		} `json:"auction,omitempty"`
 		Gas struct {
 			MaxPerUserOperation uint64 `json:"max_per_user_operation,omitempty"`
@@ -48,7 +50,8 @@ type Contracts struct {
 }
 
 type Auction struct {
-	Duration time.Duration
+	Duration     time.Duration
+	MaxSolutions uint64
 }
 
 type Gas struct {
@@ -118,7 +121,6 @@ func (c *Config) parseConfigFile() {
 	}
 
 	c.Relay.Auction.Duration = time.Duration(configJson.Relay.Auction.Duration * uint64(time.Millisecond))
-
 	c.Relay.Gas.MaxPerUserOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerUserOperation)
 	c.Relay.Gas.MaxPerDAppOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerDAppOperation)
 }
@@ -129,6 +131,7 @@ func (c *Config) parseFlags() {
 	contractsAtlasVerificationPtr := flag.String("contracts.atlasVerification", "", "AtlasVerification contract address")
 	contractsSimulatorPtr := flag.String("contracts.simulator", "", "Simulator contract address")
 	relayAuctionDurationPtr := flag.Uint64("relay.auction.duration", 0, "Auction duration in milliseconds")
+	relayAuctionMaxSolutionsPtr := flag.Uint64("relay.auction.max_solutions", 0, "Max solutions per auction")
 	relayGasMaxPerUserOperationPtr := flag.Uint64("relay.gas.max_per_user_operation", 0, "Max gas per user operation")
 	relayGasMaxPerDAppOperationPtr := flag.Uint64("relay.gas.max_per_dApp_operation", 0, "Max gas per dApp operation")
 	flag.Parse()
@@ -160,6 +163,10 @@ func (c *Config) parseFlags() {
 
 	if *relayAuctionDurationPtr > 0 {
 		c.Relay.Auction.Duration = time.Duration(*relayAuctionDurationPtr * uint64(time.Millisecond))
+	}
+
+	if *relayAuctionMaxSolutionsPtr > 0 {
+		c.Relay.Auction.MaxSolutions = *relayAuctionMaxSolutionsPtr
 	}
 
 	if *relayGasMaxPerUserOperationPtr > 0 {
@@ -196,6 +203,10 @@ func (c *Config) Validate() {
 
 	if c.Relay.Auction.Duration == 0 {
 		c.Relay.Auction.Duration = defaultAuctionDuration
+	}
+
+	if c.Relay.Auction.MaxSolutions == 0 {
+		c.Relay.Auction.MaxSolutions = defaultMaxSolutions
 	}
 
 	if c.Relay.Gas.MaxPerUserOperation == nil || c.Relay.Gas.MaxPerUserOperation.Cmp(common.Big0) == 0 {

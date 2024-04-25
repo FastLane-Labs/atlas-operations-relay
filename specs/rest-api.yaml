@@ -95,7 +95,7 @@ paths:
       description: Get solver operations for a user operation previously submitted
       operationId: solverOperations
       parameters:
-        - name: userOpHash
+        - name: operationHash
           in: query
           description: The hash of the user operation
           required: true
@@ -185,7 +185,7 @@ paths:
       description: Get the Atlas transaction hash from a previously submitted bundle
       operationId: getBundleHash
       parameters:
-        - name: userOpHash
+        - name: operationHash
           in: query
           description: The hash of the user operation
           required: true
@@ -243,13 +243,13 @@ paths:
               $ref: '#/components/schemas/SolverOperation'
       responses:
         '200':
-          description: Solver operation successfully submitted and included in the auction
+          description: The hash of the solver operation
           content:
             application/json:
               schema:
                 type: string
-                description: Result message
-                examples: ["Solver operation successfully submitted"]
+                description: Solidity type bytes32
+                pattern: '^0x[0-9a-f]{64}$'
         '400':
           description: Invalid input
           content:
@@ -268,6 +268,58 @@ paths:
                 examples:
                   - code: 3001
                     message: server internal error
+
+  /solverOperationStatus:
+    get:
+      tags:
+        - solver
+      summary: Get a solver operation status, identified by its hash
+      description: Get solver operation status for an operation previously submitted
+      operationId: solverOperationStatus
+      parameters:
+        - name: operationHash
+          in: query
+          description: The hash of the solver operation
+          required: true
+          schema:
+            type: string
+            description: Solidity type bytes32
+            pattern: '^0x[0-9a-f]{64}$'
+        - name: wait
+          in: query
+          description: Hold the request until the end of the auction
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Solver operation status successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolverOperationStatus'
+                examples:
+                  - code: 1
+                    message: included in auction
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                examples:
+                  - code: 3004
+                    message: invalid operation hash
+        '500':
+          description: Relay exception
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                examples:
+                  - code: 3001
+                    message: server internal serror
 
 components:
   schemas:
@@ -470,6 +522,21 @@ components:
       xml:
         name: SolverOperationsWithScores
         wrapped: true
+    
+    SolverOperationStatus:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: "The status code for the solver operation (0: failure, 1: success, 2: pending)"
+          enum: [0, 1, 2]
+        message:
+          type: string
+          description: The status message for the solver operation
+          examples: ["included in auction", "auction is pending"]
+      required:
+        - code
+        - message
 
     DAppOperation:
       type: object

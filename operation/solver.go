@@ -20,6 +20,7 @@ var (
 	ErrSolverOpDAppControlMismatch = relayerror.NewError(2104, "solver operation's dApp control does not match the user operation's")
 	ErrSolverOpComputeProofHash    = relayerror.NewError(2105, "failed to compute solver proof hash")
 	ErrSolverOpSignatureInvalid    = relayerror.NewError(2106, "solver operation has invalid signature")
+	ErrSolverOpComputeHash         = relayerror.NewError(2107, "failed to compute solver operation hash")
 )
 
 var (
@@ -110,6 +111,7 @@ type SolverOperationWithScoreRaw struct {
 }
 
 type SolverOperationWithScore struct {
+	SolverOpHash    common.Hash
 	SolverOperation *SolverOperation
 	Score           int
 }
@@ -193,6 +195,14 @@ func (s *SolverOperation) Validate(userOperation *UserOperation, atlas common.Ad
 	}
 
 	return nil
+}
+
+func (s *SolverOperation) Hash() (common.Hash, *relayerror.Error) {
+	packed, err := s.AbiEncode()
+	if err != nil {
+		return common.Hash{}, ErrSolverOpComputeHash.AddError(err)
+	}
+	return crypto.Keccak256Hash(packed), nil
 }
 
 func (s *SolverOperation) AbiEncode() ([]byte, error) {

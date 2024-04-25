@@ -14,8 +14,7 @@ import (
 )
 
 const (
-	SolverOpSuccessfullySubmitted = "solver operation successfully submitted"
-	BundleSuccessfullySubmitted   = "bundle successfully submitted"
+	BundleSuccessfullySubmitted = "bundle successfully submitted"
 )
 
 var (
@@ -69,7 +68,7 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 
 	r.auctionManager = auction.NewManager(ethClient, config, atlasDomainSeparator, r.solverGasLimit, r.balanceOfBonded, r.reputationScore, r.getDAppConfig)
 	r.bundleManager = bundle.NewManager(ethClient, config, atlasDomainSeparator, r.getDAppConfig)
-	r.server = NewServer(NewRouter(NewApi(r)), r.auctionManager.NewSolverOperation, r.getDAppSignatories)
+	r.server = NewServer(NewRouter(NewApi(r)), r.auctionManager.NewSolverOperation, r.auctionManager.GetSolverOperationStatus, r.getDAppSignatories)
 
 	return r
 }
@@ -110,13 +109,10 @@ func (r *Relay) getBundleHash(userOpHash common.Hash, completionChan chan *bundl
 	return r.bundleManager.GetBundleHash(userOpHash, completionChan)
 }
 
-func (r *Relay) submitSolverOperation(solverOp *operation.SolverOperation) (string, *relayerror.Error) {
-	var result string
+func (r *Relay) submitSolverOperation(solverOp *operation.SolverOperation) (common.Hash, *relayerror.Error) {
+	return r.auctionManager.NewSolverOperation(solverOp)
+}
 
-	relayErr := r.auctionManager.NewSolverOperation(solverOp)
-	if relayErr == nil {
-		result = SolverOpSuccessfullySubmitted
-	}
-
-	return result, relayErr
+func (r *Relay) getSolverOperationStatus(solverOpHash common.Hash, completionChan chan *auction.SolverStatus) (*auction.SolverStatus, *relayerror.Error) {
+	return r.auctionManager.GetSolverOperationStatus(solverOpHash, completionChan)
 }

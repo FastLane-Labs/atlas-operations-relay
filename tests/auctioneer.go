@@ -121,8 +121,8 @@ func retreiveSolverOps(userOpHash common.Hash, wait bool) ([]*operation.SolverOp
 		Host:   "localhost:8080",
 		Path:   "/solverOperations",
 		RawQuery: url.Values{
-			"userOpHash": []string{userOpHash.Hex()},
-			"wait":       []string{fmt.Sprintf("%t", wait)},
+			"operationHash": []string{userOpHash.Hex()},
+			"wait":          []string{fmt.Sprintf("%t", wait)},
 		}.Encode(),
 	}
 
@@ -192,8 +192,8 @@ func retrieveAtlasTxHash(userOpHash common.Hash, wait bool) (common.Hash, error)
 		Host:   "localhost:8080",
 		Path:   "/bundleHash",
 		RawQuery: url.Values{
-			"userOpHash": []string{userOpHash.Hex()},
-			"wait":       []string{fmt.Sprintf("%t", wait)},
+			"operationHash": []string{userOpHash.Hex()},
+			"wait":          []string{fmt.Sprintf("%t", wait)},
 		}.Encode(),
 	}
 
