@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -38,7 +39,11 @@ const (
 	MethodSolverOperationStatus = "solverOperationStatus"
 
 	// Subscriptions topics
-	TopicNewUserOperations = "newUserOperations"
+	TopicNewUserOperations    = "newUserOperations"
+	TopicUpdateSolverOpStatus = "updateSolverOperationStatus"
+
+	//TopicDelimiter
+	TopicDelimiter = "_"
 
 	// Events
 	EventUpdate    = "update"
@@ -79,7 +84,8 @@ var (
 	}
 
 	Topics = map[string]struct{}{
-		TopicNewUserOperations: {},
+		TopicNewUserOperations:    {},
+		TopicUpdateSolverOpStatus: {},
 	}
 
 	upgrader = websocket.Upgrader{
@@ -133,6 +139,7 @@ func (r *Response) Marshal() []byte {
 
 type BroadcastParams struct {
 	UserOperationPartial *operation.UserOperationPartialRaw `json:"userOperation,omitempty"`
+	SolverStatus         *auction.SolverStatus              `json:"solverStatus,omitempty"`
 }
 
 type Broadcast struct {
@@ -347,6 +354,18 @@ func (s *Server) BroadcastUserOperationPartial(userOperationPartialRaw *operatio
 	s.publish(broadcast)
 }
 
+func (s *Server) BroadcastSolverOpStatusUpdate(solverOpHash common.Hash, solverStatus *auction.SolverStatus) {
+	topicForSolverHash := TopicUpdateSolverOpStatus + TopicDelimiter + solverOpHash.Hex()
+	broadcast := &Broadcast{
+		Event: EventUpdate,
+		Topic: topicForSolverHash,
+		Data: &BroadcastParams{
+			SolverStatus: solverStatus,
+		},
+	}
+	s.publish(broadcast)
+}
+
 func (s *Server) ForwardBundle(bundleOps *operation.BundleOperations, setAtlasTxHash setAtlasTxHashFn, setRelayError setRelayErrorFn) *relayerror.Error {
 	bundlingRequest := &bundlingRequest{
 		candidatesBundlers: make(map[common.Address]*Conn),
@@ -550,8 +569,9 @@ func (s *Server) publish(broadcast *Broadcast) {
 }
 
 func (s *Server) subscribe(conn *Conn, topic string, resp *Response) {
-	if _, valid := Topics[topic]; !valid {
-		log.Info("invalid topic", "topic", topic)
+	topicPrefix := strings.SplitN(topic, TopicDelimiter, 2)[0]
+	if _, valid := Topics[topicPrefix]; !valid {
+		log.Info("invalid topic", "topic", topic, "topicPrefix", topicPrefix)
 		resp.Error = InvalidTopic
 		return
 	}
@@ -574,8 +594,9 @@ func (s *Server) subscribe(conn *Conn, topic string, resp *Response) {
 }
 
 func (s *Server) unsubscribe(conn *Conn, topic string, resp *Response) {
-	if _, valid := Topics[topic]; !valid {
-		log.Info("invalid topic", "topic", topic)
+	topicPrefix := strings.SplitN(topic, TopicDelimiter, 2)[0]
+	if _, valid := Topics[topicPrefix]; !valid {
+		log.Info("invalid topic", "topic", topic, "topicPrefix", topicPrefix)
 		resp.Error = InvalidTopic
 		return
 	}

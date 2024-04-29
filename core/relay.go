@@ -69,6 +69,7 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 	r.auctionManager = auction.NewManager(ethClient, config, atlasDomainSeparator, r.solverGasLimit, r.balanceOfBonded, r.reputationScore, r.getDAppConfig)
 	r.bundleManager = bundle.NewManager(ethClient, config, atlasDomainSeparator, r.getDAppConfig)
 	r.server = NewServer(NewRouter(NewApi(r)), r.auctionManager.NewSolverOperation, r.auctionManager.GetSolverOperationStatus, r.getDAppSignatories)
+	r.auctionManager.AttachSolverOpStatusUpdateFn(r.server.BroadcastSolverOpStatusUpdate)
 
 	return r
 }

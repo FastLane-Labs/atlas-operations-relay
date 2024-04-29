@@ -35,6 +35,7 @@ type solverGasLimitFn func(common.Address) (uint32, *relayerror.Error)
 type balanceOfBondedFn func(common.Address) (*big.Int, *relayerror.Error)
 type reputationScoreFn func(account common.Address) int
 type getDAppConfigFn func(common.Address, *operation.UserOperation) (*dAppControl.DAppConfig, *relayerror.Error)
+type solverOpStatusUpdateFn func(common.Hash, *SolverStatus)
 
 type Manager struct {
 	ethClient *ethclient.Client
@@ -47,10 +48,11 @@ type Manager struct {
 
 	atlasDomainSeparator common.Hash
 
-	solverGasLimit  solverGasLimitFn
-	balanceOfBonded balanceOfBondedFn
-	reputationScore reputationScoreFn
-	getDAppConfig   getDAppConfigFn
+	solverGasLimit         solverGasLimitFn
+	balanceOfBonded        balanceOfBondedFn
+	reputationScore        reputationScoreFn
+	getDAppConfig          getDAppConfigFn
+	solverOpStatusUpdateFn solverOpStatusUpdateFn
 
 	mu sync.RWMutex
 }
@@ -143,7 +145,7 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []com
 		return common.Hash{}, nil, ErrAuctionAlreadyStarted
 	}
 
-	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, am.config.Relay.Auction.MaxSolutions, userOp, userOperationPartialRaw, userOpHash, solverGasLimit, am.simulateSolverOperation)
+	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, am.config.Relay.Auction.MaxSolutions, userOp, userOperationPartialRaw, userOpHash, solverGasLimit, am.simulateSolverOperation, am.solverOpStatusUpdateFn)
 	return userOpHash, userOperationPartialRaw, nil
 }
 
@@ -225,6 +227,10 @@ func (am *Manager) GetSolverOperationStatus(solverOpHash common.Hash, completion
 	}
 
 	return auction.getSolverOpStatus(solverOpHash, completionChan)
+}
+
+func (am *Manager) AttachSolverOpStatusUpdateFn(fn func(common.Hash, *SolverStatus)) {
+	am.solverOpStatusUpdateFn = fn
 }
 
 func (am *Manager) simulateSolverOperation(userOp *operation.UserOperation, userOpHash common.Hash, solverOp *operation.SolverOperation) *relayerror.Error {

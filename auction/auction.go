@@ -38,13 +38,14 @@ type Auction struct {
 	solverStatusesCompletionSubs map[common.Hash][]chan *SolverStatus
 
 	simulateSolverOperation simulateSolverOperationFn
+	solverOpStatusUpdate    solverOpStatusUpdateFn
 
 	createdAt time.Time
 
 	mu sync.Mutex
 }
 
-func NewAuction(duration time.Duration, maxSolutions uint64, userOp *operation.UserOperation, userOperationPartialRaw *operation.UserOperationPartialRaw, userOpHash common.Hash, solverGasLimit uint32, simulateSolverOperation simulateSolverOperationFn) *Auction {
+func NewAuction(duration time.Duration, maxSolutions uint64, userOp *operation.UserOperation, userOperationPartialRaw *operation.UserOperationPartialRaw, userOpHash common.Hash, solverGasLimit uint32, simulateSolverOperation simulateSolverOperationFn, solverOpStatusUpdate solverOpStatusUpdateFn) *Auction {
 	auction := &Auction{
 		open:                         true,
 		userOpHash:                   userOpHash,
@@ -58,6 +59,7 @@ func NewAuction(duration time.Duration, maxSolutions uint64, userOp *operation.U
 		solverOpsCompletionSubs:      make([]chan []*operation.SolverOperationWithScore, 0),
 		solverStatusesCompletionSubs: make(map[common.Hash][]chan *SolverStatus),
 		simulateSolverOperation:      simulateSolverOperation,
+		solverOpStatusUpdate:         solverOpStatusUpdate,
 		createdAt:                    time.Now(),
 	}
 
@@ -139,6 +141,11 @@ func (a *Auction) close() {
 
 	for solverOpHash, subs := range a.solverStatusesCompletionSubs {
 		status := a.solverOpsStatus[solverOpHash]
+
+		go func(solverOpHash common.Hash, status *SolverStatus) {
+			a.solverOpStatusUpdate(solverOpHash, status)
+		}(solverOpHash, status)
+
 		for _, subChan := range subs {
 			select {
 			case subChan <- status:
@@ -184,6 +191,9 @@ func (a *Auction) addSolverOp(solverOp *operation.SolverOperationWithScore) (com
 
 	a.solverOpsWithScore = append(a.solverOpsWithScore, solverOp)
 	a.solverOpsStatus[solverOpHash] = SolverStatusAuctionPending
+	go func() {
+		a.solverOpStatusUpdate(solverOpHash, SolverStatusAuctionPending)
+	}()
 	a.solversParticipating[solverOp.SolverOperation.From] = struct{}{}
 
 	return solverOpHash, nil
