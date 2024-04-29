@@ -354,7 +354,7 @@ func (s *Server) BroadcastUserOperationPartial(userOperationPartialRaw *operatio
 	s.publish(broadcast)
 }
 
-func (s *Server) BroadcastSolverOpStatusUpdate(solverOpHash common.Hash, solverStatus *auction.SolverStatus) {
+func (s *Server) BroadcastSolverOpStatusUpdate(solverOpHash common.Hash, solverStatus *auction.SolverStatus, unsubscribeAfterBroadcast bool) {
 	topicForSolverHash := TopicUpdateSolverOpStatus + TopicDelimiter + solverOpHash.Hex()
 	broadcast := &Broadcast{
 		Event: EventUpdate,
@@ -364,6 +364,16 @@ func (s *Server) BroadcastSolverOpStatusUpdate(solverOpHash common.Hash, solverS
 		},
 	}
 	s.publish(broadcast)
+
+	if unsubscribeAfterBroadcast {
+		for _, conn := range s.subscriptions[broadcast.Topic] {
+			resp := &Response{}
+			s.unsubscribe(conn, broadcast.Topic, resp)
+			if resp.Result != Unsubscribed {
+				log.Error("failed to unsubscribe", "uuid", conn.uuid, "topic", broadcast.Topic, "result", resp.Result)
+			}
+		}
+	}
 }
 
 func (s *Server) ForwardBundle(bundleOps *operation.BundleOperations, setAtlasTxHash setAtlasTxHashFn, setRelayError setRelayErrorFn) *relayerror.Error {

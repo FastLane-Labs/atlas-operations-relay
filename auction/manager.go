@@ -35,7 +35,7 @@ type solverGasLimitFn func(common.Address) (uint32, *relayerror.Error)
 type balanceOfBondedFn func(common.Address) (*big.Int, *relayerror.Error)
 type reputationScoreFn func(account common.Address) int
 type getDAppConfigFn func(common.Address, *operation.UserOperation) (*dAppControl.DAppConfig, *relayerror.Error)
-type solverOpStatusUpdateFn func(common.Hash, *SolverStatus)
+type solverOpStatusUpdateFn func(common.Hash, *SolverStatus, bool)
 
 type Manager struct {
 	ethClient *ethclient.Client
@@ -229,7 +229,7 @@ func (am *Manager) GetSolverOperationStatus(solverOpHash common.Hash, completion
 	return auction.getSolverOpStatus(solverOpHash, completionChan)
 }
 
-func (am *Manager) AttachSolverOpStatusUpdateFn(fn func(common.Hash, *SolverStatus)) {
+func (am *Manager) AttachSolverOpStatusUpdateFn(fn func(common.Hash, *SolverStatus, bool)) {
 	am.solverOpStatusUpdateFn = fn
 }
 

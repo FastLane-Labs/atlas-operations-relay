@@ -141,11 +141,6 @@ func (a *Auction) close() {
 
 	for solverOpHash, subs := range a.solverStatusesCompletionSubs {
 		status := a.solverOpsStatus[solverOpHash]
-
-		go func(solverOpHash common.Hash, status *SolverStatus) {
-			a.solverOpStatusUpdate(solverOpHash, status)
-		}(solverOpHash, status)
-
 		for _, subChan := range subs {
 			select {
 			case subChan <- status:
@@ -154,6 +149,17 @@ func (a *Auction) close() {
 			}
 		}
 	}
+
+	// update status and close subscriptions to solverOpStatus subscribers
+	var wg2 sync.WaitGroup
+	for solverOpHash, status := range a.solverOpsStatus {
+		wg2.Add(1)
+		go func(solverOpHash common.Hash, status *SolverStatus) {
+			defer wg2.Done()
+			a.solverOpStatusUpdate(solverOpHash, status, true)
+		}(solverOpHash, status)
+	}
+	wg2.Wait()
 }
 
 func (a *Auction) addSolverOpsCompletionSub(subChan chan []*operation.SolverOperationWithScore) {
@@ -192,7 +198,7 @@ func (a *Auction) addSolverOp(solverOp *operation.SolverOperationWithScore) (com
 	a.solverOpsWithScore = append(a.solverOpsWithScore, solverOp)
 	a.solverOpsStatus[solverOpHash] = SolverStatusAuctionPending
 	go func() {
-		a.solverOpStatusUpdate(solverOpHash, SolverStatusAuctionPending)
+		a.solverOpStatusUpdate(solverOpHash, SolverStatusAuctionPending, false)
 	}()
 	a.solversParticipating[solverOp.SolverOperation.From] = struct{}{}
 
