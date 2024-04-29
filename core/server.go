@@ -40,7 +40,7 @@ const (
 
 	// Subscriptions topics
 	TopicNewUserOperations    = "newUserOperations"
-	TopicUpdateSolverOpStatus = "updateSolverOperationStatus"
+	TopicUpdateSolverOpStatus = "solverOperationStatusUpdates"
 
 	//TopicDelimiter
 	TopicDelimiter = "_"
