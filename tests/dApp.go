@@ -5,6 +5,7 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 )
 
 func newDappOperation(userOp *operation.UserOperation, solverOps []*operation.SolverOperation) *operation.DAppOperation {
@@ -44,7 +45,7 @@ func newDappOperation(userOp *operation.UserOperation, solverOps []*operation.So
 		panic(err)
 	}
 
-	dAppOp.Signature = signEip712(atlasDomainSeparator, proofHash, userPk)
+	dAppOp.Signature, _ = utils.SignEip712Message(atlasDomainSeparator, proofHash, userPk)
 
 	return dAppOp
 }

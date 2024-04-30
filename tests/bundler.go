@@ -13,6 +13,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -25,7 +26,7 @@ func runBundler(bundlerPk *ecdsa.PrivateKey, bundlerReceiveChan chan []byte, bun
 	bundlerAddr := crypto.PubkeyToAddress(bundlerPk.PublicKey)
 	timestamp := time.Now().Unix()
 	signatureContent := fmt.Sprintf("%s:%d", bundlerAddr, timestamp)
-	signature, err := signMessage([]byte(signatureContent), bundlerPk)
+	signature, err := utils.SignEthereumMessage([]byte(signatureContent), bundlerPk)
 	if err != nil {
 		log.Error("failed to sign message:", err)
 		return

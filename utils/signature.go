@@ -1,15 +1,34 @@
 package utils
 
 import (
-	"github.com/FastLane-Labs/atlas-operations-relay/log"
+	"crypto/ecdsa"
+
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func RecoverEip712Signer(domainSeparator common.Hash, structHash common.Hash, signature []byte) (common.Address, error) {
-	messageHash := crypto.Keccak256([]byte("\x19\x01"), domainSeparator.Bytes(), structHash.Bytes())
-	return recoverSigner(messageHash, signature)
+func SignEthereumMessage(data []byte, pk *ecdsa.PrivateKey) ([]byte, error) {
+	sig, err := crypto.Sign(accounts.TextHash(data), pk)
+	if err != nil {
+		return nil, err
+	}
+	if sig[crypto.RecoveryIDOffset] == 0 || sig[crypto.RecoveryIDOffset] == 1 {
+		sig[crypto.RecoveryIDOffset] += 27
+	}
+	return sig, nil
+}
+
+func SignEip712Message(domainSeparator common.Hash, proofHash common.Hash, pk *ecdsa.PrivateKey) ([]byte, error) {
+	payload := crypto.Keccak256Hash([]byte("\x19\x01"), domainSeparator.Bytes(), proofHash.Bytes())
+	sig, err := crypto.Sign(payload.Bytes(), pk)
+	if err != nil {
+		return nil, err
+	}
+	if sig[crypto.RecoveryIDOffset] == 0 || sig[crypto.RecoveryIDOffset] == 1 {
+		sig[crypto.RecoveryIDOffset] += 27
+	}
+	return sig, nil
 }
 
 func RecoverEthereumSigner(message string, signature []byte) (common.Address, error) {
@@ -17,22 +36,20 @@ func RecoverEthereumSigner(message string, signature []byte) (common.Address, er
 	return recoverSigner(messageHash, signature)
 }
 
+func RecoverEip712Signer(domainSeparator common.Hash, structHash common.Hash, signature []byte) (common.Address, error) {
+	messageHash := crypto.Keccak256([]byte("\x19\x01"), domainSeparator.Bytes(), structHash.Bytes())
+	return recoverSigner(messageHash, signature)
+}
+
 func recoverSigner(messageHash []byte, signature []byte) (common.Address, error) {
-	changedSignature := false
-	if signature[crypto.RecoveryIDOffset] == 27 || signature[crypto.RecoveryIDOffset] == 28 {
-		signature[crypto.RecoveryIDOffset] -= 27 // Transform yellow paper V from 27/28 to 0/1
-		changedSignature = true
+	sig := make([]byte, len(signature))
+	copy(sig, signature)
+	if sig[crypto.RecoveryIDOffset] == 27 || sig[crypto.RecoveryIDOffset] == 28 {
+		sig[crypto.RecoveryIDOffset] -= 27
 	}
-
-	pubKey, err := crypto.SigToPub(messageHash, signature)
+	pubKey, err := crypto.SigToPub(messageHash, sig)
 	if err != nil {
-		log.Info("failed to recover public key", "err", err)
 		return common.Address{}, err
-	}
-
-	//reset the v of the signature
-	if changedSignature {
-		signature[crypto.RecoveryIDOffset] += 27
 	}
 	return crypto.PubkeyToAddress(*pubKey), nil
 }
