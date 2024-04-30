@@ -64,10 +64,17 @@ func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash comm
 		return relayErr
 	}
 
-	callChainHash, err := b.CallChainHash(dAppConfig.CallConfig, dAppConfig.To)
-	if err != nil {
-		log.Info("failed to compute call chain hash", "err", err)
-		return relayerror.ErrServerInternal
+	var (
+		callChainHash common.Hash
+		err           error
+	)
+
+	if utils.FlagVerifyCallChainHash(dAppConfig.CallConfig) {
+		callChainHash, err = b.CallChainHash(dAppConfig.CallConfig, dAppConfig.To)
+		if err != nil {
+			log.Info("failed to compute call chain hash", "err", err)
+			return relayerror.ErrServerInternal
+		}
 	}
 
 	if relayErr := b.DAppOperation.Validate(userOpHash, b.UserOperation, callChainHash, atlas, atlasDomainSeparator, dAppOpGasLimit); relayErr != nil {

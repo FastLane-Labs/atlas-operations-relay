@@ -152,7 +152,8 @@ func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, 
 		return ErrDAppOpUserOpHashMismatch
 	}
 
-	if d.CallChainHash != callChainHash {
+	// Validate callChainHash only if it's provided
+	if callChainHash != (common.Hash{}) && d.CallChainHash != callChainHash {
 		return ErrDAppOpInvalidCallChainHash
 	}
 
