@@ -1,13 +1,16 @@
 package config
 
 import (
+	"crypto/ecdsa"
 	"encoding/json"
 	"flag"
 	"math/big"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 var (
@@ -60,8 +63,9 @@ type Gas struct {
 }
 
 type Relay struct {
-	Auction Auction
-	Gas     Gas
+	Auction     Auction
+	Gas         Gas
+	Signatories map[common.Address]*ecdsa.PrivateKey
 }
 
 type Config struct {
@@ -71,7 +75,11 @@ type Config struct {
 }
 
 func Load() *Config {
-	config := &Config{}
+	config := &Config{
+		Relay: Relay{
+			Signatories: make(map[common.Address]*ecdsa.PrivateKey),
+		},
+	}
 
 	config.parseConfigFile()
 	config.parseFlags()
@@ -181,6 +189,17 @@ func (c *Config) parseFlags() {
 func (c *Config) parseEnv() {
 	if envRpcUrl, set := os.LookupEnv("ETH_RPC_URL"); set && len(envRpcUrl) > 0 {
 		c.Network.RpcUrl = envRpcUrl
+	}
+
+	if envSignatoriesPks, set := os.LookupEnv("SIGNATORIES_PKS"); set && len(envSignatoriesPks) > 0 {
+		for _, pk := range strings.Split(envSignatoriesPks, ",") {
+			privateKey, err := crypto.HexToECDSA(pk)
+			if err != nil {
+				panic(err)
+			}
+			c.Relay.Signatories[crypto.PubkeyToAddress(privateKey.PublicKey)] = privateKey
+
+		}
 	}
 }
 

@@ -17,7 +17,7 @@ If a combination is used, the priority order is **ENV var** > **CLI param** > **
     - *config.json*:  `network.rpc_url` (string)
     - *CLI flag*:     `--network.rpc_url`
     - *ENV var*:      `ETH_RPC_URL`
-    - *comment*:      The relay needs access to an operational node, it makes view calls only
+    - *comment*:      the relay needs access to an operational node, it makes view calls only
 - **ATLAS CONTRACT ADDRESS** (required)
     - *config.json*:  `contracts.atlas` (string)
     - *CLI flag*:     `--contracts.atlas`
@@ -47,6 +47,9 @@ If a combination is used, the priority order is **ENV var** > **CLI param** > **
     - *CLI flag*:     `--relay.gas.max_per_dApp_operation`
     - *default*:      1000000
     - *comment*:      values <= 0 are ignored
+- **SIGNATORIES PRIVATE KEYS** (optional)
+    - *ENV var*:      `SIGNATORIES_PKS`
+    - *comment*:      comma separated list of hexadecimal private keys (without 0x prefix) to enable the relay to sign dApp operations when possible
 
 ### Docker
 
