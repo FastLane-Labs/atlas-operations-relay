@@ -1,14 +1,19 @@
 package core
 
 import (
+	"crypto/ecdsa"
+	"math/big"
+
 	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/bundle"
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlETH"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlasVerification"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/storage"
+	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -35,6 +40,8 @@ type Relay struct {
 	atlETHContract            *atlETH.AtlETH
 	storageContract           *storage.Storage
 	atlasVerificationContract *atlasVerification.AtlasVerification
+
+	atlasDomainSeparator common.Hash
 }
 
 func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
@@ -64,9 +71,10 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 		atlETHContract:            atlETHContract,
 		storageContract:           storageContract,
 		atlasVerificationContract: atlasVerificationContract,
+		atlasDomainSeparator:      atlasDomainSeparator,
 	}
 
-	r.auctionManager = auction.NewManager(ethClient, config, atlasDomainSeparator, r.solverGasLimit, r.balanceOfBonded, r.reputationScore, r.getDAppConfig)
+	r.auctionManager = auction.NewManager(ethClient, config, atlasDomainSeparator, r.solverGasLimit, r.balanceOfBonded, r.reputationScore, r.getDAppConfig, r.auctionCompleteCallback)
 	r.bundleManager = bundle.NewManager(ethClient, config, atlasDomainSeparator, r.getDAppConfig)
 	r.server = NewServer(NewRouter(NewApi(r)), r.auctionManager.NewSolverOperation, r.auctionManager.GetSolverOperationStatus, r.getDAppSignatories)
 
@@ -75,6 +83,94 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 
 func (r *Relay) Run(serverReadyChan chan struct{}) {
 	r.server.ListenAndServe(serverReadyChan)
+}
+
+// Called when an auction is complete, bundleOps is missing the DAppOperation, we'll generate it if one of the relay's
+// signatories is allowed by the dApp and submit the complete bundle.
+func (r *Relay) auctionCompleteCallback(bundleOps *operation.BundleOperations) {
+	dAppConfig, relayErr := r.getDAppConfig(bundleOps.UserOperation.Control, bundleOps.UserOperation)
+	if relayErr != nil {
+		log.Info("failed to get dapp config", "err", relayErr.Message)
+		return
+	}
+
+	if utils.FlagUserAuctioneer(dAppConfig.CallConfig) || utils.FlagSolverAuctioneer(dAppConfig.CallConfig) || utils.FlagUnknownAuctioneer(dAppConfig.CallConfig) {
+		// Another allowed auctioneer will generate the DAppOperation and submit the bundle
+		return
+	}
+
+	allowedSignatories, relayErr := r.getDAppSignatories(bundleOps.UserOperation.Control)
+	if relayErr != nil {
+		log.Info("failed to get dApp signatories", "control", bundleOps.UserOperation.Control.Hex(), "err", relayErr.Message)
+		return
+	}
+
+	var (
+		selectedSignatory   common.Address
+		selectedSignatoryPk *ecdsa.PrivateKey
+	)
+
+	for _, signatory := range allowedSignatories {
+		if pk, ok := r.config.Relay.Signatories[signatory]; ok {
+			log.Info("signatory available", "signatory", signatory.Hex())
+			selectedSignatory = signatory
+			selectedSignatoryPk = pk
+			break
+		}
+	}
+
+	if selectedSignatoryPk == nil {
+		// No signatory available
+		return
+	}
+
+	userOpHash, relayErr := bundleOps.UserOperation.Hash(utils.FlagTrustedOpHash(dAppConfig.CallConfig))
+	if relayErr != nil {
+		log.Info("failed to compute user operation hash", "err", relayErr.Message)
+		return
+	}
+
+	callChainHash, err := bundleOps.CallChainHash(dAppConfig.CallConfig, dAppConfig.To)
+	if err != nil {
+		log.Info("failed to compute call chain hash", "err", err)
+		return
+	}
+
+	nonce, relayErr := r.getNextNonce(selectedSignatory, utils.FlagDAppNoncesSequenced(dAppConfig.CallConfig))
+	if relayErr != nil {
+		log.Info("failed to get next nonce", "err", relayErr.Message)
+		return
+	}
+
+	bundleOps.DAppOperation = &operation.DAppOperation{
+		From:          selectedSignatory,
+		To:            r.config.Contracts.Atlas,
+		Value:         new(big.Int).Set(common.Big0),
+		Gas:           new(big.Int).Set(r.config.Relay.Gas.MaxPerDAppOperation),
+		Nonce:         nonce,
+		Deadline:      new(big.Int).Set(bundleOps.UserOperation.Deadline),
+		Control:       bundleOps.UserOperation.Control,
+		Bundler:       selectedSignatory, // Signatory is a whitelisted bundler and will be tried first
+		UserOpHash:    userOpHash,
+		CallChainHash: callChainHash,
+	}
+
+	proofHash, err := bundleOps.DAppOperation.ProofHash()
+	if err != nil {
+		log.Info("failed to compute dApp proof hash", "err", err)
+		return
+	}
+
+	bundleOps.DAppOperation.Signature, err = utils.SignEip712Message(r.atlasDomainSeparator, proofHash, selectedSignatoryPk)
+	if err != nil {
+		log.Info("failed to sign dApp proof hash", "err", err)
+		return
+	}
+
+	// All set to submit the bundle
+	if _, relayErr := r.submitBundleOperations(bundleOps); relayErr != nil {
+		log.Info("failed to submit bundle", "err", relayErr.Message)
+	}
 }
 
 func (r *Relay) submitUserOperation(userOp *operation.UserOperation, hints []common.Address) (common.Hash, *relayerror.Error) {

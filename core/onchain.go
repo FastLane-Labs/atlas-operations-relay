@@ -75,3 +75,13 @@ func (r *Relay) getDAppConfig(dAppControlAddress common.Address, userOp *operati
 
 	return &dAppConfig, nil
 }
+
+func (r *Relay) getNextNonce(account common.Address, requireSequencedNonces bool) (*big.Int, *relayerror.Error) {
+	nonce, err := r.atlasVerificationContract.GetNextNonce(nil, account, requireSequencedNonces)
+	if err != nil {
+		log.Error("failed to get next nonce", "err", err)
+		return nil, relayerror.ErrServerInternal
+	}
+
+	return nonce, nil
+}
