@@ -79,7 +79,7 @@ func (am *Manager) auctionsCleaner() {
 	for range time.Tick(10 * time.Minute) {
 		am.mu.Lock()
 		for userOpHash, auction := range am.auctions {
-			if !auction.open && time.Since(auction.createdAt) > time.Hour {
+			if !auction.isOpen() && time.Since(auction.createdAt) > time.Hour {
 				delete(am.auctions, userOpHash)
 			}
 		}
@@ -161,6 +161,13 @@ func (am *Manager) GetSolverOperations(userOpHash common.Hash, completionChan ch
 	}
 
 	return auction.getSolverOps(completionChan)
+}
+
+func (am *Manager) IsAuctionOngoing(userOpHash common.Hash) bool {
+	am.mu.RLock()
+	defer am.mu.RUnlock()
+	auction, ok := am.auctions[userOpHash]
+	return ok && auction.isOpen()
 }
 
 func (am *Manager) getAuction(userOpHash common.Hash) *Auction {
