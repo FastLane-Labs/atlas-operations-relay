@@ -67,6 +67,12 @@ func NewAuction(duration time.Duration, maxSolutions uint64, userOp *operation.U
 	return auction
 }
 
+func (a *Auction) isOpen() bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.open
+}
+
 func (a *Auction) close() {
 	a.mu.Lock()
 	defer a.mu.Unlock()

@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/auction"
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
@@ -24,6 +25,7 @@ var (
 )
 
 type getDAppConfigFn func(common.Address, *operation.UserOperation) (*dAppControl.DAppConfig, *relayerror.Error)
+type isAuctionOngoingFn func(common.Hash) bool
 
 type Manager struct {
 	ethClient *ethclient.Client
@@ -34,18 +36,20 @@ type Manager struct {
 
 	atlasDomainSeparator common.Hash
 
-	getDAppConfig getDAppConfigFn
+	getDAppConfig    getDAppConfigFn
+	isAuctionOngoing isAuctionOngoingFn
 
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, getDAppConfig getDAppConfigFn) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, getDAppConfig getDAppConfigFn, isAuctionOngoing isAuctionOngoingFn) *Manager {
 	bm := &Manager{
 		ethClient:            ethClient,
 		config:               config,
 		bundles:              make(map[common.Hash]*Bundle),
 		atlasDomainSeparator: atlasDomainSeparator,
 		getDAppConfig:        getDAppConfig,
+		isAuctionOngoing:     isAuctionOngoing,
 	}
 
 	go bm.bundlesCleaner()
@@ -75,6 +79,11 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 	if relayErr != nil {
 		log.Info("failed to compute user operation hash", "err", relayErr.Message)
 		return common.Hash{}, nil, relayErr
+	}
+
+	if bm.isAuctionOngoing(userOpHash) {
+		log.Info("auction is ongoing", "userOpHash", userOpHash.Hex())
+		return common.Hash{}, nil, auction.ErrAuctionOngoing
 	}
 
 	relayErr = bundleOps.Validate(bm.ethClient, userOpHash, bm.config.Contracts.Atlas, bm.atlasDomainSeparator, bm.config.Relay.Gas.MaxPerUserOperation, bm.config.Relay.Gas.MaxPerDAppOperation, dAppConfig)
