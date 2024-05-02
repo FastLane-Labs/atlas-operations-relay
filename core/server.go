@@ -23,12 +23,14 @@ import (
 
 const (
 	BundlerTimeout      = 2 * time.Second
+	SignatoryTimeout    = 2 * time.Second
 	websocketRateLimit  = 2
 	websocketBurstLimit = 32
 
 	// Channels
-	ChannelSolver  = "solver"
-	ChannelBundler = "bundler"
+	ChannelSolver    = "solver"
+	ChannelBundler   = "bundler"
+	ChannelSignatory = "signatory"
 
 	// Methods
 	MethodPing                  = "ping"
@@ -41,8 +43,9 @@ const (
 	TopicNewUserOperations = "newUserOperations"
 
 	// Events
-	EventUpdate    = "update"
-	EventNewBundle = "newBundle"
+	EventUpdate              = "update"
+	EventNewBundle           = "newBundle"
+	EventNewSignatoryRequest = "newSignatoryRequest"
 
 	// Messages
 	ConnUpgradeFailed      = "failed upgrading connection"
@@ -69,13 +72,15 @@ const (
 
 var (
 	Channels = map[string]struct{}{
-		ChannelSolver:  {},
-		ChannelBundler: {},
+		ChannelSolver:    {},
+		ChannelBundler:   {},
+		ChannelSignatory: {},
 	}
 
 	Methods = map[string]map[string]struct{}{
-		ChannelSolver:  {MethodPing: {}, MethodSubscribe: {}, MethodUnsubscribe: {}, MethodSubmitSolverOperation: {}, MethodSolverOperationStatus: {}},
-		ChannelBundler: {MethodPing: {}},
+		ChannelSolver:    {MethodPing: {}, MethodSubscribe: {}, MethodUnsubscribe: {}, MethodSubmitSolverOperation: {}, MethodSolverOperationStatus: {}},
+		ChannelBundler:   {MethodPing: {}},
+		ChannelSignatory: {MethodPing: {}},
 	}
 
 	Topics = map[string]struct{}{
@@ -102,6 +107,7 @@ type getSolverOperationStatusFn func(common.Hash, chan *auction.SolverStatus) (*
 type getDAppSignatoriesFn func(common.Address) ([]common.Address, *relayerror.Error)
 type setAtlasTxHashFn func(common.Hash) *relayerror.Error
 type setRelayErrorFn func(*relayerror.Error) *relayerror.Error
+type submitBundleOperationsFn func(*operation.BundleOperations) (string, *relayerror.Error)
 
 type RequestParams struct {
 	Topic           string                         `json:"topic"`
@@ -168,6 +174,29 @@ func (br *BundleResponse) Marshal() []byte {
 	return b
 }
 
+type SignatoryRequest struct {
+	Id               string                          `json:"id"`
+	Event            string                          `json:"event"`
+	UserOperation    *operation.UserOperationRaw     `json:"userOperation"`
+	SolverOperations []*operation.SolverOperationRaw `json:"solverOperations"`
+}
+
+func (sr *SignatoryRequest) Marshal() []byte {
+	b, _ := json.Marshal(sr)
+	return b
+}
+
+type SignatoryResponse struct {
+	Id     string                      `json:"id"`
+	Result *operation.DAppOperationRaw `json:"result"`
+	Error  string                      `json:"error,omitempty"`
+}
+
+func (sr *SignatoryResponse) Marshal() []byte {
+	b, _ := json.Marshal(sr)
+	return b
+}
+
 type Marshaler interface {
 	Marshal() []byte
 }
@@ -175,19 +204,21 @@ type Marshaler interface {
 type Conn struct {
 	*websocket.Conn
 
-	uuid     string
-	channel  string
-	bundler  common.Address
-	sendChan chan []byte
+	uuid      string
+	channel   string
+	bundler   common.Address
+	signatory common.Address
+	sendChan  chan []byte
 }
 
-func NewConn(conn *websocket.Conn, channel string, bundler common.Address) *Conn {
+func NewConn(conn *websocket.Conn, channel string, bundler common.Address, signatory common.Address) *Conn {
 	return &Conn{
-		Conn:     conn,
-		uuid:     uuid.New().String(),
-		channel:  channel,
-		bundler:  bundler,
-		sendChan: make(chan []byte, 256),
+		Conn:      conn,
+		uuid:      uuid.New().String(),
+		channel:   channel,
+		bundler:   bundler,
+		signatory: signatory,
+		sendChan:  make(chan []byte, 256),
 	}
 }
 
@@ -214,12 +245,24 @@ func (c *Conn) isBundler() bool {
 	return c.bundler != (common.Address{})
 }
 
+func (c *Conn) isSignatory() bool {
+	return c.signatory != (common.Address{})
+}
+
 type bundlingRequest struct {
 	candidatesBundlers map[common.Address]*Conn
 	offlineBundlers    map[common.Address]bool
 	setAtlasTxHash     setAtlasTxHashFn
 	setRelayError      setRelayErrorFn
 	doneChan           chan struct{}
+}
+
+type SigningRequest struct {
+	candidatesSignatories  map[common.Address]*Conn
+	offlineSignatories     map[common.Address]bool
+	submitBundleOperations submitBundleOperationsFn
+	bundle                 *operation.BundleOperations
+	doneChan               chan struct{}
 }
 
 type Server struct {
@@ -229,10 +272,12 @@ type Server struct {
 	subscriptions map[string]map[string]*Conn
 
 	// Indexed by [address]
-	bundlers map[common.Address]*Conn
+	bundlers    map[common.Address]*Conn
+	signatories map[common.Address]*Conn
 
 	// Indexed by [id]
 	bundlingRequests map[string]*bundlingRequest
+	signingRequests  map[string]*SigningRequest
 
 	newSolverOperation       newSolverOperationFn
 	getSolverOperationStatus getSolverOperationStatusFn
@@ -246,7 +291,9 @@ func NewServer(router *mux.Router, newSolverOperation newSolverOperationFn, getS
 		router:                   router,
 		subscriptions:            make(map[string]map[string]*Conn),
 		bundlers:                 make(map[common.Address]*Conn),
+		signatories:              make(map[common.Address]*Conn),
 		bundlingRequests:         make(map[string]*bundlingRequest),
+		signingRequests:          make(map[string]*SigningRequest),
 		newSolverOperation:       newSolverOperation,
 		getSolverOperationStatus: getSolverOperationStatus,
 		getDAppSignatories:       getDAppSignatories,
@@ -272,7 +319,7 @@ func (s *Server) ListenAndServe(serverReadyChan chan struct{}) {
 	log.Info("server stopped", "err", err)
 }
 
-func (s *Server) ServeWs(w http.ResponseWriter, r *http.Request, channel string, bundler common.Address) (*Conn, error) {
+func (s *Server) ServeWs(w http.ResponseWriter, r *http.Request, channel string, bundler common.Address, signatory common.Address) (*Conn, error) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Info("failed upgrading connection", "err", err)
@@ -281,7 +328,7 @@ func (s *Server) ServeWs(w http.ResponseWriter, r *http.Request, channel string,
 		return nil, err
 	}
 
-	conn := NewConn(c, channel, bundler)
+	conn := NewConn(c, channel, bundler, signatory)
 	doneChan := make(chan struct{})
 
 	go s.writePump(conn, doneChan)
@@ -291,11 +338,11 @@ func (s *Server) ServeWs(w http.ResponseWriter, r *http.Request, channel string,
 }
 
 func (s *Server) ServeWsSolver(w http.ResponseWriter, r *http.Request) {
-	s.ServeWs(w, r, ChannelSolver, common.Address{})
+	s.ServeWs(w, r, ChannelSolver, common.Address{}, common.Address{})
 }
 
 func (s *Server) ServeWsBundler(w http.ResponseWriter, r *http.Request, bundler common.Address) {
-	conn, err := s.ServeWs(w, r, ChannelBundler, bundler)
+	conn, err := s.ServeWs(w, r, ChannelBundler, bundler, common.Address{})
 	if err != nil {
 		log.Info("failed to serve ws bundler", "err", err)
 		return
@@ -304,6 +351,20 @@ func (s *Server) ServeWsBundler(w http.ResponseWriter, r *http.Request, bundler 
 	s.registerBundler(conn)
 	conn.SetCloseHandler(func(code int, text string) error {
 		s.unregisterBundler(conn)
+		return nil
+	})
+}
+
+func (s *Server) ServeWsSignatory(w http.ResponseWriter, r *http.Request, signatory common.Address) {
+	conn, err := s.ServeWs(w, r, ChannelSignatory, common.Address{}, signatory)
+	if err != nil {
+		log.Info("failed to serve ws signatory", "err", err)
+		return
+	}
+
+	s.registerSignatory(conn)
+	conn.SetCloseHandler(func(code int, text string) error {
+		s.unregisterSignatory(conn)
 		return nil
 	})
 }
@@ -334,6 +395,34 @@ func (s *Server) unregisterBundler(conn *Conn) {
 	defer s.mu.Unlock()
 
 	delete(s.bundlers, conn.bundler)
+}
+
+func (s *Server) registerSignatory(conn *Conn) {
+	if conn.channel != ChannelSignatory || conn.signatory == (common.Address{}) {
+		log.Info("invalid signatory connection")
+		return
+	}
+
+	log.Info("signatory connected", "signatory", conn.signatory.Hex())
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.signatories[conn.signatory] = conn
+}
+
+func (s *Server) unregisterSignatory(conn *Conn) {
+	if conn.signatory == (common.Address{}) {
+		log.Info("invalid signatory connection")
+		return
+	}
+
+	log.Info("signatory disconnected", "signatory", conn.signatory.Hex())
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	delete(s.signatories, conn.signatory)
 }
 
 func (s *Server) BroadcastUserOperationPartial(userOperationPartialRaw *operation.UserOperationPartialRaw) {
@@ -447,6 +536,102 @@ func (s *Server) runBundlingRequest(id string, bundleReq *BundleRequest, firstCa
 	}
 }
 
+func (s *Server) NewSignatoryRequest(userOp *operation.UserOperation, solverOps []*operation.SolverOperation, submitBundleOperations submitBundleOperationsFn) *relayerror.Error {
+	signingRequest := &SigningRequest{
+		candidatesSignatories:  make(map[common.Address]*Conn),
+		offlineSignatories:     make(map[common.Address]bool),
+		submitBundleOperations: submitBundleOperations,
+		bundle:                 &operation.BundleOperations{UserOperation: userOp, SolverOperations: solverOps},
+		doneChan:               make(chan struct{}),
+	}
+
+	var firstCandidate *Conn
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Retrieve dApp signatories
+	signatories, relayErr := s.getDAppSignatories(userOp.Control)
+	if relayErr != nil {
+		log.Info("failed to get dApp signatories", "control", userOp.Control.Hex(), "err", relayErr.Message)
+	}
+
+	for _, signatory := range signatories {
+		conn, online := s.signatories[signatory]
+		if online {
+			signingRequest.candidatesSignatories[signatory] = conn
+		}
+		if firstCandidate == nil {
+			firstCandidate = conn
+		}
+	}
+
+	if len(signingRequest.candidatesSignatories) == 0 {
+		log.Info("no online signatory", "control", userOp.Control.Hex())
+		return relayErr
+	}
+
+	id := uuid.New().String()
+	s.signingRequests[id] = signingRequest
+
+	solverOpsRaw := make([]*operation.SolverOperationRaw, 0, len(solverOps))
+	for _, solverOp := range solverOps {
+		solverOpsRaw = append(solverOpsRaw, solverOp.EncodeToRaw())
+	}
+
+	signatoryReq := &SignatoryRequest{
+		Id:               id,
+		Event:            EventNewSignatoryRequest,
+		UserOperation:    userOp.EncodeToRaw(),
+		SolverOperations: solverOpsRaw,
+	}
+
+	go s.runSignatoryRequest(id, signatoryReq, firstCandidate, signingRequest)
+	return nil
+}
+
+func (s *Server) runSignatoryRequest(id string, signatoryReq *SignatoryRequest, firstCandidate *Conn, signingRequest *SigningRequest) {
+	nextCandidate := firstCandidate
+
+	getNextCandidate := func() *Conn {
+		for candidate, conn := range signingRequest.candidatesSignatories {
+			if signingRequest.offlineSignatories[candidate] {
+				continue
+			}
+			return conn
+		}
+		return nil
+	}
+
+	for {
+		if nextCandidate == nil {
+			// No more candidates
+			s.mu.Lock()
+			delete(s.signingRequests, id)
+			s.mu.Unlock()
+			return
+		}
+
+		if relayErr := nextCandidate.send(signatoryReq); relayErr != nil {
+			log.Info("failed to send signatory request", "signatory", nextCandidate.signatory.Hex(), "err", relayErr.Message)
+			signingRequest.offlineSignatories[nextCandidate.signatory] = true
+			nextCandidate = getNextCandidate()
+			continue
+		}
+
+		select {
+		case <-time.After(SignatoryTimeout):
+			log.Info("signatory timed out", "signatory", nextCandidate.signatory.Hex())
+			signingRequest.offlineSignatories[nextCandidate.signatory] = true
+			nextCandidate = getNextCandidate()
+
+		case <-signingRequest.doneChan:
+			// Got a response, exit
+			return
+		}
+	}
+}
+
 func (s *Server) processSolverMessage(conn *Conn, msg []byte) {
 	var req *Request
 	if err := json.Unmarshal(msg, &req); err != nil {
@@ -533,6 +718,45 @@ func (s *Server) processBundlerMessage(msg []byte) {
 	}
 
 	bundlingRequest.setAtlasTxHash(resp.Result)
+}
+
+func (s *Server) processSignatoryMessage(msg []byte) {
+	var resp *SignatoryResponse
+	if err := json.Unmarshal(msg, &resp); err != nil {
+		log.Info("failed to unmarshal signatory message", "err", err)
+		return
+	}
+
+	validate := validator.New()
+	if err := validate.Struct(resp); err != nil {
+		log.Info("invalid signatory message", "err", err)
+		return
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	signingRequest, exist := s.signingRequests[resp.Id]
+	if !exist {
+		log.Info("signatory response not found", "id", resp.Id)
+		return
+	}
+
+	close(signingRequest.doneChan)
+	delete(s.signingRequests, resp.Id)
+
+	if len(resp.Error) > 0 {
+		log.Info("signatory response error", "err", resp.Error)
+		return
+	}
+
+	if resp.Result == nil {
+		log.Info("signatory response invalid dApp operation")
+		return
+	}
+
+	signingRequest.bundle.DAppOperation = resp.Result.Decode()
+	signingRequest.submitBundleOperations(signingRequest.bundle)
 }
 
 func (s *Server) publish(broadcast *Broadcast) {
@@ -675,6 +899,8 @@ func (s *Server) readPump(conn *Conn, doneChan chan<- struct{}) {
 
 		if conn.isBundler() {
 			s.processBundlerMessage(msg)
+		} else if conn.isSignatory() {
+			s.processSignatoryMessage(msg)
 		} else {
 			s.processSolverMessage(conn, msg)
 		}

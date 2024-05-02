@@ -109,7 +109,7 @@ Note that all simulations referenced here can be easily done by calling view fun
 - 3002: invalid parameter
 - 3003: server corrupted data
 - 3004: invalid operation hash
-- 3005: invalid bundler address
+- 3005: invalid address
 - 3006: invalid timestamp
 - 3007: expired signature
 - 3008: bad signature (decode/recover error)

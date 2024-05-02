@@ -19,16 +19,16 @@ import (
 )
 
 var (
-	ErrMalformedRequest      = relayerror.NewError(3000, "malformed request")
-	ErrMalformedJson         = relayerror.NewError(3001, "malformed json")
-	ErrInvalidParameter      = relayerror.NewError(3002, "invalid parameter")
-	ErrServerCorruptedData   = relayerror.NewError(3003, "server corrupted data")
-	ErrInvalidOpHash         = relayerror.NewError(3004, "invalid operation hash")
-	ErrInvalidBundlerAddress = relayerror.NewError(3005, "invalid bundler address")
-	ErrInvalidTimestamp      = relayerror.NewError(3006, "invalid timestamp")
-	ErrExpiredSignature      = relayerror.NewError(3007, "expired signature")
-	ErrBadSignature          = relayerror.NewError(3008, "bad signature (decode/recover error)")
-	ErrSignatureMismatch     = relayerror.NewError(3009, "signature mismatch")
+	ErrMalformedRequest    = relayerror.NewError(3000, "malformed request")
+	ErrMalformedJson       = relayerror.NewError(3001, "malformed json")
+	ErrInvalidParameter    = relayerror.NewError(3002, "invalid parameter")
+	ErrServerCorruptedData = relayerror.NewError(3003, "server corrupted data")
+	ErrInvalidOpHash       = relayerror.NewError(3004, "invalid operation hash")
+	ErrInvalidAddress      = relayerror.NewError(3005, "invalid address")
+	ErrInvalidTimestamp    = relayerror.NewError(3006, "invalid timestamp")
+	ErrExpiredSignature    = relayerror.NewError(3007, "expired signature")
+	ErrBadSignature        = relayerror.NewError(3008, "bad signature (decode/recover error)")
+	ErrSignatureMismatch   = relayerror.NewError(3009, "signature mismatch")
 )
 
 type RetrieveRequest struct {
@@ -252,52 +252,62 @@ func (api *Api) WebsocketSolver(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) WebsocketBundler(w http.ResponseWriter, r *http.Request) {
+	bundler, relayErr := authenticate(r)
+	if relayErr != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(relayErr.Marshal())
+		return
+	}
+
+	api.relay.server.ServeWsBundler(w, r, bundler)
+}
+
+func (api *Api) WebsocketSignatory(w http.ResponseWriter, r *http.Request) {
+	signatory, relayErr := authenticate(r)
+	if relayErr != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(relayErr.Marshal())
+		return
+	}
+
+	api.relay.server.ServeWsSignatory(w, r, signatory)
+}
+
+func authenticate(r *http.Request) (common.Address, *relayerror.Error) {
 	q := r.URL.Query()
 
 	address := q.Get("address")
 	if !common.IsHexAddress(address) {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(ErrInvalidBundlerAddress.Marshal())
-		return
+		return common.Address{}, ErrInvalidAddress
 	}
-	bundler := common.HexToAddress(address)
+	account := common.HexToAddress(address)
 
 	timestamp, err := strconv.ParseInt(q.Get("timestamp"), 10, 64)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(ErrInvalidTimestamp.Marshal())
-		return
+		return common.Address{}, ErrInvalidTimestamp
 	}
 
 	// 60 seconds window past and future for timestamp
 	minTimestamp, maxTimestamp := time.Now().Unix()-60, time.Now().Unix()+60
 	if timestamp < minTimestamp || timestamp > maxTimestamp {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(ErrExpiredSignature.Marshal())
-		return
+		return common.Address{}, ErrExpiredSignature
 	}
 
 	signature, err := hexutil.Decode(q.Get("signature"))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(ErrBadSignature.Marshal())
-		return
+		return common.Address{}, ErrBadSignature
 	}
 
 	// Validate the signature
-	signatureContent := fmt.Sprintf("%s:%d", bundler, timestamp)
+	signatureContent := fmt.Sprintf("%s:%d", account, timestamp)
 	signer, err := utils.RecoverEthereumSigner(signatureContent, signature)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(ErrBadSignature.Marshal())
-		return
+		return common.Address{}, ErrBadSignature
 	}
 
-	if bundler != signer {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(ErrSignatureMismatch.Marshal())
-		return
+	if account != signer {
+		return common.Address{}, ErrSignatureMismatch
 	}
 
-	api.relay.server.ServeWsBundler(w, r, bundler)
+	return account, nil
 }
