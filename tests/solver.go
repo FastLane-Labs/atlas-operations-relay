@@ -13,6 +13,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/websocket"
 )
@@ -180,7 +181,7 @@ func solveUserOperation(userOperationPartialRaw *operation.UserOperationPartialR
 		panic(err)
 	}
 
-	solverOp.Signature = signEip712(atlasDomainSeparator, proofHash, solverPk)
+	solverOp.Signature, _ = utils.SignEip712Message(atlasDomainSeparator, proofHash, solverPk)
 
 	return solverOp
 }

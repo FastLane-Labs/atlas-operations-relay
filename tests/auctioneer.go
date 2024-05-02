@@ -14,6 +14,7 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -63,7 +64,7 @@ func newDemoUserOperation() *operation.UserOperation {
 		panic(err)
 	}
 
-	userOp.Signature = signEip712(atlasDomainSeparator, proofHash, userPk)
+	userOp.Signature, _ = utils.SignEip712Message(atlasDomainSeparator, proofHash, userPk)
 
 	if err := userOp.Validate(ethClient, conf.Contracts.Atlas, atlasDomainSeparator, conf.Relay.Gas.MaxPerUserOperation); err != nil {
 		panic(err)
