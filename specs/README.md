@@ -64,7 +64,7 @@ Note that all simulations and validation referenced here can be easily done by c
 
 ### Reputation
 
-- Simulations and validation of solver operations is performed at the end of the auction, not when they are individually received. The operations relay can configure a max number of simulations that it wants to perform, and if it receives more solver operations than that, it can use reputation as a filter before the simulations.
+- Simulations and validation of solver operations is performed at the end of the auction, not when they are received. The operations relay can configure a max number of simulations that it wants to perform, and if it receives more solver operations than that, it can use reputation as a filter before the simulations.
 - Reputation scores for each solver are their Atlas solverOp success rate (# of successfull solverOps/ # of failed solverOps), and it is readable from the Atlas EntryPoint contract. 
 - Solvers are assigned to either a low or high priority queue based on that score. High priority queue solvers get access to simulations before any low priority queue solver does. Once the max number of simulations allowed by the relay has been reached, the operations to be sent to the auctioneer is finalized.
 
