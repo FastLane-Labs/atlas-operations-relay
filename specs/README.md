@@ -53,14 +53,20 @@ When frontend submits a bundle, the relay should re-run validations on the user 
 - `CallChainHash` field should be the correct hash of the **callChain**
 - `Signature` field must be valid
 
-### Simulations
+### Validation and Simulation
 
-Note that all simulations referenced here can be easily done by calling view functions on the Atlas entrypoint contract using the inputs from users and solvers.
+Note that all simulations and validation referenced here can be easily done by calling view functions on the Atlas entrypoint contract using the inputs from users and solvers.
 
 - When a user operation is submitted it should be simulated. The result from the Atlas entrypoint will tell you if this operation successfully passes the userOp phase of simulation.
 - When the relay receives a userOp, it should also generate a mock dapp operation that is associated with it.
-- The relay must individually simulate each solver operation it receives using the associated mock dapp operation. The relay must read the bonded atlETH (escrowed gas) balance of the solver from the Atlas contract, and verify that the solver has 3x more atlETH than the simulated gas cost in ETH.
+- The relay must individually simulate solver operations that it receives using the associated mock dapp operation. The relay must read the bonded atlETH (escrowed gas) balance of the solver from the Atlas contract, and verify that the solver has 3x more atlETH than the simulated gas cost in ETH.
 - When a bundle is submitted, it should be simulated before forwarding it to the appointed bundler.
+
+### Reputation
+
+- Simulations and validation of solver operations is performed at the end of the auction, not when they are individually received. The operations relay can configure a max number of simulations that it wants to perform, and if it receives more solver operations than that, it can use reputation as a filter before the simulations.
+- Reputation scores for each solver are their Atlas solverOp success rate (# of successfull solverOps/ # of failed solverOps), and it is readable from the Atlas EntryPoint contract. 
+- Solvers are assigned to either a low or high priority queue based on that score. High priority queue solvers get access to simulations before any low priority queue solver does. Once the max number of simulations allowed by the relay has been reached, the operations to be sent to the auctioneer is finalized.
 
 ## Error codes
 
