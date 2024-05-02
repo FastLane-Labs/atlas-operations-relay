@@ -97,5 +97,11 @@ func buildRoutes(api *Api) []Route {
 			"/ws/bundler",
 			api.WebsocketBundler,
 		},
+		{
+			"WebsocketSignatory",
+			http.MethodGet,
+			"/ws/signatory",
+			api.WebsocketSignatory,
+		},
 	}
 }

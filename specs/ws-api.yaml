@@ -67,6 +67,34 @@ channels:
               type: string
               description: The concatenated signature of the timestamp and address by the bundler
               pattern: '^0x([0-9a-f][0-9a-f])*$'
+  Signatory:
+    address: /ws/signatory
+    messages:
+      Ping:
+        $ref: '#/components/messages/Ping'
+      Error:
+        $ref: '#/components/messages/Error'
+      NewSignatoryRequest:
+        $ref: '#/components/messages/NewSignatoryRequest'
+      SignatorySuccess:
+        $ref: '#/components/messages/SignatorySuccess'
+    bindings:
+      ws:
+        query:
+          type: object
+          properties:
+            timestamp:
+              type: integer
+              description: The timestamp of the request
+              example: 1619430000
+            address:
+              type: string
+              description: The address of the signatory
+              pattern: '^0x[0-9a-f]{40}$'
+            signature:
+              type: string
+              description: The concatenated signature of the timestamp and address by the signatory
+              pattern: '^0x([0-9a-f][0-9a-f])*$'
 
 operations:
   processSolverMessage:
@@ -106,6 +134,22 @@ operations:
       $ref: '#/channels/Bundler'
     messages:
       - $ref: '#/channels/Bundler/messages/NewBundle'
+    
+  processSignatoryMessage:
+    action: receive
+    channel:
+      $ref: '#/channels/Signatory'
+    messages:
+      - $ref: '#/channels/Signatory/messages/Ping'
+      - $ref: '#/channels/Signatory/messages/SignatorySuccess'
+      - $ref: '#/channels/Signatory/messages/Error'
+  
+  sendSignatoryMessage:
+    action: send
+    channel:
+      $ref: '#/channels/Signatory'
+    messages:
+      - $ref: '#/channels/Signatory/messages/NewSignatoryRequest'
 
 components:
   messages:
@@ -228,6 +272,20 @@ components:
       summary: The generated Atlas transaction hash following a bundling request
       payload:
         $ref: '#/components/schemas/BundlingSuccess'
+    
+    NewSignatoryRequest:
+      summary: The new signatory request
+      payload:
+        $ref: '#/components/schemas/NewSignatoryRequest'
+      x-response:
+        anyOf:
+          - $ref: '#/components/messages/SignatorySuccess'
+          - $ref: '#/components/messages/Error'
+    
+    SignatorySuccess:
+      summary: The signed DApp operation
+      payload:
+        $ref: '#/components/schemas/SignatorySuccess'
 
   schemas:
     ReqId:
@@ -413,6 +471,35 @@ components:
           type: string
           description: The generated Atlas transaction hash
           examples: ['0x6044c22ab257659b74b1eb4cf2f8f65e0bcc2d9fe832279efb42a6700873fa74']
+      required:
+        - id
+        - result
+    
+    NewSignatoryRequest:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ReqId'
+        event:
+          type: string
+          const: newSignatoryRequest
+        userOperation:
+          $ref: '#/components/schemas/UserOperation'
+        solverOperations:
+          $ref: '#/components/schemas/SolverOperations'
+      required:
+        - id
+        - event
+        - userOperation
+        - solverOperations
+    
+    SignatorySuccess:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ReqId'
+        result:
+          $ref: '#/components/schemas/DAppOperation'
       required:
         - id
         - result
