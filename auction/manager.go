@@ -33,8 +33,9 @@ var (
 
 type solverGasLimitFn func(common.Address) (uint32, *relayerror.Error)
 type balanceOfBondedFn func(common.Address) (*big.Int, *relayerror.Error)
-type reputationScoreFn func(account common.Address) int
+type reputationScoreFn func(common.Address) int
 type getDAppConfigFn func(common.Address, *operation.UserOperation) (*dAppControl.DAppConfig, *relayerror.Error)
+type auctionCompleteCallbackFn func(*operation.BundleOperations)
 
 type Manager struct {
 	ethClient *ethclient.Client
@@ -47,25 +48,27 @@ type Manager struct {
 
 	atlasDomainSeparator common.Hash
 
-	solverGasLimit  solverGasLimitFn
-	balanceOfBonded balanceOfBondedFn
-	reputationScore reputationScoreFn
-	getDAppConfig   getDAppConfigFn
+	solverGasLimit          solverGasLimitFn
+	balanceOfBonded         balanceOfBondedFn
+	reputationScore         reputationScoreFn
+	getDAppConfig           getDAppConfigFn
+	auctionCompleteCallback auctionCompleteCallbackFn
 
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, solverGasLimit solverGasLimitFn, balanceOfBonded balanceOfBondedFn, reputationScore reputationScoreFn, getDAppConfig getDAppConfigFn) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, solverGasLimit solverGasLimitFn, balanceOfBonded balanceOfBondedFn, reputationScore reputationScoreFn, getDAppConfig getDAppConfigFn, auctionCompleteCallback auctionCompleteCallbackFn) *Manager {
 	am := &Manager{
-		ethClient:             ethClient,
-		config:                config,
-		auctions:              make(map[common.Hash]*Auction),
-		solverOpHashToAuction: make(map[common.Hash]*Auction),
-		atlasDomainSeparator:  atlasDomainSeparator,
-		solverGasLimit:        solverGasLimit,
-		balanceOfBonded:       balanceOfBonded,
-		reputationScore:       reputationScore,
-		getDAppConfig:         getDAppConfig,
+		ethClient:               ethClient,
+		config:                  config,
+		auctions:                make(map[common.Hash]*Auction),
+		solverOpHashToAuction:   make(map[common.Hash]*Auction),
+		atlasDomainSeparator:    atlasDomainSeparator,
+		solverGasLimit:          solverGasLimit,
+		balanceOfBonded:         balanceOfBonded,
+		reputationScore:         reputationScore,
+		getDAppConfig:           getDAppConfig,
+		auctionCompleteCallback: auctionCompleteCallback,
 	}
 
 	go am.auctionsCleaner()
@@ -143,7 +146,7 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []com
 		return common.Hash{}, nil, ErrAuctionAlreadyStarted
 	}
 
-	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, am.config.Relay.Auction.MaxSolutions, userOp, userOperationPartialRaw, userOpHash, solverGasLimit, am.simulateSolverOperation)
+	am.auctions[userOpHash] = NewAuction(am.config.Relay.Auction.Duration, am.config.Relay.Auction.MaxSolutions, userOp, userOperationPartialRaw, userOpHash, solverGasLimit, am.simulateSolverOperation, am.auctionCompleteCallback)
 	return userOpHash, userOperationPartialRaw, nil
 }
 
