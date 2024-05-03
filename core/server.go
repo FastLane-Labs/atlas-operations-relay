@@ -714,20 +714,18 @@ func (s *Server) processBundlerMessage(msg []byte) {
 		return
 	}
 
-	close(bundlingRequest.doneChan)
-	delete(s.bundlingRequests, resp.Id)
-
 	if len(resp.Error) > 0 {
 		log.Info("bundler response error", "err", resp.Error)
-		bundlingRequest.setRelayError(ErrBundlingFailure.AddMessage(resp.Error))
 		return
 	}
 
 	if resp.Result == (common.Hash{}) {
 		log.Info("bundler response invalid tx hash", "txHash", resp.Result.Hex())
-		bundlingRequest.setRelayError(ErrBundlingFailure)
 		return
 	}
+
+	close(bundlingRequest.doneChan)
+	delete(s.bundlingRequests, resp.Id)
 
 	bundlingRequest.setAtlasTxHash(resp.Result)
 }
@@ -754,20 +752,18 @@ func (s *Server) processSignatoryMessage(msg []byte) {
 		return
 	}
 
-	close(signingRequest.doneChan)
-	delete(s.signingRequests, resp.Id)
-
 	if len(resp.Error) > 0 {
 		log.Info("signatory response error", "err", resp.Error)
-		signingRequest.registerBundleError(signingRequest.userOpHash, ErrSigningFailure.AddMessage(resp.Error))
 		return
 	}
 
 	if resp.Result == nil {
 		log.Info("signatory response invalid dApp operation")
-		signingRequest.registerBundleError(signingRequest.userOpHash, ErrSigningFailure)
 		return
 	}
+
+	close(signingRequest.doneChan)
+	delete(s.signingRequests, resp.Id)
 
 	signingRequest.bundle.DAppOperation = resp.Result.Decode()
 	signingRequest.submitBundleOperations(signingRequest.bundle)
