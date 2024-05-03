@@ -190,8 +190,8 @@ func (sr *SignatoryRequest) Marshal() []byte {
 }
 
 type SignatoryResponse struct {
-	Id     string                      `json:"id"`
-	Result *operation.DAppOperationRaw `json:"result"`
+	Id     string                      `json:"id" validate:"required"`
+	Result *operation.DAppOperationRaw `json:"result,omitempty"`
 	Error  string                      `json:"error,omitempty"`
 }
 
