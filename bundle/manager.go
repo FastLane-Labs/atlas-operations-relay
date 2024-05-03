@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"math/big"
 	"sync"
 	"time"
 
@@ -106,9 +107,10 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 	_, err = bm.ethClient.CallContract(
 		context.Background(),
 		ethereum.CallMsg{
-			From: bundleOps.DAppOperation.Bundler,
-			To:   &bm.config.Contracts.Atlas,
-			Data: pData,
+			From:     bundleOps.DAppOperation.Bundler,
+			To:       &bm.config.Contracts.Atlas,
+			GasPrice: new(big.Int).Set(bundleOps.UserOperation.MaxFeePerGas),
+			Data:     pData,
 		},
 		nil,
 	)

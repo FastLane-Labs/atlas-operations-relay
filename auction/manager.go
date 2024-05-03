@@ -111,7 +111,7 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []com
 		return common.Hash{}, nil, relayerror.ErrServerInternal
 	}
 
-	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &am.config.Contracts.Simulator, Data: pData}, nil)
+	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &am.config.Contracts.Simulator, GasPrice: new(big.Int).Set(userOp.MaxFeePerGas), Data: pData}, nil)
 	if err != nil {
 		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, nil, relayerror.ErrServerInternal
@@ -246,7 +246,7 @@ func (am *Manager) simulateSolverOperation(userOp *operation.UserOperation, user
 		return relayerror.ErrServerInternal
 	}
 
-	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &am.config.Contracts.Simulator, Data: pData}, nil)
+	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &am.config.Contracts.Simulator, GasPrice: new(big.Int).Set(userOp.MaxFeePerGas), Data: pData}, nil)
 	if err != nil {
 		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.Hex())
 		return relayerror.ErrServerInternal
