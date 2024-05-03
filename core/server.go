@@ -100,6 +100,8 @@ var (
 	ErrBundlerOffline    = relayerror.NewError(3200, "bundler is offline")
 	ErrCloggedConnection = relayerror.NewError(3201, "clogged connection")
 	ErrBundlingFailure   = relayerror.NewError(3202, "bundling failure")
+	ErrSignatoryOffline  = relayerror.NewError(3203, "signatory is offline")
+	ErrSigningFailure    = relayerror.NewError(3204, "auctioneer signing failure")
 )
 
 type newSolverOperationFn func(*operation.SolverOperation) (common.Hash, *relayerror.Error)
@@ -108,6 +110,7 @@ type getDAppSignatoriesFn func(common.Address) ([]common.Address, *relayerror.Er
 type setAtlasTxHashFn func(common.Hash) *relayerror.Error
 type setRelayErrorFn func(*relayerror.Error) *relayerror.Error
 type submitBundleOperationsFn func(*operation.BundleOperations) (string, *relayerror.Error)
+type registerBundleErrorFn func(common.Hash, *relayerror.Error)
 
 type RequestParams struct {
 	Topic           string                         `json:"topic"`
@@ -187,8 +190,8 @@ func (sr *SignatoryRequest) Marshal() []byte {
 }
 
 type SignatoryResponse struct {
-	Id     string                      `json:"id"`
-	Result *operation.DAppOperationRaw `json:"result"`
+	Id     string                      `json:"id" validate:"required"`
+	Result *operation.DAppOperationRaw `json:"result,omitempty"`
 	Error  string                      `json:"error,omitempty"`
 }
 
@@ -258,9 +261,11 @@ type bundlingRequest struct {
 }
 
 type SigningRequest struct {
+	userOpHash             common.Hash
 	candidatesSignatories  map[common.Address]*Conn
 	offlineSignatories     map[common.Address]bool
 	submitBundleOperations submitBundleOperationsFn
+	registerBundleError    registerBundleErrorFn
 	bundle                 *operation.BundleOperations
 	doneChan               chan struct{}
 }
@@ -536,11 +541,13 @@ func (s *Server) runBundlingRequest(id string, bundleReq *BundleRequest, firstCa
 	}
 }
 
-func (s *Server) NewSignatoryRequest(userOp *operation.UserOperation, solverOps []*operation.SolverOperation, submitBundleOperations submitBundleOperationsFn) *relayerror.Error {
+func (s *Server) NewSignatoryRequest(userOpHash common.Hash, userOp *operation.UserOperation, solverOps []*operation.SolverOperation, signatories []common.Address, submitBundleOperations submitBundleOperationsFn, registerBundleError registerBundleErrorFn) {
 	signingRequest := &SigningRequest{
+		userOpHash:             userOpHash,
 		candidatesSignatories:  make(map[common.Address]*Conn),
 		offlineSignatories:     make(map[common.Address]bool),
 		submitBundleOperations: submitBundleOperations,
+		registerBundleError:    registerBundleError,
 		bundle:                 &operation.BundleOperations{UserOperation: userOp, SolverOperations: solverOps},
 		doneChan:               make(chan struct{}),
 	}
@@ -550,10 +557,14 @@ func (s *Server) NewSignatoryRequest(userOp *operation.UserOperation, solverOps 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Retrieve dApp signatories
-	signatories, relayErr := s.getDAppSignatories(userOp.Control)
-	if relayErr != nil {
-		log.Info("failed to get dApp signatories", "control", userOp.Control.Hex(), "err", relayErr.Message)
+	if signatories == nil {
+		var relayErr *relayerror.Error
+		signatories, relayErr = s.getDAppSignatories(userOp.Control)
+		if relayErr != nil {
+			log.Info("failed to get dApp signatories", "control", userOp.Control.Hex(), "err", relayErr.Message)
+			registerBundleError(userOpHash, relayerror.ErrServerInternal)
+			return
+		}
 	}
 
 	for _, signatory := range signatories {
@@ -568,7 +579,8 @@ func (s *Server) NewSignatoryRequest(userOp *operation.UserOperation, solverOps 
 
 	if len(signingRequest.candidatesSignatories) == 0 {
 		log.Info("no online signatory", "control", userOp.Control.Hex())
-		return relayErr
+		registerBundleError(userOpHash, ErrSignatoryOffline)
+		return
 	}
 
 	id := uuid.New().String()
@@ -587,7 +599,6 @@ func (s *Server) NewSignatoryRequest(userOp *operation.UserOperation, solverOps 
 	}
 
 	go s.runSignatoryRequest(id, signatoryReq, firstCandidate, signingRequest)
-	return nil
 }
 
 func (s *Server) runSignatoryRequest(id string, signatoryReq *SignatoryRequest, firstCandidate *Conn, signingRequest *SigningRequest) {
@@ -609,6 +620,7 @@ func (s *Server) runSignatoryRequest(id string, signatoryReq *SignatoryRequest, 
 			s.mu.Lock()
 			delete(s.signingRequests, id)
 			s.mu.Unlock()
+			signingRequest.registerBundleError(signingRequest.userOpHash, ErrSignatoryOffline)
 			return
 		}
 
@@ -702,20 +714,18 @@ func (s *Server) processBundlerMessage(msg []byte) {
 		return
 	}
 
-	close(bundlingRequest.doneChan)
-	delete(s.bundlingRequests, resp.Id)
-
 	if len(resp.Error) > 0 {
 		log.Info("bundler response error", "err", resp.Error)
-		bundlingRequest.setRelayError(ErrBundlingFailure.AddMessage(resp.Error))
 		return
 	}
 
 	if resp.Result == (common.Hash{}) {
 		log.Info("bundler response invalid tx hash", "txHash", resp.Result.Hex())
-		bundlingRequest.setRelayError(ErrBundlingFailure)
 		return
 	}
+
+	close(bundlingRequest.doneChan)
+	delete(s.bundlingRequests, resp.Id)
 
 	bundlingRequest.setAtlasTxHash(resp.Result)
 }
@@ -742,9 +752,6 @@ func (s *Server) processSignatoryMessage(msg []byte) {
 		return
 	}
 
-	close(signingRequest.doneChan)
-	delete(s.signingRequests, resp.Id)
-
 	if len(resp.Error) > 0 {
 		log.Info("signatory response error", "err", resp.Error)
 		return
@@ -754,6 +761,9 @@ func (s *Server) processSignatoryMessage(msg []byte) {
 		log.Info("signatory response invalid dApp operation")
 		return
 	}
+
+	close(signingRequest.doneChan)
+	delete(s.signingRequests, resp.Id)
 
 	signingRequest.bundle.DAppOperation = resp.Result.Decode()
 	signingRequest.submitBundleOperations(signingRequest.bundle)

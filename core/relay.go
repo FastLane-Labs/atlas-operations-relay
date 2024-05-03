@@ -99,6 +99,12 @@ func (r *Relay) auctionCompleteCallback(bundleOps *operation.BundleOperations) {
 		return
 	}
 
+	userOpHash, relayErr := bundleOps.UserOperation.Hash(utils.FlagTrustedOpHash(dAppConfig.CallConfig))
+	if relayErr != nil {
+		log.Info("failed to compute user operation hash", "err", relayErr.Message)
+		return
+	}
+
 	allowedSignatories, relayErr := r.getDAppSignatories(bundleOps.UserOperation.Control)
 	if relayErr != nil {
 		log.Info("failed to get dApp signatories", "control", bundleOps.UserOperation.Control.Hex(), "err", relayErr.Message)
@@ -120,13 +126,8 @@ func (r *Relay) auctionCompleteCallback(bundleOps *operation.BundleOperations) {
 	}
 
 	if selectedSignatoryPk == nil {
-		// No signatory available
-		return
-	}
-
-	userOpHash, relayErr := bundleOps.UserOperation.Hash(utils.FlagTrustedOpHash(dAppConfig.CallConfig))
-	if relayErr != nil {
-		log.Info("failed to compute user operation hash", "err", relayErr.Message)
+		// No local signatory available, the server will attempt to contact the appropiate signatory
+		r.server.NewSignatoryRequest(userOpHash, bundleOps.UserOperation, bundleOps.SolverOperations, allowedSignatories, r.submitBundleOperations, r.bundleManager.RegisterBundleError)
 		return
 	}
 
