@@ -130,6 +130,16 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 	return userOpHash, bundle, nil
 }
 
+func (bm *Manager) RegisterBundleError(userOpHash common.Hash, relayErr *relayerror.Error) {
+	bm.mu.Lock()
+	defer bm.mu.Unlock()
+
+	bundle := NewBundle(userOpHash, &operation.BundleOperations{})
+	bm.bundles[userOpHash] = bundle
+
+	bundle.SetRelayError(relayErr)
+}
+
 func (bm *Manager) UnregisterBundle(userOpHash common.Hash) {
 	bm.mu.Lock()
 	defer bm.mu.Unlock()

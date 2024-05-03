@@ -131,6 +131,8 @@ Note that all simulations and validation referenced here can be easily done by c
 - 3200: bundler is offline
 - 3201: clogged connection
 - 3202: bundling failure
+- 3203: signatory is offline
+- 3204: auctioneer signing failure
 
 ### 4xxx (Auction related error)
 
