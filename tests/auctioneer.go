@@ -50,7 +50,7 @@ func newDemoUserOperation() *operation.UserOperation {
 		Deadline:     deadline,
 		Gas:          big.NewInt(100000),
 		Nonce:        big.NewInt(1),
-		MaxFeePerGas: big.NewInt(20e9),
+		MaxFeePerGas: big.NewInt(150e9),
 		Value:        big.NewInt(0),
 		Dapp:         swapIntentDAppControl,
 		Control:      swapIntentDAppControl,

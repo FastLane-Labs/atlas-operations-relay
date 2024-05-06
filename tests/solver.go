@@ -139,7 +139,7 @@ func runSolver(sendMsgOnWs bool,
 		}
 	} else {
 		if err := sendSolverOpHttp(solverOp); err != nil {
-			log.Error("failed to send solverOp on http:", err)
+			log.Error("failed to send solverOp on http", "err", err)
 		}
 	}
 	log.Info("solver sent solverOp", "userOpHash", solverOp.UserOpHash.Hex())
