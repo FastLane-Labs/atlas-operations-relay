@@ -104,13 +104,20 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 		return common.Hash{}, nil, relayerror.ErrServerInternal
 	}
 
+	gasLimit := bundleOps.UserOperation.Gas.Uint64()
+	for _, solverOp := range bundleOps.SolverOperations {
+		gasLimit += solverOp.Gas.Uint64()
+	}
+	gasLimit += bm.config.Relay.Gas.MaxPerDAppOperation.Uint64()
+
 	_, err = bm.ethClient.CallContract(
 		context.Background(),
 		ethereum.CallMsg{
-			From:     bundleOps.DAppOperation.Bundler,
-			To:       &bm.config.Contracts.Atlas,
-			GasPrice: new(big.Int).Set(bundleOps.UserOperation.MaxFeePerGas),
-			Data:     pData,
+			From:      bundleOps.DAppOperation.Bundler,
+			To:        &bm.config.Contracts.Atlas,
+			Gas:       gasLimit + 1000000, // Add gas for validateCalls and others
+			GasFeeCap: new(big.Int).Set(bundleOps.UserOperation.MaxFeePerGas),
+			Data:      pData,
 		},
 		nil,
 	)
