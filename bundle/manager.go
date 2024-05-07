@@ -105,8 +105,12 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 	}
 
 	gasLimit := bundleOps.UserOperation.Gas.Uint64()
+	gasPrice := new(big.Int).Set(bundleOps.UserOperation.MaxFeePerGas)
 	for _, solverOp := range bundleOps.SolverOperations {
 		gasLimit += solverOp.Gas.Uint64()
+		if solverOp.MaxFeePerGas.Cmp(gasPrice) > 0 {
+			gasPrice.Set(solverOp.MaxFeePerGas)
+		}
 	}
 	gasLimit += bm.config.Relay.Gas.MaxPerDAppOperation.Uint64()
 
@@ -116,7 +120,7 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 			From:      bundleOps.DAppOperation.Bundler,
 			To:        &bm.config.Contracts.Atlas,
 			Gas:       gasLimit + 1000000, // Add gas for validateCalls and others
-			GasFeeCap: new(big.Int).Set(bundleOps.UserOperation.MaxFeePerGas),
+			GasFeeCap: gasPrice,
 			Data:      pData,
 		},
 		nil,
