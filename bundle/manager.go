@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"math/big"
 	"sync"
 	"time"
 
@@ -103,12 +104,24 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 		return common.Hash{}, nil, relayerror.ErrServerInternal
 	}
 
+	gasLimit := bundleOps.UserOperation.Gas.Uint64()
+	gasPrice := new(big.Int).Set(bundleOps.UserOperation.MaxFeePerGas)
+	for _, solverOp := range bundleOps.SolverOperations {
+		gasLimit += solverOp.Gas.Uint64()
+		if solverOp.MaxFeePerGas.Cmp(gasPrice) > 0 {
+			gasPrice.Set(solverOp.MaxFeePerGas)
+		}
+	}
+	gasLimit += bm.config.Relay.Gas.MaxPerDAppOperation.Uint64()
+
 	_, err = bm.ethClient.CallContract(
 		context.Background(),
 		ethereum.CallMsg{
-			From: bundleOps.DAppOperation.Bundler,
-			To:   &bm.config.Contracts.Atlas,
-			Data: pData,
+			From:      bundleOps.DAppOperation.Bundler,
+			To:        &bm.config.Contracts.Atlas,
+			Gas:       gasLimit + 1000000, // Add gas for validateCalls and others
+			GasFeeCap: gasPrice,
+			Data:      pData,
 		},
 		nil,
 	)

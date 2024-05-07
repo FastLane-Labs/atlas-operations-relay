@@ -111,7 +111,15 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []com
 		return common.Hash{}, nil, relayerror.ErrServerInternal
 	}
 
-	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &am.config.Contracts.Simulator, Data: pData}, nil)
+	bData, err := am.ethClient.CallContract(
+		context.Background(),
+		ethereum.CallMsg{
+			To:        &am.config.Contracts.Simulator,
+			Gas:       userOp.Gas.Uint64() + 1000000, // Add gas for validateCalls and others
+			GasFeeCap: new(big.Int).Set(userOp.MaxFeePerGas),
+			Data:      pData,
+		},
+		nil)
 	if err != nil {
 		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, nil, relayerror.ErrServerInternal
@@ -246,7 +254,21 @@ func (am *Manager) simulateSolverOperation(userOp *operation.UserOperation, user
 		return relayerror.ErrServerInternal
 	}
 
-	bData, err := am.ethClient.CallContract(context.Background(), ethereum.CallMsg{To: &am.config.Contracts.Simulator, Data: pData}, nil)
+	gasPrice := new(big.Int).Set(userOp.MaxFeePerGas)
+	if solverOp.MaxFeePerGas.Cmp(userOp.MaxFeePerGas) > 0 {
+		gasPrice.Set(solverOp.MaxFeePerGas)
+	}
+
+	bData, err := am.ethClient.CallContract(
+		context.Background(),
+		ethereum.CallMsg{
+			To:        &am.config.Contracts.Simulator,
+			Gas:       userOp.Gas.Uint64() + solverOp.Gas.Uint64() + 1000000, // Add gas for validateCalls and others
+			GasFeeCap: gasPrice,
+			Data:      pData,
+		},
+		nil,
+	)
 	if err != nil {
 		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.Hex())
 		return relayerror.ErrServerInternal
