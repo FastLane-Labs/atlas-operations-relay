@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlasVerification"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/utils"
@@ -44,12 +45,22 @@ func newDemoUserOperation() *operation.UserOperation {
 	//randomize the deadline so that a new userOp is created every time with a different userOpHash
 	deadline := big.NewInt(int64(currentBlock) + 100 + rand.Int63n(1000))
 
+	atlasVerification, err := atlasVerification.NewAtlasVerification(conf.Contracts.AtlasVerification, ethClient)
+	if err != nil {
+		panic(err)
+	}
+	
+	nonce, err := atlasVerification.GetNextNonce(nil, userEoa, false)
+	if err != nil {
+		panic(err)
+	}
+
 	userOp := &operation.UserOperation{
 		From:         userEoa,
 		To:           conf.Contracts.Atlas,
 		Deadline:     deadline,
 		Gas:          big.NewInt(100000),
-		Nonce:        big.NewInt(1),
+		Nonce:        nonce,
 		MaxFeePerGas: big.NewInt(150e9),
 		Value:        big.NewInt(0),
 		Dapp:         swapIntentDAppControl,
