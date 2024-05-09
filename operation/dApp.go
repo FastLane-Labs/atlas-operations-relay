@@ -219,7 +219,7 @@ func (d *DAppOperation) checkSignature(domainSeparator common.Hash) *relayerror.
 
 	if signer != d.From {
 		log.Info("invalid dApp operation signature", "signer", signer.Hex(), "from", d.From.Hex())
-		return ErrUserOpInvalidSignature
+		return ErrDappOpSignatureInvalid
 	}
 
 	return nil
