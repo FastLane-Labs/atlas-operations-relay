@@ -89,7 +89,7 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 
 	relayErr = bundleOps.Validate(bm.ethClient, userOpHash, bm.config.Contracts.Atlas, bm.atlasDomainSeparator, bm.config.Relay.Gas.MaxPerUserOperation, bm.config.Relay.Gas.MaxPerDAppOperation, dAppConfig)
 	if relayErr != nil {
-		log.Info("invalid dapp operation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
+		log.Info("invalid dApp operation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, nil, relayErr
 	}
 
