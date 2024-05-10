@@ -31,7 +31,8 @@ type configJson struct {
 	} `json:"contracts"`
 
 	Relay struct {
-		Auction struct {
+		Simulations bool `json:"simulations,omitempty"`
+		Auction     struct {
 			Duration     uint64 `json:"duration,omitempty"`
 			MaxSolutions uint64 `json:"max_solutions,omitempty"`
 		} `json:"auction,omitempty"`
@@ -63,6 +64,7 @@ type Gas struct {
 }
 
 type Relay struct {
+	Simulations bool
 	Auction     Auction
 	Gas         Gas
 	Signatories map[common.Address]*ecdsa.PrivateKey
@@ -138,6 +140,7 @@ func (c *Config) parseFlags() {
 	contractsAtlasPtr := flag.String("contracts.atlas", "", "Atlas contract address")
 	contractsAtlasVerificationPtr := flag.String("contracts.atlasVerification", "", "AtlasVerification contract address")
 	contractsSimulatorPtr := flag.String("contracts.simulator", "", "Simulator contract address")
+	relaySimulationsPtr := flag.Bool("relay.simulations", false, "Enable simulations")
 	relayAuctionDurationPtr := flag.Uint64("relay.auction.duration", 0, "Auction duration in milliseconds")
 	relayAuctionMaxSolutionsPtr := flag.Uint64("relay.auction.max_solutions", 0, "Max solutions per auction")
 	relayGasMaxPerUserOperationPtr := flag.Uint64("relay.gas.max_per_user_operation", 0, "Max gas per user operation")
@@ -168,6 +171,8 @@ func (c *Config) parseFlags() {
 		}
 		c.Contracts.Simulator = common.HexToAddress(*contractsSimulatorPtr)
 	}
+
+	c.Relay.Simulations = *relaySimulationsPtr
 
 	if *relayAuctionDurationPtr > 0 {
 		c.Relay.Auction.Duration = time.Duration(*relayAuctionDurationPtr * uint64(time.Millisecond))

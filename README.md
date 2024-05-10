@@ -27,6 +27,11 @@ If a combination is used, the priority order is **ENV var** > **CLI param** > **
 - **ATLAS SIMULATOR CONTRACT ADDRESS** (required)
     - *config.json*:  `contracts.simulator` (string)
     - *CLI flag*:     `--contracts.simulator`
+- **SIMULATIONS** (optional)
+    - *config.json*:  `relay.simulations` (boolean)
+    - *CLI flag*:     `--relay.simulations`
+    - *default*:      `false`
+    - *comment*:      simulate user and solvers operations and bundles
 - **AUCTION DURATION** (optional)
     - *config.json*:  `relay.auction.duration` (integer)
     - *CLI flag*:     `--relay.auction.duration`

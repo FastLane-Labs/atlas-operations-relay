@@ -43,6 +43,7 @@ var (
 			Simulator:         common.HexToAddress("0xa76a0CD24769241F890B322c39ABDd52aa962094"),
 		},
 		Relay: config.Relay{
+			Simulations: true,
 			Auction: config.Auction{
 				Duration: 5 * time.Second,
 			},
