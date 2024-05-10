@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"encoding/hex"
 	"math/big"
 	"sync"
 	"time"
@@ -151,6 +152,7 @@ func (bm *Manager) simulateBundle(bundleOps *operation.BundleOperations, userOpH
 
 	if err != nil {
 		log.Info("metacall simulation failed", "err", err, "userOpHash", userOpHash.Hex())
+		log.Info("metacall pData", "pData", hex.EncodeToString(pData))
 		return ErrBundleFailedSimulation.AddError(err)
 	}
 
