@@ -105,37 +105,9 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []com
 		return common.Hash{}, nil, relayErr
 	}
 
-	pData, err := contract.SimulatorAbi.Pack("simUserOperation", *userOp)
-	if err != nil {
-		log.Info("failed to pack user operation", "err", err, "userOpHash", userOpHash.Hex())
-		return common.Hash{}, nil, relayerror.ErrServerInternal
-	}
-
-	bData, err := am.ethClient.CallContract(
-		context.Background(),
-		ethereum.CallMsg{
-			To:        &am.config.Contracts.Simulator,
-			Gas:       userOp.Gas.Uint64() + 1000000, // Add gas for validateCalls and others
-			GasFeeCap: new(big.Int).Set(userOp.MaxFeePerGas),
-			Data:      pData,
-		},
-		nil)
-	if err != nil {
-		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.Hex())
-		return common.Hash{}, nil, relayerror.ErrServerInternal
-	}
-
-	validOp, err := contract.SimulatorAbi.Unpack("simUserOperation", bData)
-	if err != nil {
-		log.Info("failed to unpack simUserOperation return data", "err", err, "userOpHash", userOpHash.Hex())
-		return common.Hash{}, nil, relayerror.ErrServerInternal
-	}
-
-	if !validOp[0].(bool) {
-		result := validOp[1].(uint8)
-		validCallResult := validOp[2].(*big.Int)
-		log.Info("user operation failed simulation", "userOpHash", userOpHash.Hex(), "result", result, "validCallResult", validCallResult.String())
-		return common.Hash{}, nil, ErrUserOpFailedSimulation.AddMessage(fmt.Sprintf("result: %d, validCallResult: %s", result, validCallResult.String()))
+	if relayErr := am.simulateUserOperation(userOp, userOpHash); relayErr != nil {
+		log.Info("user operation failed simulation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
+		return common.Hash{}, nil, relayErr
 	}
 
 	solverGasLimit, relayErr := am.solverGasLimit(userOp.Control)
@@ -245,7 +217,54 @@ func (am *Manager) GetSolverOperationStatus(solverOpHash common.Hash, completion
 	return auction.getSolverOpStatus(solverOpHash, completionChan)
 }
 
+func (am *Manager) simulateUserOperation(userOp *operation.UserOperation, userOpHash common.Hash) *relayerror.Error {
+	if !am.config.Relay.Simulations {
+		// Simulations disabled
+		return nil
+	}
+
+	pData, err := contract.SimulatorAbi.Pack("simUserOperation", *userOp)
+	if err != nil {
+		log.Info("failed to pack user operation", "err", err, "userOpHash", userOpHash.Hex())
+		return relayerror.ErrServerInternal
+	}
+
+	bData, err := am.ethClient.CallContract(
+		context.Background(),
+		ethereum.CallMsg{
+			To:        &am.config.Contracts.Simulator,
+			Gas:       userOp.Gas.Uint64() + 1000000, // Add gas for validateCalls and others
+			GasFeeCap: new(big.Int).Set(userOp.MaxFeePerGas),
+			Data:      pData,
+		},
+		nil)
+	if err != nil {
+		log.Info("failed to call simulator contract", "err", err, "userOpHash", userOpHash.Hex())
+		return relayerror.ErrServerInternal
+	}
+
+	validOp, err := contract.SimulatorAbi.Unpack("simUserOperation", bData)
+	if err != nil {
+		log.Info("failed to unpack simUserOperation return data", "err", err, "userOpHash", userOpHash.Hex())
+		return relayerror.ErrServerInternal
+	}
+
+	if !validOp[0].(bool) {
+		result := validOp[1].(uint8)
+		validCallResult := validOp[2].(*big.Int)
+		log.Info("user operation failed simulation", "userOpHash", userOpHash.Hex(), "result", result, "validCallResult", validCallResult.String())
+		return ErrUserOpFailedSimulation.AddMessage(fmt.Sprintf("result: %d, validCallResult: %s", result, validCallResult.String()))
+	}
+
+	return nil
+}
+
 func (am *Manager) simulateSolverOperation(userOp *operation.UserOperation, userOpHash common.Hash, solverOp *operation.SolverOperation) *relayerror.Error {
+	if !am.config.Relay.Simulations {
+		// Simulations disabled
+		return nil
+	}
+
 	dAppOp := operation.GenerateSimulationDAppOperation(userOpHash, userOp)
 
 	pData, err := contract.SimulatorAbi.Pack("simSolverCall", *userOp, *solverOp, *dAppOp)

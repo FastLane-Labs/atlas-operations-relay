@@ -93,6 +93,29 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 		return common.Hash{}, nil, relayErr
 	}
 
+	if relayErr = bm.simulateBundle(bundleOps, userOpHash); relayErr != nil {
+		log.Info("bundle simulation failed", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
+		return common.Hash{}, nil, relayErr
+	}
+
+	bm.mu.Lock()
+	defer bm.mu.Unlock()
+
+	if _, exist := bm.bundles[userOpHash]; exist {
+		return common.Hash{}, nil, ErrBundleAlreadySubmitted
+	}
+
+	bundle := NewBundle(userOpHash, bundleOps)
+	bm.bundles[userOpHash] = bundle
+	return userOpHash, bundle, nil
+}
+
+func (bm *Manager) simulateBundle(bundleOps *operation.BundleOperations, userOpHash common.Hash) *relayerror.Error {
+	if !bm.config.Relay.Simulations {
+		// Simulations disabled
+		return nil
+	}
+
 	solverOps := make([]operation.SolverOperation, 0, len(bundleOps.SolverOperations))
 	for _, solverOp := range bundleOps.SolverOperations {
 		solverOps = append(solverOps, *solverOp)
@@ -101,7 +124,7 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 	pData, err := contract.AtlasAbi.Pack("metacall", *bundleOps.UserOperation, solverOps, *bundleOps.DAppOperation)
 	if err != nil {
 		log.Info("failed to pack bundle", "err", err, "userOpHash", userOpHash.Hex())
-		return common.Hash{}, nil, relayerror.ErrServerInternal
+		return relayerror.ErrServerInternal
 	}
 
 	gasLimit := bundleOps.UserOperation.Gas.Uint64()
@@ -128,19 +151,10 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 
 	if err != nil {
 		log.Info("metacall simulation failed", "err", err, "userOpHash", userOpHash.Hex())
-		return common.Hash{}, nil, ErrBundleFailedSimulation.AddError(err)
+		return ErrBundleFailedSimulation.AddError(err)
 	}
 
-	bm.mu.Lock()
-	defer bm.mu.Unlock()
-
-	if _, exist := bm.bundles[userOpHash]; exist {
-		return common.Hash{}, nil, ErrBundleAlreadySubmitted
-	}
-
-	bundle := NewBundle(userOpHash, bundleOps)
-	bm.bundles[userOpHash] = bundle
-	return userOpHash, bundle, nil
+	return nil
 }
 
 func (bm *Manager) RegisterBundleError(userOpHash common.Hash, relayErr *relayerror.Error) {

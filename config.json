@@ -8,6 +8,7 @@
     "simulator": ""
   },
   "relay": {
+    "simulations": false,
     "auction": {
       "duration": 0,
       "max_solutions": 0
