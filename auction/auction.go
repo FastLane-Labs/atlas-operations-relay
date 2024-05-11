@@ -112,7 +112,9 @@ func (a *Auction) close() {
 			relayErr := a.simulateSolverOperation(a.userOp, a.userOpHash, solverOpWithScore.SolverOperation)
 			if relayErr != nil {
 				// Update status
+				mu.Lock()
 				a.solverOpsStatus[solverOpWithScore.SolverOpHash] = SolverStatusFailedSimulation
+				mu.Unlock()
 				log.Info("solver operation failed simulation", "userOpHash", a.userOpHash.Hex(), "solverOpHash", solverOpWithScore.SolverOpHash.Hex(), "err", relayErr.Message)
 				return
 			}
