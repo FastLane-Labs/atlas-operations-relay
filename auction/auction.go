@@ -112,17 +112,20 @@ func (a *Auction) close() {
 			relayErr := a.simulateSolverOperation(a.userOp, a.userOpHash, solverOpWithScore.SolverOperation)
 			if relayErr != nil {
 				// Update status
+				mu.Lock()
 				a.solverOpsStatus[solverOpWithScore.SolverOpHash] = SolverStatusFailedSimulation
+				mu.Unlock()
 				log.Info("solver operation failed simulation", "userOpHash", a.userOpHash.Hex(), "solverOpHash", solverOpWithScore.SolverOpHash.Hex(), "err", relayErr.Message)
 				return
 			}
 
 			mu.Lock()
 			solverOpsWithScoreTmp = append(solverOpsWithScoreTmp, solverOpWithScore)
-			mu.Unlock()
 
 			// Update status
 			a.solverOpsStatus[solverOpWithScore.SolverOpHash] = SolverStatusIncluded
+			mu.Unlock()
+
 			log.Info("solver operation added to auction's final list", "userOpHash", a.userOpHash.Hex(), "solverOpHash", solverOpWithScore.SolverOpHash.Hex())
 		}(solverOpWithScore)
 	}
