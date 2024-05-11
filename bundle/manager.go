@@ -152,7 +152,7 @@ func (bm *Manager) simulateBundle(bundleOps *operation.BundleOperations, userOpH
 
 	if err != nil {
 		log.Info("metacall simulation failed", "err", err, "userOpHash", userOpHash.Hex())
-		log.Info("metacall pData", "pData", hex.EncodeToString(pData))
+		log.Debug("metacall pData", "pData", hex.EncodeToString(pData))
 		return ErrBundleFailedSimulation.AddError(err)
 	}
 
