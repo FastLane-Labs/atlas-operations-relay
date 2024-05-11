@@ -119,12 +119,10 @@ func (a *Auction) close() {
 
 			mu.Lock()
 			solverOpsWithScoreTmp = append(solverOpsWithScoreTmp, solverOpWithScore)
-			mu.Unlock()
 
-			a.mu.Lock()
 			// Update status
 			a.solverOpsStatus[solverOpWithScore.SolverOpHash] = SolverStatusIncluded
-			a.mu.Unlock()
+			mu.Unlock()
 
 			log.Info("solver operation added to auction's final list", "userOpHash", a.userOpHash.Hex(), "solverOpHash", solverOpWithScore.SolverOpHash.Hex())
 		}(solverOpWithScore)
