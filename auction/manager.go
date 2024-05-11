@@ -254,7 +254,7 @@ func (am *Manager) simulateUserOperation(userOp *operation.UserOperation, userOp
 		result := validOp[1].(uint8)
 		validCallResult := validOp[2].(*big.Int)
 		log.Info("user operation failed simulation", "userOpHash", userOpHash.Hex(), "result", result, "validCallResult", validCallResult.String())
-		log.Info("user operation pData", "pData", hex.EncodeToString(pData))
+		log.Debug("user operation pData", "pData", hex.EncodeToString(pData))
 		return ErrUserOpFailedSimulation.AddMessage(fmt.Sprintf("result: %d, validCallResult: %s", result, validCallResult.String()))
 	}
 
@@ -305,7 +305,7 @@ func (am *Manager) simulateSolverOperation(userOp *operation.UserOperation, user
 		result := validOp[1].(uint8)
 		solverOutcomeResult := validOp[2].(*big.Int)
 		log.Info("solver operation failed simulation", "userOpHash", userOpHash.Hex(), "result", result, "solverOutcomeResult", solverOutcomeResult.String())
-		log.Info("solver operation pData", "pData", hex.EncodeToString(pData))
+		log.Debug("solver operation pData", "pData", hex.EncodeToString(pData))
 		return ErrSolverOpFailedSimulation.AddMessage(fmt.Sprintf("result: %d, solverOutcomeResult: %s", result, solverOutcomeResult.String()))
 	}
 
