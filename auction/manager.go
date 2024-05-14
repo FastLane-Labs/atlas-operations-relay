@@ -236,6 +236,7 @@ func (am *Manager) simulateUserOperation(userOp *operation.UserOperation, userOp
 			To:        &am.config.Contracts.Simulator,
 			Gas:       userOp.Gas.Uint64() + 1000000, // Add gas for validateCalls and others
 			GasFeeCap: new(big.Int).Set(userOp.MaxFeePerGas),
+			Value:     new(big.Int).Set(userOp.Value),
 			Data:      pData,
 		},
 		nil)
@@ -286,6 +287,7 @@ func (am *Manager) simulateSolverOperation(userOp *operation.UserOperation, user
 			To:        &am.config.Contracts.Simulator,
 			Gas:       userOp.Gas.Uint64() + solverOp.Gas.Uint64() + 1000000, // Add gas for validateCalls and others
 			GasFeeCap: gasPrice,
+			Value:     new(big.Int).Set(userOp.Value),
 			Data:      pData,
 		},
 		nil,
