@@ -7,7 +7,7 @@ import (
 )
 
 func InitLogger() {
-	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stdout, log.LevelInfo, true)))
+	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stdout, log.LevelDebug, true)))
 }
 
 func Debug(format string, v ...interface{}) {
