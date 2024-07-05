@@ -25,7 +25,7 @@ var (
 )
 
 var (
-	DAPP_TYPE_HASH = crypto.Keccak256Hash([]byte("DAppApproval(address from,address to,uint256 value,uint256 gas,uint256 nonce,uint256 deadline,address control,address bundler,bytes32 userOpHash,bytes32 callChainHash)"))
+	DAPP_TYPE_HASH = crypto.Keccak256Hash([]byte("DAppOperation(address from,address to,uint256 nonce,uint256 deadline,address control,address bundler,bytes32 userOpHash,bytes32 callChainHash)"))
 )
 
 var (

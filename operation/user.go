@@ -27,7 +27,7 @@ var (
 )
 
 var (
-	USER_TYPE_HASH = crypto.Keccak256Hash([]byte("UserOperation(address from,address to,uint256 value,uint256 gas,uint256 maxFeePerGas,uint256 nonce,uint256 deadline,address dapp,address control,address sessionKey,bytes32 data)"))
+	USER_TYPE_HASH = crypto.Keccak256Hash([]byte("UserOperation(address from,address to,uint256 value,uint256 gas,uint256 maxFeePerGas,uint256 nonce,uint256 deadline,address dapp,address control,uint32 callConfig,address sessionKey,bytes data)"))
 )
 
 var (
@@ -41,6 +41,7 @@ var (
 		{Name: "deadline", Type: "uint256", InternalType: "uint256"},
 		{Name: "dapp", Type: "address", InternalType: "address"},
 		{Name: "control", Type: "address", InternalType: "address"},
+		{Name: "callConfig", Type: "uint32", InternalType: "uint32"},
 		{Name: "sessionKey", Type: "address", InternalType: "address"},
 		{Name: "data", Type: "bytes", InternalType: "bytes"},
 		{Name: "signature", Type: "bytes", InternalType: "bytes"},
@@ -57,6 +58,7 @@ var (
 		{Name: "deadline", Type: "uint256", InternalType: "uint256"},
 		{Name: "dapp", Type: "address", InternalType: "address"},
 		{Name: "control", Type: "address", InternalType: "address"},
+		{Name: "callConfig", Type: "uint32", InternalType: "uint32"},
 		{Name: "sessionKey", Type: "address", InternalType: "address"},
 		{Name: "data", Type: "bytes32", InternalType: "bytes32"},
 	})
@@ -82,6 +84,7 @@ type UserOperationRaw struct {
 	Deadline     *hexutil.Big   `json:"deadline" validate:"required"`
 	Dapp         common.Address `json:"dapp" validate:"required"`
 	Control      common.Address `json:"control" validate:"required"`
+	CallConfig   *hexutil.Big   `json:"callConfig" validate:"required"`
 	SessionKey   common.Address `json:"sessionKey"` // Optional
 	Data         hexutil.Bytes  `json:"data" validate:"required"`
 	Signature    hexutil.Bytes  `json:"signature" validate:"required"`
@@ -98,6 +101,7 @@ func (u *UserOperationRaw) Decode() *UserOperation {
 		Deadline:     u.Deadline.ToInt(),
 		Dapp:         u.Dapp,
 		Control:      u.Control,
+		CallConfig:   uint32(u.CallConfig.ToInt().Uint64()),
 		SessionKey:   u.SessionKey,
 		Data:         u.Data,
 		Signature:    u.Signature,
@@ -141,6 +145,7 @@ func (u *UserOperation) EncodeToRaw() *UserOperationRaw {
 		Deadline:     (*hexutil.Big)(u.Deadline),
 		Dapp:         u.Dapp,
 		Control:      u.Control,
+		CallConfig:   (*hexutil.Big)(big.NewInt(int64(u.CallConfig))),
 		SessionKey:   u.SessionKey,
 		Data:         hexutil.Bytes(u.Data),
 		Signature:    hexutil.Bytes(u.Signature),
@@ -188,6 +193,7 @@ func (u *UserOperation) Hash(altHash bool) (common.Hash, *relayerror.Error) {
 			u.To.Bytes(),
 			u.Dapp.Bytes(),
 			u.Control.Bytes(),
+			big.NewInt(int64(u.CallConfig)).Bytes(),
 			u.SessionKey.Bytes(),
 		}, nil)
 	} else {
@@ -216,6 +222,7 @@ func (u *UserOperation) ProofHash() (common.Hash, error) {
 		Deadline     *big.Int
 		Dapp         common.Address
 		Control      common.Address
+		CallConfig   *big.Int
 		SessionKey   common.Address
 		Data         common.Hash
 	}{
@@ -229,6 +236,7 @@ func (u *UserOperation) ProofHash() (common.Hash, error) {
 		u.Deadline,
 		u.Dapp,
 		u.Control,
+		big.NewInt(int64(u.CallConfig)),
 		u.SessionKey,
 		crypto.Keccak256Hash(u.Data),
 	}

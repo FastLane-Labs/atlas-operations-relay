@@ -18,6 +18,7 @@ func generateUserOperation() *UserOperation {
 		Value:        big.NewInt(500),
 		Dapp:         common.HexToAddress("0x3"),
 		Control:      common.HexToAddress("0x4"),
+		CallConfig:   600,
 		SessionKey:   common.HexToAddress("0x5"),
 		Data:         []byte("data"),
 		Signature:    []byte("signature"),

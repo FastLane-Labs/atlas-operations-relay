@@ -28,7 +28,7 @@ var (
 )
 
 var (
-	solverOpSolType, _ = abi.NewType("tuple", "struct SolverOperation", []abi.ArgumentMarshaling{
+	solverOpStructArgs = []abi.ArgumentMarshaling{
 		{Name: "from", Type: "address", InternalType: "address"},
 		{Name: "to", Type: "address", InternalType: "address"},
 		{Name: "value", Type: "uint256", InternalType: "uint256"},
@@ -42,7 +42,10 @@ var (
 		{Name: "bidAmount", Type: "uint256", InternalType: "uint256"},
 		{Name: "data", Type: "bytes", InternalType: "bytes"},
 		{Name: "signature", Type: "bytes", InternalType: "bytes"},
-	})
+	}
+
+	solverOpSolType, _      = abi.NewType("tuple", "struct SolverOperation", solverOpStructArgs)
+	solverOpArraySolType, _ = abi.NewType("tuple[]", "struct SolverOperation[]", solverOpStructArgs)
 
 	solverProofHashSolType, _ = abi.NewType("tuple", "struct SolverProofHash", []abi.ArgumentMarshaling{
 		{Name: "solverTypeHash", Type: "bytes32", InternalType: "bytes32"},
@@ -62,6 +65,10 @@ var (
 
 	solverOpArgs = abi.Arguments{
 		{Type: solverOpSolType, Name: "solverOperation"},
+	}
+
+	solverOpArrayArgs = abi.Arguments{
+		{Type: solverOpArraySolType, Name: "solverOperations"},
 	}
 
 	solverProofHashArgs = abi.Arguments{
@@ -271,4 +278,15 @@ func (s *SolverOperation) checkSignature(domainSeparator common.Hash) *relayerro
 	}
 
 	return nil
+}
+
+// Array of solver operations
+type SolverOperations []*SolverOperation
+
+func (s SolverOperations) AbiEncode() ([]byte, error) {
+	solverOps := make([]SolverOperation, len(s))
+	for i, solverOp := range s {
+		solverOps[i] = *solverOp
+	}
+	return solverOpArrayArgs.Pack(solverOps)
 }

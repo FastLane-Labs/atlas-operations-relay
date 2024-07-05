@@ -14,7 +14,7 @@ func TestFlagUserNoncesSequenced(t *testing.T) {
 	}{
 		{
 			name:       "UserNoncesSequenced",
-			callConfig: 1 << indexUserNoncesSequenced,
+			callConfig: 1 << IndexUserNoncesSequenced,
 			want:       true,
 		},
 		{
@@ -24,7 +24,7 @@ func TestFlagUserNoncesSequenced(t *testing.T) {
 		},
 		{
 			name:       "UserNoncesSequencedAndDAppNoncesSequenced",
-			callConfig: 1<<indexUserNoncesSequenced | 1<<indexDAppNoncesSequenced,
+			callConfig: 1<<IndexUserNoncesSequenced | 1<<IndexDAppNoncesSequenced,
 			want:       true,
 		},
 	}
@@ -48,7 +48,7 @@ func TestFlagDAppNoncesSequenced(t *testing.T) {
 	}{
 		{
 			name:       "DAppNoncesSequenced",
-			callConfig: 1 << indexDAppNoncesSequenced,
+			callConfig: 1 << IndexDAppNoncesSequenced,
 			want:       true,
 		},
 		{
@@ -58,7 +58,7 @@ func TestFlagDAppNoncesSequenced(t *testing.T) {
 		},
 		{
 			name:       "DAppNoncesSequencedAndUserNoncesSequenced",
-			callConfig: 1<<indexDAppNoncesSequenced | 1<<indexUserNoncesSequenced,
+			callConfig: 1<<IndexDAppNoncesSequenced | 1<<IndexUserNoncesSequenced,
 			want:       true,
 		},
 	}
@@ -82,7 +82,7 @@ func TestFlagRequirePreOps(t *testing.T) {
 	}{
 		{
 			name:       "RequirePreOps",
-			callConfig: 1 << indexRequirePreOps,
+			callConfig: 1 << IndexRequirePreOps,
 			want:       true,
 		},
 		{
@@ -92,7 +92,7 @@ func TestFlagRequirePreOps(t *testing.T) {
 		},
 		{
 			name:       "RequirePreOpsAndTrackPreOpsReturnData",
-			callConfig: 1<<indexRequirePreOps | 1<<indexTrackPreOpsReturnData,
+			callConfig: 1<<IndexRequirePreOps | 1<<IndexTrackPreOpsReturnData,
 			want:       true,
 		},
 	}
@@ -116,7 +116,7 @@ func TestFlagTrackPreOpsReturnData(t *testing.T) {
 	}{
 		{
 			name:       "TrackPreOpsReturnData",
-			callConfig: 1 << indexTrackPreOpsReturnData,
+			callConfig: 1 << IndexTrackPreOpsReturnData,
 			want:       true,
 		},
 		{
@@ -126,7 +126,7 @@ func TestFlagTrackPreOpsReturnData(t *testing.T) {
 		},
 		{
 			name:       "TrackPreOpsReturnDataAndTrackUserReturnData",
-			callConfig: 1<<indexTrackPreOpsReturnData | 1<<indexTrackUserReturnData,
+			callConfig: 1<<IndexTrackPreOpsReturnData | 1<<IndexTrackUserReturnData,
 			want:       true,
 		},
 	}
@@ -150,7 +150,7 @@ func TestFlagTrackUserReturnData(t *testing.T) {
 	}{
 		{
 			name:       "TrackUserReturnData",
-			callConfig: 1 << indexTrackUserReturnData,
+			callConfig: 1 << IndexTrackUserReturnData,
 			want:       true,
 		},
 		{
@@ -160,7 +160,7 @@ func TestFlagTrackUserReturnData(t *testing.T) {
 		},
 		{
 			name:       "TrackUserReturnDataAndDelegateUser",
-			callConfig: 1<<indexTrackUserReturnData | 1<<indexDelegateUser,
+			callConfig: 1<<IndexTrackUserReturnData | 1<<IndexDelegateUser,
 			want:       true,
 		},
 	}
@@ -184,7 +184,7 @@ func TestFlagDelegateUser(t *testing.T) {
 	}{
 		{
 			name:       "DelegateUser",
-			callConfig: 1 << indexDelegateUser,
+			callConfig: 1 << IndexDelegateUser,
 			want:       true,
 		},
 		{
@@ -194,7 +194,7 @@ func TestFlagDelegateUser(t *testing.T) {
 		},
 		{
 			name:       "DelegateUserAndPreSolver",
-			callConfig: 1<<indexDelegateUser | 1<<indexPreSolver,
+			callConfig: 1<<IndexDelegateUser | 1<<IndexPreSolver,
 			want:       true,
 		},
 	}
@@ -218,7 +218,7 @@ func TestFlagPreSolver(t *testing.T) {
 	}{
 		{
 			name:       "PreSolver",
-			callConfig: 1 << indexPreSolver,
+			callConfig: 1 << IndexPreSolver,
 			want:       true,
 		},
 		{
@@ -228,7 +228,7 @@ func TestFlagPreSolver(t *testing.T) {
 		},
 		{
 			name:       "PreSolverAndPostSolver",
-			callConfig: 1<<indexPreSolver | 1<<indexPostSolver,
+			callConfig: 1<<IndexPreSolver | 1<<IndexPostSolver,
 			want:       true,
 		},
 	}
@@ -252,7 +252,7 @@ func TestFlagPostSolver(t *testing.T) {
 	}{
 		{
 			name:       "PostSolver",
-			callConfig: 1 << indexPostSolver,
+			callConfig: 1 << IndexPostSolver,
 			want:       true,
 		},
 		{
@@ -262,7 +262,7 @@ func TestFlagPostSolver(t *testing.T) {
 		},
 		{
 			name:       "PostSolverAndPostOpsCall",
-			callConfig: 1<<indexPostSolver | 1<<indexPostOpsCall,
+			callConfig: 1<<IndexPostSolver | 1<<IndexPostOpsCall,
 			want:       true,
 		},
 	}
@@ -286,7 +286,7 @@ func TestFlagPostOpsCall(t *testing.T) {
 	}{
 		{
 			name:       "PostOpsCall",
-			callConfig: 1 << indexPostOpsCall,
+			callConfig: 1 << IndexPostOpsCall,
 			want:       true,
 		},
 		{
@@ -296,7 +296,7 @@ func TestFlagPostOpsCall(t *testing.T) {
 		},
 		{
 			name:       "PostOpsCallAndZeroSolvers",
-			callConfig: 1<<indexPostOpsCall | 1<<indexZeroSolvers,
+			callConfig: 1<<IndexPostOpsCall | 1<<IndexZeroSolvers,
 			want:       true,
 		},
 	}
@@ -320,7 +320,7 @@ func TestFlagZeroSolvers(t *testing.T) {
 	}{
 		{
 			name:       "ZeroSolvers",
-			callConfig: 1 << indexZeroSolvers,
+			callConfig: 1 << IndexZeroSolvers,
 			want:       true,
 		},
 		{
@@ -330,7 +330,7 @@ func TestFlagZeroSolvers(t *testing.T) {
 		},
 		{
 			name:       "ZeroSolversAndReuseUserOp",
-			callConfig: 1<<indexZeroSolvers | 1<<indexReuseUserOp,
+			callConfig: 1<<IndexZeroSolvers | 1<<IndexReuseUserOp,
 			want:       true,
 		},
 	}
@@ -354,7 +354,7 @@ func TestFlagReuseUserOp(t *testing.T) {
 	}{
 		{
 			name:       "ReuseUserOp",
-			callConfig: 1 << indexReuseUserOp,
+			callConfig: 1 << IndexReuseUserOp,
 			want:       true,
 		},
 		{
@@ -364,7 +364,7 @@ func TestFlagReuseUserOp(t *testing.T) {
 		},
 		{
 			name:       "ReuseUserOpAndUserAuctioneer",
-			callConfig: 1<<indexReuseUserOp | 1<<indexUserAuctioneer,
+			callConfig: 1<<IndexReuseUserOp | 1<<IndexUserAuctioneer,
 			want:       true,
 		},
 	}
@@ -388,7 +388,7 @@ func TestFlagUserAuctioneer(t *testing.T) {
 	}{
 		{
 			name:       "UserAuctioneer",
-			callConfig: 1 << indexUserAuctioneer,
+			callConfig: 1 << IndexUserAuctioneer,
 			want:       true,
 		},
 		{
@@ -398,7 +398,7 @@ func TestFlagUserAuctioneer(t *testing.T) {
 		},
 		{
 			name:       "UserAuctioneerAndSolverAuctioneer",
-			callConfig: 1<<indexUserAuctioneer | 1<<indexSolverAuctioneer,
+			callConfig: 1<<IndexUserAuctioneer | 1<<IndexSolverAuctioneer,
 			want:       true,
 		},
 	}
@@ -422,7 +422,7 @@ func TestFlagSolverAuctioneer(t *testing.T) {
 	}{
 		{
 			name:       "SolverAuctioneer",
-			callConfig: 1 << indexSolverAuctioneer,
+			callConfig: 1 << IndexSolverAuctioneer,
 			want:       true,
 		},
 		{
@@ -432,7 +432,7 @@ func TestFlagSolverAuctioneer(t *testing.T) {
 		},
 		{
 			name:       "SolverAuctioneerAndUnknownAuctioneer",
-			callConfig: 1<<indexSolverAuctioneer | 1<<indexUnknownAuctioneer,
+			callConfig: 1<<IndexSolverAuctioneer | 1<<IndexUnknownAuctioneer,
 			want:       true,
 		},
 	}
@@ -456,7 +456,7 @@ func TestFlagUnknownAuctioneer(t *testing.T) {
 	}{
 		{
 			name:       "UnknownAuctioneer",
-			callConfig: 1 << indexUnknownAuctioneer,
+			callConfig: 1 << IndexUnknownAuctioneer,
 			want:       true,
 		},
 		{
@@ -466,7 +466,7 @@ func TestFlagUnknownAuctioneer(t *testing.T) {
 		},
 		{
 			name:       "UnknownAuctioneerAndUserNoncesSequenced",
-			callConfig: 1<<indexUnknownAuctioneer | 1<<indexUserNoncesSequenced,
+			callConfig: 1<<IndexUnknownAuctioneer | 1<<IndexUserNoncesSequenced,
 			want:       true,
 		},
 	}
@@ -490,7 +490,7 @@ func TestFlagVerifyCallChainHash(t *testing.T) {
 	}{
 		{
 			name:       "VerifyCallChainHash",
-			callConfig: 1 << indexVerifyCallChainHash,
+			callConfig: 1 << IndexVerifyCallChainHash,
 			want:       true,
 		},
 		{
@@ -500,7 +500,7 @@ func TestFlagVerifyCallChainHash(t *testing.T) {
 		},
 		{
 			name:       "VerifyCallChainHashAndIndexInvertBidValue",
-			callConfig: 1<<indexVerifyCallChainHash | 1<<indexInvertBidValue,
+			callConfig: 1<<IndexVerifyCallChainHash | 1<<IndexInvertBidValue,
 			want:       true,
 		},
 	}
@@ -524,7 +524,7 @@ func TestFlagInvertBidValue(t *testing.T) {
 	}{
 		{
 			name:       "InvertBidValue",
-			callConfig: 1 << indexInvertBidValue,
+			callConfig: 1 << IndexInvertBidValue,
 			want:       true,
 		},
 		{
@@ -534,7 +534,7 @@ func TestFlagInvertBidValue(t *testing.T) {
 		},
 		{
 			name:       "InvertBidValueAndUserNoncesSequenced",
-			callConfig: 1<<indexInvertBidValue | 1<<indexUserNoncesSequenced,
+			callConfig: 1<<IndexInvertBidValue | 1<<IndexUserNoncesSequenced,
 			want:       true,
 		},
 	}
@@ -558,7 +558,7 @@ func TestFlagNeedsFulfillment(t *testing.T) {
 	}{
 		{
 			name:       "NeedsFulfillment",
-			callConfig: 1 << indexNeedsFulfillment,
+			callConfig: 1 << IndexNeedsFulfillment,
 			want:       true,
 		},
 		{
@@ -568,7 +568,7 @@ func TestFlagNeedsFulfillment(t *testing.T) {
 		},
 		{
 			name:       "NeedsFulfillmentAndTrustedOpHash",
-			callConfig: 1<<indexNeedsFulfillment | 1<<indexTrustedOpHash,
+			callConfig: 1<<IndexNeedsFulfillment | 1<<IndexTrustedOpHash,
 			want:       true,
 		},
 	}
@@ -592,7 +592,7 @@ func TestFlagTrustedOpHash(t *testing.T) {
 	}{
 		{
 			name:       "TrustedOpHash",
-			callConfig: 1 << indexTrustedOpHash,
+			callConfig: 1 << IndexTrustedOpHash,
 			want:       true,
 		},
 		{
@@ -602,7 +602,7 @@ func TestFlagTrustedOpHash(t *testing.T) {
 		},
 		{
 			name:       "TrustedOpHashAndFlagForwardReturnData",
-			callConfig: 1<<indexTrustedOpHash | 1<<indexForwardReturnData,
+			callConfig: 1<<IndexTrustedOpHash | 1<<IndexForwardReturnData,
 			want:       true,
 		},
 	}
@@ -626,7 +626,7 @@ func TestFlagForwardReturnData(t *testing.T) {
 	}{
 		{
 			name:       "ForwardReturnData",
-			callConfig: 1 << indexForwardReturnData,
+			callConfig: 1 << IndexForwardReturnData,
 			want:       true,
 		},
 		{
@@ -636,7 +636,7 @@ func TestFlagForwardReturnData(t *testing.T) {
 		},
 		{
 			name:       "ForwardReturnDataAndFlagNeedsFulfillment",
-			callConfig: 1<<indexForwardReturnData | 1<<indexNeedsFulfillment,
+			callConfig: 1<<IndexForwardReturnData | 1<<IndexNeedsFulfillment,
 			want:       true,
 		},
 	}
@@ -660,7 +660,7 @@ func TestFlagExPostBids(t *testing.T) {
 	}{
 		{
 			name:       "ExPostBids",
-			callConfig: 1 << indexExPostBids,
+			callConfig: 1 << IndexExPostBids,
 			want:       true,
 		},
 		{
@@ -670,7 +670,7 @@ func TestFlagExPostBids(t *testing.T) {
 		},
 		{
 			name:       "ExPostBidsAndFlagTrustedOpHash",
-			callConfig: 1<<indexExPostBids | 1<<indexTrustedOpHash,
+			callConfig: 1<<IndexExPostBids | 1<<IndexTrustedOpHash,
 			want:       true,
 		},
 	}
@@ -687,7 +687,7 @@ func TestFlagExPostBids(t *testing.T) {
 func TestFlagVerifyCallChainHashAndInvertBidValue(t *testing.T) {
 	t.Parallel()
 
-	callConfig := uint32(1<<indexVerifyCallChainHash | 1<<indexInvertBidValue)
+	callConfig := uint32(1<<IndexVerifyCallChainHash | 1<<IndexInvertBidValue)
 	want := true
 
 	if got := FlagVerifyCallChainHash(callConfig); got != want {
@@ -704,7 +704,7 @@ func TestFlagVerifyCallChainHashAndInvertBidValue(t *testing.T) {
 func TestFlagTrackUserReturnDataAndDelegateUser(t *testing.T) {
 	t.Parallel()
 
-	callConfig := uint32(1<<indexTrackUserReturnData | 1<<indexDelegateUser)
+	callConfig := uint32(1<<IndexTrackUserReturnData | 1<<IndexDelegateUser)
 	want := true
 
 	if got := FlagTrackUserReturnData(callConfig); got != want {
@@ -721,7 +721,7 @@ func TestFlagTrackUserReturnDataAndDelegateUser(t *testing.T) {
 func TestFlagPreSolverAndPostSolver(t *testing.T) {
 	t.Parallel()
 
-	callConfig := uint32(1<<indexPreSolver | 1<<indexPostSolver)
+	callConfig := uint32(1<<IndexPreSolver | 1<<IndexPostSolver)
 	want := true
 
 	if got := FlagPreSolver(callConfig); got != want {
