@@ -124,6 +124,7 @@ type UserOperation struct {
 	Deadline     *big.Int
 	Dapp         common.Address
 	Control      common.Address
+	CallConfig   uint32
 	SessionKey   common.Address
 	Data         []byte
 	Signature    []byte

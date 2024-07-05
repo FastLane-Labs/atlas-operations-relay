@@ -51,7 +51,7 @@ func (r *Relay) reputationScore(account common.Address) int {
 }
 
 func (r *Relay) getDAppSignatories(dAppControl common.Address) ([]common.Address, *relayerror.Error) {
-	signatories, err := r.atlasVerificationContract.GetDAppSignatories(nil, dAppControl)
+	signatories, err := r.atlasVerificationContract.DAppSignatories(nil, dAppControl)
 	if err != nil {
 		log.Error("getDAppSignatories: failed to get dApp signatories", "err", err)
 		return []common.Address{}, ErrCantGetDAppSignatories.AddError(err)
@@ -76,8 +76,18 @@ func (r *Relay) getDAppConfig(dAppControlAddress common.Address, userOp *operati
 	return &dAppConfig, nil
 }
 
-func (r *Relay) getNextNonce(account common.Address, requireSequencedNonces bool) (*big.Int, *relayerror.Error) {
-	nonce, err := r.atlasVerificationContract.GetNextNonce(nil, account, requireSequencedNonces)
+func (r *Relay) getUserNextNonce(account common.Address, requireSequencedNonces bool) (*big.Int, *relayerror.Error) {
+	nonce, err := r.atlasVerificationContract.GetUserNextNonce(nil, account, requireSequencedNonces)
+	if err != nil {
+		log.Error("failed to get next nonce", "err", err)
+		return nil, relayerror.ErrServerInternal
+	}
+
+	return nonce, nil
+}
+
+func (r *Relay) getDappNextNonce(account common.Address) (*big.Int, *relayerror.Error) {
+	nonce, err := r.atlasVerificationContract.GetDAppNextNonce(nil, account)
 	if err != nil {
 		log.Error("failed to get next nonce", "err", err)
 		return nil, relayerror.ErrServerInternal

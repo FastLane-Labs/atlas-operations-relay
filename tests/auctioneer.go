@@ -50,7 +50,7 @@ func newDemoUserOperation() *operation.UserOperation {
 		panic(err)
 	}
 	
-	nonce, err := atlasVerification.GetNextNonce(nil, userEoa, false)
+	nonce, err := atlasVerification.GetUserNextNonce(nil, userEoa, false)
 	if err != nil {
 		panic(err)
 	}

@@ -29,19 +29,34 @@ var (
 	_ = abi.ConvertType
 )
 
+// Context is an auto generated low-level Go binding around an user-defined struct.
+type Context struct {
+	UserOpHash           [32]byte
+	ExecutionEnvironment common.Address
+	SolverOutcome        *big.Int
+	SolverIndex          uint8
+	SolverCount          uint8
+	CallDepth            uint8
+	Phase                uint8
+	SolverSuccessful     bool
+	PaymentsSuccessful   bool
+	BidFind              bool
+	IsSimulation         bool
+	Bundler              common.Address
+}
+
 // DAppConfig is an auto generated low-level Go binding around an user-defined struct.
 type DAppConfig struct {
-	To         common.Address
-	CallConfig uint32
-	BidToken   common.Address
+	To             common.Address
+	CallConfig     uint32
+	BidToken       common.Address
+	SolverGasLimit uint32
 }
 
 // DAppOperation is an auto generated low-level Go binding around an user-defined struct.
 type DAppOperation struct {
 	From          common.Address
 	To            common.Address
-	Value         *big.Int
-	Gas           *big.Int
 	Nonce         *big.Int
 	Deadline      *big.Int
 	Control       common.Address
@@ -68,6 +83,15 @@ type SolverOperation struct {
 	Signature    []byte
 }
 
+// SolverTracker is an auto generated low-level Go binding around an user-defined struct.
+type SolverTracker struct {
+	BidAmount       *big.Int
+	Floor           *big.Int
+	Ceiling         *big.Int
+	EtherIsBidToken bool
+	InvertsBidValue bool
+}
+
 // UserOperation is an auto generated low-level Go binding around an user-defined struct.
 type UserOperation struct {
 	From         common.Address
@@ -79,6 +103,7 @@ type UserOperation struct {
 	Deadline     *big.Int
 	Dapp         common.Address
 	Control      common.Address
+	CallConfig   uint32
 	SessionKey   common.Address
 	Data         []byte
 	Signature    []byte
@@ -86,7 +111,7 @@ type UserOperation struct {
 
 // AtlasMetaData contains all meta data concerning the Atlas contract.
 var AtlasMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_escrowDuration\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_verification\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_simulator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_surchargeRecipient\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_executionTemplate\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"fallback\",\"stateMutability\":\"payable\"},{\"type\":\"receive\",\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"DOMAIN_SEPARATOR\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ESCROW_DURATION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SIMULATOR\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SURCHARGE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"SURCHARGE_BASE\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"VERIFICATION\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"accessData\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"bonded\",\"type\":\"uint112\",\"internalType\":\"uint112\"},{\"name\":\"lastAccessedBlock\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"auctionWins\",\"type\":\"uint24\",\"internalType\":\"uint24\"},{\"name\":\"auctionFails\",\"type\":\"uint24\",\"internalType\":\"uint24\"},{\"name\":\"totalGasUsed\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"accountLastActiveBlock\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"activeEnvironment\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"allowance\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"approve\",\"inputs\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"balanceOf\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"balanceOfBonded\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"balanceOfUnbonding\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"becomeSurchargeRecipient\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"bond\",\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"bondedTotalSupply\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"borrow\",\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"claims\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"contribute\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"createExecutionEnvironment\",\"inputs\":[{\"name\":\"dAppControl\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"executionEnvironment\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"decimals\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deposit\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"depositAndBond\",\"inputs\":[{\"name\":\"amountToBond\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"deposits\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"execute\",\"inputs\":[{\"name\":\"dConfig\",\"type\":\"tuple\",\"internalType\":\"structDAppConfig\",\"components\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"callConfig\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"bidToken\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"name\":\"userOp\",\"type\":\"tuple\",\"internalType\":\"structUserOperation\",\"components\":[{\"name\":\"from\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"gas\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxFeePerGas\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"deadline\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"dapp\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"control\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"sessionKey\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"solverOps\",\"type\":\"tuple[]\",\"internalType\":\"structSolverOperation[]\",\"components\":[{\"name\":\"from\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"gas\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxFeePerGas\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"deadline\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"solver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"control\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"userOpHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"bidToken\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"bidAmount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"executionEnvironment\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"bundler\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"userOpHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"auctionWon\",\"type\":\"bool\",\"internalType\":\"bool\"},{\"name\":\"winningSearcherIndex\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"executionTemplate\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExecutionEnvironment\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"dAppControl\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"executionEnvironment\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"callConfig\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"exists\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isUnlocked\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"lock\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"metacall\",\"inputs\":[{\"name\":\"userOp\",\"type\":\"tuple\",\"internalType\":\"structUserOperation\",\"components\":[{\"name\":\"from\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"gas\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxFeePerGas\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"deadline\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"dapp\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"control\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"sessionKey\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"solverOps\",\"type\":\"tuple[]\",\"internalType\":\"structSolverOperation[]\",\"components\":[{\"name\":\"from\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"gas\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"maxFeePerGas\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"deadline\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"solver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"control\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"userOpHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"bidToken\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"bidAmount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"dAppOp\",\"type\":\"tuple\",\"internalType\":\"structDAppOperation\",\"components\":[{\"name\":\"from\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"gas\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"deadline\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"control\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"bundler\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"userOpHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"callChainHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[{\"name\":\"auctionWon\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"name\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"nonces\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pendingSurchargeRecipient\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"permit\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"deadline\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"v\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"r\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"s\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"reconcile\",\"inputs\":[{\"name\":\"environment\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"solverFrom\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxApprovedGasSpend\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"owed\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"redeem\",\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"salt\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"shortfall\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"solver\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"solverLockData\",\"inputs\":[],\"outputs\":[{\"name\":\"currentSolver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"calledBack\",\"type\":\"bool\",\"internalType\":\"bool\"},{\"name\":\"fulfilled\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"surcharge\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"surchargeRecipient\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"symbol\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalSupply\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transfer\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferDAppERC20\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destination\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"controller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"callConfig\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"lockState\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferFrom\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferSurchargeRecipient\",\"inputs\":[{\"name\":\"newRecipient\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferUserERC20\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destination\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"controller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"callConfig\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"lockState\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unbond\",\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unbondingCompleteBlock\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"validateBalances\",\"inputs\":[],\"outputs\":[{\"name\":\"valid\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"withdraw\",\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawSurcharge\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawals\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"Approval\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Bond\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ExecutionEnvironmentCreated\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"executionEnvironment\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GasRefundSettled\",\"inputs\":[{\"name\":\"bundler\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"refundedETH\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MEVPaymentFailure\",\"inputs\":[{\"name\":\"controller\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"callConfig\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"bidToken\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"bidAmount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MetacallResult\",\"inputs\":[{\"name\":\"bundler\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"winningSolver\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PostOpsCall\",\"inputs\":[{\"name\":\"environment\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"success\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PreOpsCall\",\"inputs\":[{\"name\":\"environment\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"success\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"},{\"name\":\"returnData\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Redeem\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SolverExecution\",\"inputs\":[{\"name\":\"solver\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"index\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"isWin\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SolverTxResult\",\"inputs\":[{\"name\":\"solverTo\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"solverFrom\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"executed\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"},{\"name\":\"success\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"},{\"name\":\"result\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SurchargeRecipientTransferStarted\",\"inputs\":[{\"name\":\"currentRecipient\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"newRecipient\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SurchargeRecipientTransferred\",\"inputs\":[{\"name\":\"newRecipient\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SurchargeWithdrawn\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Transfer\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unbond\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"earliestAvailable\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"UserCall\",\"inputs\":[{\"name\":\"environment\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"success\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"},{\"name\":\"returnData\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"UserTxResult\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"valueReturned\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"gasRefunded\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AlreadyInitialized\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"AlteredControl\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"BalanceNotReconciled\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"DAppNotEnabled\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EnvironmentMismatch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EscrowLockActive\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientAtlETHBalance\",\"inputs\":[{\"name\":\"actual\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"needed\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"InsufficientAvailableBalance\",\"inputs\":[{\"name\":\"balance\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requested\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"InsufficientBalanceForDeduction\",\"inputs\":[{\"name\":\"balance\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requested\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"InsufficientBondedBalance\",\"inputs\":[{\"name\":\"balance\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requested\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"InsufficientFunds\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InsufficientSolverBalance\",\"inputs\":[{\"name\":\"actual\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"msgValue\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"holds\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"needed\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"InsufficientSurchargeBalance\",\"inputs\":[{\"name\":\"balance\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requested\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"InsufficientTotalBalance\",\"inputs\":[{\"name\":\"shortfall\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"InsufficientUnbondedBalance\",\"inputs\":[{\"name\":\"balance\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requested\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"InsufficientWithdrawableBalance\",\"inputs\":[{\"name\":\"balance\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"requested\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"type\":\"error\",\"name\":\"IntentUnfulfilled\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidAccess\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidCaller\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidDAppControl\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidEnvironment\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidExecutionEnvironment\",\"inputs\":[{\"name\":\"correctEnvironment\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"InvalidLockState\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSigner\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSolverFrom\",\"inputs\":[{\"name\":\"solverFrom\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"LedgerBalancing\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint8\",\"internalType\":\"uint8\"}]},{\"type\":\"error\",\"name\":\"LedgerFinalized\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint8\",\"internalType\":\"uint8\"}]},{\"type\":\"error\",\"name\":\"MissingFunds\",\"inputs\":[{\"name\":\"id\",\"type\":\"uint8\",\"internalType\":\"uint8\"}]},{\"type\":\"error\",\"name\":\"NoAuctionWinner\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NoUnfilledRequests\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NoUnusedNonceInBitmap\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitialized\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyAccount\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyGovernance\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OwnerActive\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"PermitDeadlineExpired\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"PostOpsFail\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"PostOpsSimFail\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"PostSolverFailed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"PreOpsFail\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"PreOpsSimFail\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"PreSolverFailed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SignatoryActive\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SimulationPassed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SolverBidUnpaid\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SolverMustReconcile\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SolverOperationReverted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SolverSimFail\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UnbalancedAccounting\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UncoveredResult\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UserNotFulfilled\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UserOpFail\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UserOpSimFail\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UserSimulationFailed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UserSimulationSucceeded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UserUnexpectedSuccess\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ValidCalls\",\"inputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumValidCallsResult\"}]},{\"type\":\"error\",\"name\":\"ValueTooLarge\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VerificationSimFail\",\"inputs\":[]}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"escrowDuration\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"verification\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"simulator\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"initialSurchargeRecipient\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"executionTemplate\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"AllocateValueDelegatecallFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AllocateValueFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AllocateValueSimFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AlreadyInitialized\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AlteredControl\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AtlasLockActive\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"BalanceNotReconciled\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"bidAmount\",\"type\":\"uint256\"}],\"name\":\"BidFindSuccessful\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"BidNotPaid\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"indexInSolverOps\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"bidAmount\",\"type\":\"uint256\"}],\"name\":\"BidTooHigh\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"BothPreOpsAndUserReturnDataCannotBeTracked\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"BothUserAndDAppNoncesCannotBeSequential\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CallbackNotCalled\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DAppNotEnabled\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DoubleReconcile\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"EnvironmentMismatch\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"EscrowLockActive\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ExecutionEnvironmentBalanceTooLow\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"actual\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"needed\",\"type\":\"uint256\"}],\"name\":\"InsufficientAtlETHBalance\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"requested\",\"type\":\"uint256\"}],\"name\":\"InsufficientAvailableBalance\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"requested\",\"type\":\"uint256\"}],\"name\":\"InsufficientBalanceForDeduction\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"requested\",\"type\":\"uint256\"}],\"name\":\"InsufficientBondedBalance\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InsufficientEscrow\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InsufficientFunds\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InsufficientLocalFunds\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"actual\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"msgValue\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"holds\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"needed\",\"type\":\"uint256\"}],\"name\":\"InsufficientSolverBalance\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"requested\",\"type\":\"uint256\"}],\"name\":\"InsufficientSurchargeBalance\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"shortfall\",\"type\":\"uint256\"}],\"name\":\"InsufficientTotalBalance\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"requested\",\"type\":\"uint256\"}],\"name\":\"InsufficientUnbondedBalance\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"requested\",\"type\":\"uint256\"}],\"name\":\"InsufficientWithdrawableBalance\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidAccess\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidCaller\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidCodeHash\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidControl\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidDAppControl\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidEntry\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidEntryFunction\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidEnvironment\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidEscrowDuration\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"correctEnvironment\",\"type\":\"address\"}],\"name\":\"InvalidExecutionEnvironment\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidLockState\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidSignatory\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidSigner\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidSolver\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"solverFrom\",\"type\":\"address\"}],\"name\":\"InvalidSolverFrom\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidTo\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidUser\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvertBidValueCannotBeExPostBids\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"id\",\"type\":\"uint8\"}],\"name\":\"LedgerBalancing\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"id\",\"type\":\"uint8\"}],\"name\":\"LedgerFinalized\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"id\",\"type\":\"uint8\"}],\"name\":\"MissingFunds\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"MustBeDelegatecalled\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NoAuctionWinner\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NoDelegatecall\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NoUnfilledRequests\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NoUnusedNonceInBitmap\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotEnvironmentOwner\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotImplemented\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotInitialized\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OnlyAtlas\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OnlyGovernance\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PermitDeadlineExpired\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PostOpsDelegatecallFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PostOpsDelegatecallReturnedFalse\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PostOpsFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PostOpsSimFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PostSolverFailed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PreOpsDelegatecallFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PreOpsFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PreOpsSimFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PreSolverFailed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SignatoryActive\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SimulationPassed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SolverMustReconcile\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SolverOpReverted\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"solverOutcomeResult\",\"type\":\"uint256\"}],\"name\":\"SolverSimFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Unauthorized\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UnbalancedAccounting\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UncoveredResult\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UnexpectedNonRevert\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Unreachable\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UserNotFulfilled\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UserOpFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UserOpSimFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UserOpValueExceedsBalance\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UserSimulationFailed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UserSimulationSucceeded\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UserUnexpectedSuccess\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UserWrapperCallFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"UserWrapperDelegatecallFail\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"enumValidCallsResult\",\"name\":\"\",\"type\":\"uint8\"}],\"name\":\"ValidCalls\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ValueTooLarge\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"enumValidCallsResult\",\"name\":\"\",\"type\":\"uint8\"}],\"name\":\"VerificationSimFail\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"WrongDepth\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"WrongPhase\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Bond\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"governance\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"callConfig\",\"type\":\"uint32\"}],\"name\":\"DAppDisabled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"oldGovernance\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newGovernance\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"callConfig\",\"type\":\"uint32\"}],\"name\":\"DAppGovernanceChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"executionEnvironment\",\"type\":\"address\"}],\"name\":\"ExecutionEnvironmentCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousGovernance\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newGovernance\",\"type\":\"address\"}],\"name\":\"GovernanceTransferStarted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousGovernance\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newGovernance\",\"type\":\"address\"}],\"name\":\"GovernanceTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"bundler\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"solverSuccessful\",\"type\":\"bool\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"disbursementSuccessful\",\"type\":\"bool\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"ethPaidToBundler\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"netGasSurcharge\",\"type\":\"uint256\"}],\"name\":\"MetacallResult\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"governance\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"signatory\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"callConfig\",\"type\":\"uint32\"}],\"name\":\"NewDAppSignatory\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Redeem\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"governance\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"signatory\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"callConfig\",\"type\":\"uint32\"}],\"name\":\"RemovedDAppSignatory\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"solverTo\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"solverFrom\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"executed\",\"type\":\"bool\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"success\",\"type\":\"bool\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"result\",\"type\":\"uint256\"}],\"name\":\"SolverTxResult\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"currentRecipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"newRecipient\",\"type\":\"address\"}],\"name\":\"SurchargeRecipientTransferStarted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"newRecipient\",\"type\":\"address\"}],\"name\":\"SurchargeRecipientTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"SurchargeWithdrawn\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"earliestAvailable\",\"type\":\"uint256\"}],\"name\":\"Unbond\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"ATLAS_SURCHARGE_RATE\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"BUNDLER_SURCHARGE_RATE\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"ESCROW_DURATION\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"EXECUTION_ENV_TEMPLATE\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"FIXED_GAS_OFFSET\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SIMULATOR\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SURCHARGE_SCALE\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"S_accessData\",\"outputs\":[{\"internalType\":\"uint112\",\"name\":\"bonded\",\"type\":\"uint112\"},{\"internalType\":\"uint32\",\"name\":\"lastAccessedBlock\",\"type\":\"uint32\"},{\"internalType\":\"uint24\",\"name\":\"auctionWins\",\"type\":\"uint24\"},{\"internalType\":\"uint24\",\"name\":\"auctionFails\",\"type\":\"uint24\"},{\"internalType\":\"uint64\",\"name\":\"totalGasUsed\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"S_bondedTotalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"S_totalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"VERIFICATION\",\"outputs\":[{\"internalType\":\"contractAtlasVerification\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"accessData\",\"outputs\":[{\"internalType\":\"uint112\",\"name\":\"bonded\",\"type\":\"uint112\"},{\"internalType\":\"uint32\",\"name\":\"lastAccessedBlock\",\"type\":\"uint32\"},{\"internalType\":\"uint24\",\"name\":\"auctionWins\",\"type\":\"uint24\"},{\"internalType\":\"uint24\",\"name\":\"auctionFails\",\"type\":\"uint24\"},{\"internalType\":\"uint64\",\"name\":\"totalGasUsed\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"accountLastActiveBlock\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"activeEnvironment\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"balanceOfBonded\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"balanceOfUnbonding\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"becomeSurchargeRecipient\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"bond\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"bondedTotalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"borrow\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"claims\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"contribute\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"}],\"name\":\"createExecutionEnvironment\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"executionEnvironment\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"cumulativeSurcharge\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"deposit\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amountToBond\",\"type\":\"uint256\"}],\"name\":\"depositAndBond\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"deposits\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"callConfig\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"bidToken\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"solverGasLimit\",\"type\":\"uint32\"}],\"internalType\":\"structDAppConfig\",\"name\":\"dConfig\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxFeePerGas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"nonce\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"dapp\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"callConfig\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"sessionKey\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\"}],\"internalType\":\"structUserOperation\",\"name\":\"userOp\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxFeePerGas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"solver\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"userOpHash\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"bidToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"bidAmount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\"}],\"internalType\":\"structSolverOperation[]\",\"name\":\"solverOps\",\"type\":\"tuple[]\"},{\"internalType\":\"address\",\"name\":\"executionEnvironment\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"bundler\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"userOpHash\",\"type\":\"bytes32\"}],\"name\":\"execute\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"userOpHash\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"executionEnvironment\",\"type\":\"address\"},{\"internalType\":\"uint24\",\"name\":\"solverOutcome\",\"type\":\"uint24\"},{\"internalType\":\"uint8\",\"name\":\"solverIndex\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"solverCount\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"callDepth\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"phase\",\"type\":\"uint8\"},{\"internalType\":\"bool\",\"name\":\"solverSuccessful\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"paymentsSuccessful\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"bidFind\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"isSimulation\",\"type\":\"bool\"},{\"internalType\":\"address\",\"name\":\"bundler\",\"type\":\"address\"}],\"internalType\":\"structContext\",\"name\":\"ctx\",\"type\":\"tuple\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"fees\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"}],\"name\":\"getExecutionEnvironment\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"executionEnvironment\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"callConfig\",\"type\":\"uint32\"},{\"internalType\":\"bool\",\"name\":\"exists\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"isUnlocked\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lock\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"activeEnvironment\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"callConfig\",\"type\":\"uint32\"},{\"internalType\":\"uint8\",\"name\":\"phase\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxFeePerGas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"nonce\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"dapp\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"callConfig\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"sessionKey\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\"}],\"internalType\":\"structUserOperation\",\"name\":\"userOp\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxFeePerGas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"solver\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"userOpHash\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"bidToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"bidAmount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\"}],\"internalType\":\"structSolverOperation[]\",\"name\":\"solverOps\",\"type\":\"tuple[]\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"nonce\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"bundler\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"userOpHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"callChainHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\"}],\"internalType\":\"structDAppOperation\",\"name\":\"dAppOp\",\"type\":\"tuple\"}],\"name\":\"metacall\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"auctionWon\",\"type\":\"bool\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pendingSurchargeRecipient\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"phase\",\"outputs\":[{\"internalType\":\"enumExecutionPhase\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"maxApprovedGasSpend\",\"type\":\"uint256\"}],\"name\":\"reconcile\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"owed\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"redeem\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"shortfall\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"solver\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"userOpHash\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"executionEnvironment\",\"type\":\"address\"},{\"internalType\":\"uint24\",\"name\":\"solverOutcome\",\"type\":\"uint24\"},{\"internalType\":\"uint8\",\"name\":\"solverIndex\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"solverCount\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"callDepth\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"phase\",\"type\":\"uint8\"},{\"internalType\":\"bool\",\"name\":\"solverSuccessful\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"paymentsSuccessful\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"bidFind\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"isSimulation\",\"type\":\"bool\"},{\"internalType\":\"address\",\"name\":\"bundler\",\"type\":\"address\"}],\"internalType\":\"structContext\",\"name\":\"ctx\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxFeePerGas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"solver\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"userOpHash\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"bidToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"bidAmount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\"}],\"internalType\":\"structSolverOperation\",\"name\":\"solverOp\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"bidAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gasLimit\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"returnData\",\"type\":\"bytes\"}],\"name\":\"solverCall\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"bidAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"floor\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"ceiling\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"etherIsBidToken\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"invertsBidValue\",\"type\":\"bool\"}],\"internalType\":\"structSolverTracker\",\"name\":\"solverTracker\",\"type\":\"tuple\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"solverLock\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"solverLockData\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"currentSolver\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"calledBack\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"fulfilled\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"opHash\",\"type\":\"bytes32\"}],\"name\":\"solverOpHashes\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"surchargeRecipient\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"destination\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"}],\"name\":\"transferDAppERC20\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newRecipient\",\"type\":\"address\"}],\"name\":\"transferSurchargeRecipient\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"destination\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"control\",\"type\":\"address\"}],\"name\":\"transferUserERC20\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"unbond\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"unbondingCompleteBlock\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdrawSurcharge\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdrawals\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"writeoffs\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"stateMutability\":\"payable\",\"type\":\"receive\"}]",
 }
 
 // AtlasABI is the input ABI used to generate the binding from.
@@ -235,35 +260,66 @@ func (_Atlas *AtlasTransactorRaw) Transact(opts *bind.TransactOpts, method strin
 	return _Atlas.Contract.contract.Transact(opts, method, params...)
 }
 
-// DOMAINSEPARATOR is a free data retrieval call binding the contract method 0x3644e515.
+// ATLASSURCHARGERATE is a free data retrieval call binding the contract method 0x3173d012.
 //
-// Solidity: function DOMAIN_SEPARATOR() view returns(bytes32)
-func (_Atlas *AtlasCaller) DOMAINSEPARATOR(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function ATLAS_SURCHARGE_RATE() view returns(uint256)
+func (_Atlas *AtlasCaller) ATLASSURCHARGERATE(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _Atlas.contract.Call(opts, &out, "DOMAIN_SEPARATOR")
+	err := _Atlas.contract.Call(opts, &out, "ATLAS_SURCHARGE_RATE")
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
 }
 
-// DOMAINSEPARATOR is a free data retrieval call binding the contract method 0x3644e515.
+// ATLASSURCHARGERATE is a free data retrieval call binding the contract method 0x3173d012.
 //
-// Solidity: function DOMAIN_SEPARATOR() view returns(bytes32)
-func (_Atlas *AtlasSession) DOMAINSEPARATOR() ([32]byte, error) {
-	return _Atlas.Contract.DOMAINSEPARATOR(&_Atlas.CallOpts)
+// Solidity: function ATLAS_SURCHARGE_RATE() view returns(uint256)
+func (_Atlas *AtlasSession) ATLASSURCHARGERATE() (*big.Int, error) {
+	return _Atlas.Contract.ATLASSURCHARGERATE(&_Atlas.CallOpts)
 }
 
-// DOMAINSEPARATOR is a free data retrieval call binding the contract method 0x3644e515.
+// ATLASSURCHARGERATE is a free data retrieval call binding the contract method 0x3173d012.
 //
-// Solidity: function DOMAIN_SEPARATOR() view returns(bytes32)
-func (_Atlas *AtlasCallerSession) DOMAINSEPARATOR() ([32]byte, error) {
-	return _Atlas.Contract.DOMAINSEPARATOR(&_Atlas.CallOpts)
+// Solidity: function ATLAS_SURCHARGE_RATE() view returns(uint256)
+func (_Atlas *AtlasCallerSession) ATLASSURCHARGERATE() (*big.Int, error) {
+	return _Atlas.Contract.ATLASSURCHARGERATE(&_Atlas.CallOpts)
+}
+
+// BUNDLERSURCHARGERATE is a free data retrieval call binding the contract method 0x1df634ad.
+//
+// Solidity: function BUNDLER_SURCHARGE_RATE() view returns(uint256)
+func (_Atlas *AtlasCaller) BUNDLERSURCHARGERATE(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _Atlas.contract.Call(opts, &out, "BUNDLER_SURCHARGE_RATE")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// BUNDLERSURCHARGERATE is a free data retrieval call binding the contract method 0x1df634ad.
+//
+// Solidity: function BUNDLER_SURCHARGE_RATE() view returns(uint256)
+func (_Atlas *AtlasSession) BUNDLERSURCHARGERATE() (*big.Int, error) {
+	return _Atlas.Contract.BUNDLERSURCHARGERATE(&_Atlas.CallOpts)
+}
+
+// BUNDLERSURCHARGERATE is a free data retrieval call binding the contract method 0x1df634ad.
+//
+// Solidity: function BUNDLER_SURCHARGE_RATE() view returns(uint256)
+func (_Atlas *AtlasCallerSession) BUNDLERSURCHARGERATE() (*big.Int, error) {
+	return _Atlas.Contract.BUNDLERSURCHARGERATE(&_Atlas.CallOpts)
 }
 
 // ESCROWDURATION is a free data retrieval call binding the contract method 0xa6efccf9.
@@ -297,6 +353,68 @@ func (_Atlas *AtlasCallerSession) ESCROWDURATION() (*big.Int, error) {
 	return _Atlas.Contract.ESCROWDURATION(&_Atlas.CallOpts)
 }
 
+// EXECUTIONENVTEMPLATE is a free data retrieval call binding the contract method 0xd57c4dbd.
+//
+// Solidity: function EXECUTION_ENV_TEMPLATE() view returns(address)
+func (_Atlas *AtlasCaller) EXECUTIONENVTEMPLATE(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _Atlas.contract.Call(opts, &out, "EXECUTION_ENV_TEMPLATE")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// EXECUTIONENVTEMPLATE is a free data retrieval call binding the contract method 0xd57c4dbd.
+//
+// Solidity: function EXECUTION_ENV_TEMPLATE() view returns(address)
+func (_Atlas *AtlasSession) EXECUTIONENVTEMPLATE() (common.Address, error) {
+	return _Atlas.Contract.EXECUTIONENVTEMPLATE(&_Atlas.CallOpts)
+}
+
+// EXECUTIONENVTEMPLATE is a free data retrieval call binding the contract method 0xd57c4dbd.
+//
+// Solidity: function EXECUTION_ENV_TEMPLATE() view returns(address)
+func (_Atlas *AtlasCallerSession) EXECUTIONENVTEMPLATE() (common.Address, error) {
+	return _Atlas.Contract.EXECUTIONENVTEMPLATE(&_Atlas.CallOpts)
+}
+
+// FIXEDGASOFFSET is a free data retrieval call binding the contract method 0x0019f274.
+//
+// Solidity: function FIXED_GAS_OFFSET() view returns(uint256)
+func (_Atlas *AtlasCaller) FIXEDGASOFFSET(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _Atlas.contract.Call(opts, &out, "FIXED_GAS_OFFSET")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// FIXEDGASOFFSET is a free data retrieval call binding the contract method 0x0019f274.
+//
+// Solidity: function FIXED_GAS_OFFSET() view returns(uint256)
+func (_Atlas *AtlasSession) FIXEDGASOFFSET() (*big.Int, error) {
+	return _Atlas.Contract.FIXEDGASOFFSET(&_Atlas.CallOpts)
+}
+
+// FIXEDGASOFFSET is a free data retrieval call binding the contract method 0x0019f274.
+//
+// Solidity: function FIXED_GAS_OFFSET() view returns(uint256)
+func (_Atlas *AtlasCallerSession) FIXEDGASOFFSET() (*big.Int, error) {
+	return _Atlas.Contract.FIXEDGASOFFSET(&_Atlas.CallOpts)
+}
+
 // SIMULATOR is a free data retrieval call binding the contract method 0x79b79765.
 //
 // Solidity: function SIMULATOR() view returns(address)
@@ -328,12 +446,12 @@ func (_Atlas *AtlasCallerSession) SIMULATOR() (common.Address, error) {
 	return _Atlas.Contract.SIMULATOR(&_Atlas.CallOpts)
 }
 
-// SURCHARGE is a free data retrieval call binding the contract method 0x37642394.
+// SURCHARGESCALE is a free data retrieval call binding the contract method 0xfa4b7e98.
 //
-// Solidity: function SURCHARGE() view returns(uint256)
-func (_Atlas *AtlasCaller) SURCHARGE(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function SURCHARGE_SCALE() view returns(uint256)
+func (_Atlas *AtlasCaller) SURCHARGESCALE(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _Atlas.contract.Call(opts, &out, "SURCHARGE")
+	err := _Atlas.contract.Call(opts, &out, "SURCHARGE_SCALE")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -345,26 +463,86 @@ func (_Atlas *AtlasCaller) SURCHARGE(opts *bind.CallOpts) (*big.Int, error) {
 
 }
 
-// SURCHARGE is a free data retrieval call binding the contract method 0x37642394.
+// SURCHARGESCALE is a free data retrieval call binding the contract method 0xfa4b7e98.
 //
-// Solidity: function SURCHARGE() view returns(uint256)
-func (_Atlas *AtlasSession) SURCHARGE() (*big.Int, error) {
-	return _Atlas.Contract.SURCHARGE(&_Atlas.CallOpts)
+// Solidity: function SURCHARGE_SCALE() view returns(uint256)
+func (_Atlas *AtlasSession) SURCHARGESCALE() (*big.Int, error) {
+	return _Atlas.Contract.SURCHARGESCALE(&_Atlas.CallOpts)
 }
 
-// SURCHARGE is a free data retrieval call binding the contract method 0x37642394.
+// SURCHARGESCALE is a free data retrieval call binding the contract method 0xfa4b7e98.
 //
-// Solidity: function SURCHARGE() view returns(uint256)
-func (_Atlas *AtlasCallerSession) SURCHARGE() (*big.Int, error) {
-	return _Atlas.Contract.SURCHARGE(&_Atlas.CallOpts)
+// Solidity: function SURCHARGE_SCALE() view returns(uint256)
+func (_Atlas *AtlasCallerSession) SURCHARGESCALE() (*big.Int, error) {
+	return _Atlas.Contract.SURCHARGESCALE(&_Atlas.CallOpts)
 }
 
-// SURCHARGEBASE is a free data retrieval call binding the contract method 0x478d8e53.
+// SAccessData is a free data retrieval call binding the contract method 0xc4730b1c.
 //
-// Solidity: function SURCHARGE_BASE() view returns(uint256)
-func (_Atlas *AtlasCaller) SURCHARGEBASE(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function S_accessData(address ) view returns(uint112 bonded, uint32 lastAccessedBlock, uint24 auctionWins, uint24 auctionFails, uint64 totalGasUsed)
+func (_Atlas *AtlasCaller) SAccessData(opts *bind.CallOpts, arg0 common.Address) (struct {
+	Bonded            *big.Int
+	LastAccessedBlock uint32
+	AuctionWins       *big.Int
+	AuctionFails      *big.Int
+	TotalGasUsed      uint64
+}, error) {
 	var out []interface{}
-	err := _Atlas.contract.Call(opts, &out, "SURCHARGE_BASE")
+	err := _Atlas.contract.Call(opts, &out, "S_accessData", arg0)
+
+	outstruct := new(struct {
+		Bonded            *big.Int
+		LastAccessedBlock uint32
+		AuctionWins       *big.Int
+		AuctionFails      *big.Int
+		TotalGasUsed      uint64
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.Bonded = *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	outstruct.LastAccessedBlock = *abi.ConvertType(out[1], new(uint32)).(*uint32)
+	outstruct.AuctionWins = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
+	outstruct.AuctionFails = *abi.ConvertType(out[3], new(*big.Int)).(**big.Int)
+	outstruct.TotalGasUsed = *abi.ConvertType(out[4], new(uint64)).(*uint64)
+
+	return *outstruct, err
+
+}
+
+// SAccessData is a free data retrieval call binding the contract method 0xc4730b1c.
+//
+// Solidity: function S_accessData(address ) view returns(uint112 bonded, uint32 lastAccessedBlock, uint24 auctionWins, uint24 auctionFails, uint64 totalGasUsed)
+func (_Atlas *AtlasSession) SAccessData(arg0 common.Address) (struct {
+	Bonded            *big.Int
+	LastAccessedBlock uint32
+	AuctionWins       *big.Int
+	AuctionFails      *big.Int
+	TotalGasUsed      uint64
+}, error) {
+	return _Atlas.Contract.SAccessData(&_Atlas.CallOpts, arg0)
+}
+
+// SAccessData is a free data retrieval call binding the contract method 0xc4730b1c.
+//
+// Solidity: function S_accessData(address ) view returns(uint112 bonded, uint32 lastAccessedBlock, uint24 auctionWins, uint24 auctionFails, uint64 totalGasUsed)
+func (_Atlas *AtlasCallerSession) SAccessData(arg0 common.Address) (struct {
+	Bonded            *big.Int
+	LastAccessedBlock uint32
+	AuctionWins       *big.Int
+	AuctionFails      *big.Int
+	TotalGasUsed      uint64
+}, error) {
+	return _Atlas.Contract.SAccessData(&_Atlas.CallOpts, arg0)
+}
+
+// SBondedTotalSupply is a free data retrieval call binding the contract method 0xaca06e89.
+//
+// Solidity: function S_bondedTotalSupply() view returns(uint256)
+func (_Atlas *AtlasCaller) SBondedTotalSupply(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _Atlas.contract.Call(opts, &out, "S_bondedTotalSupply")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -376,18 +554,49 @@ func (_Atlas *AtlasCaller) SURCHARGEBASE(opts *bind.CallOpts) (*big.Int, error) 
 
 }
 
-// SURCHARGEBASE is a free data retrieval call binding the contract method 0x478d8e53.
+// SBondedTotalSupply is a free data retrieval call binding the contract method 0xaca06e89.
 //
-// Solidity: function SURCHARGE_BASE() view returns(uint256)
-func (_Atlas *AtlasSession) SURCHARGEBASE() (*big.Int, error) {
-	return _Atlas.Contract.SURCHARGEBASE(&_Atlas.CallOpts)
+// Solidity: function S_bondedTotalSupply() view returns(uint256)
+func (_Atlas *AtlasSession) SBondedTotalSupply() (*big.Int, error) {
+	return _Atlas.Contract.SBondedTotalSupply(&_Atlas.CallOpts)
 }
 
-// SURCHARGEBASE is a free data retrieval call binding the contract method 0x478d8e53.
+// SBondedTotalSupply is a free data retrieval call binding the contract method 0xaca06e89.
 //
-// Solidity: function SURCHARGE_BASE() view returns(uint256)
-func (_Atlas *AtlasCallerSession) SURCHARGEBASE() (*big.Int, error) {
-	return _Atlas.Contract.SURCHARGEBASE(&_Atlas.CallOpts)
+// Solidity: function S_bondedTotalSupply() view returns(uint256)
+func (_Atlas *AtlasCallerSession) SBondedTotalSupply() (*big.Int, error) {
+	return _Atlas.Contract.SBondedTotalSupply(&_Atlas.CallOpts)
+}
+
+// STotalSupply is a free data retrieval call binding the contract method 0x31a52770.
+//
+// Solidity: function S_totalSupply() view returns(uint256)
+func (_Atlas *AtlasCaller) STotalSupply(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _Atlas.contract.Call(opts, &out, "S_totalSupply")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// STotalSupply is a free data retrieval call binding the contract method 0x31a52770.
+//
+// Solidity: function S_totalSupply() view returns(uint256)
+func (_Atlas *AtlasSession) STotalSupply() (*big.Int, error) {
+	return _Atlas.Contract.STotalSupply(&_Atlas.CallOpts)
+}
+
+// STotalSupply is a free data retrieval call binding the contract method 0x31a52770.
+//
+// Solidity: function S_totalSupply() view returns(uint256)
+func (_Atlas *AtlasCallerSession) STotalSupply() (*big.Int, error) {
+	return _Atlas.Contract.STotalSupply(&_Atlas.CallOpts)
 }
 
 // VERIFICATION is a free data retrieval call binding the contract method 0x791ae748.
@@ -423,8 +632,8 @@ func (_Atlas *AtlasCallerSession) VERIFICATION() (common.Address, error) {
 
 // AccessData is a free data retrieval call binding the contract method 0x5e8edccc.
 //
-// Solidity: function accessData(address ) view returns(uint112 bonded, uint32 lastAccessedBlock, uint24 auctionWins, uint24 auctionFails, uint64 totalGasUsed)
-func (_Atlas *AtlasCaller) AccessData(opts *bind.CallOpts, arg0 common.Address) (struct {
+// Solidity: function accessData(address account) view returns(uint112 bonded, uint32 lastAccessedBlock, uint24 auctionWins, uint24 auctionFails, uint64 totalGasUsed)
+func (_Atlas *AtlasCaller) AccessData(opts *bind.CallOpts, account common.Address) (struct {
 	Bonded            *big.Int
 	LastAccessedBlock uint32
 	AuctionWins       *big.Int
@@ -432,7 +641,7 @@ func (_Atlas *AtlasCaller) AccessData(opts *bind.CallOpts, arg0 common.Address) 
 	TotalGasUsed      uint64
 }, error) {
 	var out []interface{}
-	err := _Atlas.contract.Call(opts, &out, "accessData", arg0)
+	err := _Atlas.contract.Call(opts, &out, "accessData", account)
 
 	outstruct := new(struct {
 		Bonded            *big.Int
@@ -457,28 +666,28 @@ func (_Atlas *AtlasCaller) AccessData(opts *bind.CallOpts, arg0 common.Address) 
 
 // AccessData is a free data retrieval call binding the contract method 0x5e8edccc.
 //
-// Solidity: function accessData(address ) view returns(uint112 bonded, uint32 lastAccessedBlock, uint24 auctionWins, uint24 auctionFails, uint64 totalGasUsed)
-func (_Atlas *AtlasSession) AccessData(arg0 common.Address) (struct {
+// Solidity: function accessData(address account) view returns(uint112 bonded, uint32 lastAccessedBlock, uint24 auctionWins, uint24 auctionFails, uint64 totalGasUsed)
+func (_Atlas *AtlasSession) AccessData(account common.Address) (struct {
 	Bonded            *big.Int
 	LastAccessedBlock uint32
 	AuctionWins       *big.Int
 	AuctionFails      *big.Int
 	TotalGasUsed      uint64
 }, error) {
-	return _Atlas.Contract.AccessData(&_Atlas.CallOpts, arg0)
+	return _Atlas.Contract.AccessData(&_Atlas.CallOpts, account)
 }
 
 // AccessData is a free data retrieval call binding the contract method 0x5e8edccc.
 //
-// Solidity: function accessData(address ) view returns(uint112 bonded, uint32 lastAccessedBlock, uint24 auctionWins, uint24 auctionFails, uint64 totalGasUsed)
-func (_Atlas *AtlasCallerSession) AccessData(arg0 common.Address) (struct {
+// Solidity: function accessData(address account) view returns(uint112 bonded, uint32 lastAccessedBlock, uint24 auctionWins, uint24 auctionFails, uint64 totalGasUsed)
+func (_Atlas *AtlasCallerSession) AccessData(account common.Address) (struct {
 	Bonded            *big.Int
 	LastAccessedBlock uint32
 	AuctionWins       *big.Int
 	AuctionFails      *big.Int
 	TotalGasUsed      uint64
 }, error) {
-	return _Atlas.Contract.AccessData(&_Atlas.CallOpts, arg0)
+	return _Atlas.Contract.AccessData(&_Atlas.CallOpts, account)
 }
 
 // AccountLastActiveBlock is a free data retrieval call binding the contract method 0x7c20857a.
@@ -541,37 +750,6 @@ func (_Atlas *AtlasSession) ActiveEnvironment() (common.Address, error) {
 // Solidity: function activeEnvironment() view returns(address)
 func (_Atlas *AtlasCallerSession) ActiveEnvironment() (common.Address, error) {
 	return _Atlas.Contract.ActiveEnvironment(&_Atlas.CallOpts)
-}
-
-// Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
-//
-// Solidity: function allowance(address , address ) view returns(uint256)
-func (_Atlas *AtlasCaller) Allowance(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address) (*big.Int, error) {
-	var out []interface{}
-	err := _Atlas.contract.Call(opts, &out, "allowance", arg0, arg1)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
-//
-// Solidity: function allowance(address , address ) view returns(uint256)
-func (_Atlas *AtlasSession) Allowance(arg0 common.Address, arg1 common.Address) (*big.Int, error) {
-	return _Atlas.Contract.Allowance(&_Atlas.CallOpts, arg0, arg1)
-}
-
-// Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
-//
-// Solidity: function allowance(address , address ) view returns(uint256)
-func (_Atlas *AtlasCallerSession) Allowance(arg0 common.Address, arg1 common.Address) (*big.Int, error) {
-	return _Atlas.Contract.Allowance(&_Atlas.CallOpts, arg0, arg1)
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
@@ -729,6 +907,37 @@ func (_Atlas *AtlasCallerSession) Claims() (*big.Int, error) {
 	return _Atlas.Contract.Claims(&_Atlas.CallOpts)
 }
 
+// CumulativeSurcharge is a free data retrieval call binding the contract method 0xc5471d9e.
+//
+// Solidity: function cumulativeSurcharge() view returns(uint256)
+func (_Atlas *AtlasCaller) CumulativeSurcharge(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _Atlas.contract.Call(opts, &out, "cumulativeSurcharge")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// CumulativeSurcharge is a free data retrieval call binding the contract method 0xc5471d9e.
+//
+// Solidity: function cumulativeSurcharge() view returns(uint256)
+func (_Atlas *AtlasSession) CumulativeSurcharge() (*big.Int, error) {
+	return _Atlas.Contract.CumulativeSurcharge(&_Atlas.CallOpts)
+}
+
+// CumulativeSurcharge is a free data retrieval call binding the contract method 0xc5471d9e.
+//
+// Solidity: function cumulativeSurcharge() view returns(uint256)
+func (_Atlas *AtlasCallerSession) CumulativeSurcharge() (*big.Int, error) {
+	return _Atlas.Contract.CumulativeSurcharge(&_Atlas.CallOpts)
+}
+
 // Decimals is a free data retrieval call binding the contract method 0x313ce567.
 //
 // Solidity: function decimals() view returns(uint8)
@@ -791,47 +1000,47 @@ func (_Atlas *AtlasCallerSession) Deposits() (*big.Int, error) {
 	return _Atlas.Contract.Deposits(&_Atlas.CallOpts)
 }
 
-// ExecutionTemplate is a free data retrieval call binding the contract method 0xe412ac3c.
+// Fees is a free data retrieval call binding the contract method 0x9af1d35a.
 //
-// Solidity: function executionTemplate() view returns(address)
-func (_Atlas *AtlasCaller) ExecutionTemplate(opts *bind.CallOpts) (common.Address, error) {
+// Solidity: function fees() view returns(uint256)
+func (_Atlas *AtlasCaller) Fees(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _Atlas.contract.Call(opts, &out, "executionTemplate")
+	err := _Atlas.contract.Call(opts, &out, "fees")
 
 	if err != nil {
-		return *new(common.Address), err
+		return *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
 }
 
-// ExecutionTemplate is a free data retrieval call binding the contract method 0xe412ac3c.
+// Fees is a free data retrieval call binding the contract method 0x9af1d35a.
 //
-// Solidity: function executionTemplate() view returns(address)
-func (_Atlas *AtlasSession) ExecutionTemplate() (common.Address, error) {
-	return _Atlas.Contract.ExecutionTemplate(&_Atlas.CallOpts)
+// Solidity: function fees() view returns(uint256)
+func (_Atlas *AtlasSession) Fees() (*big.Int, error) {
+	return _Atlas.Contract.Fees(&_Atlas.CallOpts)
 }
 
-// ExecutionTemplate is a free data retrieval call binding the contract method 0xe412ac3c.
+// Fees is a free data retrieval call binding the contract method 0x9af1d35a.
 //
-// Solidity: function executionTemplate() view returns(address)
-func (_Atlas *AtlasCallerSession) ExecutionTemplate() (common.Address, error) {
-	return _Atlas.Contract.ExecutionTemplate(&_Atlas.CallOpts)
+// Solidity: function fees() view returns(uint256)
+func (_Atlas *AtlasCallerSession) Fees() (*big.Int, error) {
+	return _Atlas.Contract.Fees(&_Atlas.CallOpts)
 }
 
 // GetExecutionEnvironment is a free data retrieval call binding the contract method 0x45112906.
 //
-// Solidity: function getExecutionEnvironment(address user, address dAppControl) view returns(address executionEnvironment, uint32 callConfig, bool exists)
-func (_Atlas *AtlasCaller) GetExecutionEnvironment(opts *bind.CallOpts, user common.Address, dAppControl common.Address) (struct {
+// Solidity: function getExecutionEnvironment(address user, address control) view returns(address executionEnvironment, uint32 callConfig, bool exists)
+func (_Atlas *AtlasCaller) GetExecutionEnvironment(opts *bind.CallOpts, user common.Address, control common.Address) (struct {
 	ExecutionEnvironment common.Address
 	CallConfig           uint32
 	Exists               bool
 }, error) {
 	var out []interface{}
-	err := _Atlas.contract.Call(opts, &out, "getExecutionEnvironment", user, dAppControl)
+	err := _Atlas.contract.Call(opts, &out, "getExecutionEnvironment", user, control)
 
 	outstruct := new(struct {
 		ExecutionEnvironment common.Address
@@ -852,24 +1061,24 @@ func (_Atlas *AtlasCaller) GetExecutionEnvironment(opts *bind.CallOpts, user com
 
 // GetExecutionEnvironment is a free data retrieval call binding the contract method 0x45112906.
 //
-// Solidity: function getExecutionEnvironment(address user, address dAppControl) view returns(address executionEnvironment, uint32 callConfig, bool exists)
-func (_Atlas *AtlasSession) GetExecutionEnvironment(user common.Address, dAppControl common.Address) (struct {
+// Solidity: function getExecutionEnvironment(address user, address control) view returns(address executionEnvironment, uint32 callConfig, bool exists)
+func (_Atlas *AtlasSession) GetExecutionEnvironment(user common.Address, control common.Address) (struct {
 	ExecutionEnvironment common.Address
 	CallConfig           uint32
 	Exists               bool
 }, error) {
-	return _Atlas.Contract.GetExecutionEnvironment(&_Atlas.CallOpts, user, dAppControl)
+	return _Atlas.Contract.GetExecutionEnvironment(&_Atlas.CallOpts, user, control)
 }
 
 // GetExecutionEnvironment is a free data retrieval call binding the contract method 0x45112906.
 //
-// Solidity: function getExecutionEnvironment(address user, address dAppControl) view returns(address executionEnvironment, uint32 callConfig, bool exists)
-func (_Atlas *AtlasCallerSession) GetExecutionEnvironment(user common.Address, dAppControl common.Address) (struct {
+// Solidity: function getExecutionEnvironment(address user, address control) view returns(address executionEnvironment, uint32 callConfig, bool exists)
+func (_Atlas *AtlasCallerSession) GetExecutionEnvironment(user common.Address, control common.Address) (struct {
 	ExecutionEnvironment common.Address
 	CallConfig           uint32
 	Exists               bool
 }, error) {
-	return _Atlas.Contract.GetExecutionEnvironment(&_Atlas.CallOpts, user, dAppControl)
+	return _Atlas.Contract.GetExecutionEnvironment(&_Atlas.CallOpts, user, control)
 }
 
 // IsUnlocked is a free data retrieval call binding the contract method 0x8380edb7.
@@ -905,32 +1114,51 @@ func (_Atlas *AtlasCallerSession) IsUnlocked() (bool, error) {
 
 // Lock is a free data retrieval call binding the contract method 0xf83d08ba.
 //
-// Solidity: function lock() view returns(address)
-func (_Atlas *AtlasCaller) Lock(opts *bind.CallOpts) (common.Address, error) {
+// Solidity: function lock() view returns(address activeEnvironment, uint32 callConfig, uint8 phase)
+func (_Atlas *AtlasCaller) Lock(opts *bind.CallOpts) (struct {
+	ActiveEnvironment common.Address
+	CallConfig        uint32
+	Phase             uint8
+}, error) {
 	var out []interface{}
 	err := _Atlas.contract.Call(opts, &out, "lock")
 
+	outstruct := new(struct {
+		ActiveEnvironment common.Address
+		CallConfig        uint32
+		Phase             uint8
+	})
 	if err != nil {
-		return *new(common.Address), err
+		return *outstruct, err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+	outstruct.ActiveEnvironment = *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+	outstruct.CallConfig = *abi.ConvertType(out[1], new(uint32)).(*uint32)
+	outstruct.Phase = *abi.ConvertType(out[2], new(uint8)).(*uint8)
 
-	return out0, err
+	return *outstruct, err
 
 }
 
 // Lock is a free data retrieval call binding the contract method 0xf83d08ba.
 //
-// Solidity: function lock() view returns(address)
-func (_Atlas *AtlasSession) Lock() (common.Address, error) {
+// Solidity: function lock() view returns(address activeEnvironment, uint32 callConfig, uint8 phase)
+func (_Atlas *AtlasSession) Lock() (struct {
+	ActiveEnvironment common.Address
+	CallConfig        uint32
+	Phase             uint8
+}, error) {
 	return _Atlas.Contract.Lock(&_Atlas.CallOpts)
 }
 
 // Lock is a free data retrieval call binding the contract method 0xf83d08ba.
 //
-// Solidity: function lock() view returns(address)
-func (_Atlas *AtlasCallerSession) Lock() (common.Address, error) {
+// Solidity: function lock() view returns(address activeEnvironment, uint32 callConfig, uint8 phase)
+func (_Atlas *AtlasCallerSession) Lock() (struct {
+	ActiveEnvironment common.Address
+	CallConfig        uint32
+	Phase             uint8
+}, error) {
 	return _Atlas.Contract.Lock(&_Atlas.CallOpts)
 }
 
@@ -965,37 +1193,6 @@ func (_Atlas *AtlasCallerSession) Name() (string, error) {
 	return _Atlas.Contract.Name(&_Atlas.CallOpts)
 }
 
-// Nonces is a free data retrieval call binding the contract method 0x7ecebe00.
-//
-// Solidity: function nonces(address ) view returns(uint256)
-func (_Atlas *AtlasCaller) Nonces(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
-	var out []interface{}
-	err := _Atlas.contract.Call(opts, &out, "nonces", arg0)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// Nonces is a free data retrieval call binding the contract method 0x7ecebe00.
-//
-// Solidity: function nonces(address ) view returns(uint256)
-func (_Atlas *AtlasSession) Nonces(arg0 common.Address) (*big.Int, error) {
-	return _Atlas.Contract.Nonces(&_Atlas.CallOpts, arg0)
-}
-
-// Nonces is a free data retrieval call binding the contract method 0x7ecebe00.
-//
-// Solidity: function nonces(address ) view returns(uint256)
-func (_Atlas *AtlasCallerSession) Nonces(arg0 common.Address) (*big.Int, error) {
-	return _Atlas.Contract.Nonces(&_Atlas.CallOpts, arg0)
-}
-
 // PendingSurchargeRecipient is a free data retrieval call binding the contract method 0x7c3c3160.
 //
 // Solidity: function pendingSurchargeRecipient() view returns(address)
@@ -1027,35 +1224,35 @@ func (_Atlas *AtlasCallerSession) PendingSurchargeRecipient() (common.Address, e
 	return _Atlas.Contract.PendingSurchargeRecipient(&_Atlas.CallOpts)
 }
 
-// Salt is a free data retrieval call binding the contract method 0xbfa0b133.
+// Phase is a free data retrieval call binding the contract method 0xb1c9fe6e.
 //
-// Solidity: function salt() view returns(bytes32)
-func (_Atlas *AtlasCaller) Salt(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function phase() view returns(uint8)
+func (_Atlas *AtlasCaller) Phase(opts *bind.CallOpts) (uint8, error) {
 	var out []interface{}
-	err := _Atlas.contract.Call(opts, &out, "salt")
+	err := _Atlas.contract.Call(opts, &out, "phase")
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(uint8), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
 
 	return out0, err
 
 }
 
-// Salt is a free data retrieval call binding the contract method 0xbfa0b133.
+// Phase is a free data retrieval call binding the contract method 0xb1c9fe6e.
 //
-// Solidity: function salt() view returns(bytes32)
-func (_Atlas *AtlasSession) Salt() ([32]byte, error) {
-	return _Atlas.Contract.Salt(&_Atlas.CallOpts)
+// Solidity: function phase() view returns(uint8)
+func (_Atlas *AtlasSession) Phase() (uint8, error) {
+	return _Atlas.Contract.Phase(&_Atlas.CallOpts)
 }
 
-// Salt is a free data retrieval call binding the contract method 0xbfa0b133.
+// Phase is a free data retrieval call binding the contract method 0xb1c9fe6e.
 //
-// Solidity: function salt() view returns(bytes32)
-func (_Atlas *AtlasCallerSession) Salt() ([32]byte, error) {
-	return _Atlas.Contract.Salt(&_Atlas.CallOpts)
+// Solidity: function phase() view returns(uint8)
+func (_Atlas *AtlasCallerSession) Phase() (uint8, error) {
+	return _Atlas.Contract.Phase(&_Atlas.CallOpts)
 }
 
 // Shortfall is a free data retrieval call binding the contract method 0x19b1faef.
@@ -1120,6 +1317,37 @@ func (_Atlas *AtlasCallerSession) Solver() (common.Address, error) {
 	return _Atlas.Contract.Solver(&_Atlas.CallOpts)
 }
 
+// SolverLock is a free data retrieval call binding the contract method 0xa66520a3.
+//
+// Solidity: function solverLock() view returns(uint256)
+func (_Atlas *AtlasCaller) SolverLock(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _Atlas.contract.Call(opts, &out, "solverLock")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// SolverLock is a free data retrieval call binding the contract method 0xa66520a3.
+//
+// Solidity: function solverLock() view returns(uint256)
+func (_Atlas *AtlasSession) SolverLock() (*big.Int, error) {
+	return _Atlas.Contract.SolverLock(&_Atlas.CallOpts)
+}
+
+// SolverLock is a free data retrieval call binding the contract method 0xa66520a3.
+//
+// Solidity: function solverLock() view returns(uint256)
+func (_Atlas *AtlasCallerSession) SolverLock() (*big.Int, error) {
+	return _Atlas.Contract.SolverLock(&_Atlas.CallOpts)
+}
+
 // SolverLockData is a free data retrieval call binding the contract method 0xaa7d2dc8.
 //
 // Solidity: function solverLockData() view returns(address currentSolver, bool calledBack, bool fulfilled)
@@ -1170,35 +1398,35 @@ func (_Atlas *AtlasCallerSession) SolverLockData() (struct {
 	return _Atlas.Contract.SolverLockData(&_Atlas.CallOpts)
 }
 
-// Surcharge is a free data retrieval call binding the contract method 0x2ab26a56.
+// SolverOpHashes is a free data retrieval call binding the contract method 0x6ef5ac7a.
 //
-// Solidity: function surcharge() view returns(uint256)
-func (_Atlas *AtlasCaller) Surcharge(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function solverOpHashes(bytes32 opHash) view returns(bool)
+func (_Atlas *AtlasCaller) SolverOpHashes(opts *bind.CallOpts, opHash [32]byte) (bool, error) {
 	var out []interface{}
-	err := _Atlas.contract.Call(opts, &out, "surcharge")
+	err := _Atlas.contract.Call(opts, &out, "solverOpHashes", opHash)
 
 	if err != nil {
-		return *new(*big.Int), err
+		return *new(bool), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
 
 	return out0, err
 
 }
 
-// Surcharge is a free data retrieval call binding the contract method 0x2ab26a56.
+// SolverOpHashes is a free data retrieval call binding the contract method 0x6ef5ac7a.
 //
-// Solidity: function surcharge() view returns(uint256)
-func (_Atlas *AtlasSession) Surcharge() (*big.Int, error) {
-	return _Atlas.Contract.Surcharge(&_Atlas.CallOpts)
+// Solidity: function solverOpHashes(bytes32 opHash) view returns(bool)
+func (_Atlas *AtlasSession) SolverOpHashes(opHash [32]byte) (bool, error) {
+	return _Atlas.Contract.SolverOpHashes(&_Atlas.CallOpts, opHash)
 }
 
-// Surcharge is a free data retrieval call binding the contract method 0x2ab26a56.
+// SolverOpHashes is a free data retrieval call binding the contract method 0x6ef5ac7a.
 //
-// Solidity: function surcharge() view returns(uint256)
-func (_Atlas *AtlasCallerSession) Surcharge() (*big.Int, error) {
-	return _Atlas.Contract.Surcharge(&_Atlas.CallOpts)
+// Solidity: function solverOpHashes(bytes32 opHash) view returns(bool)
+func (_Atlas *AtlasCallerSession) SolverOpHashes(opHash [32]byte) (bool, error) {
+	return _Atlas.Contract.SolverOpHashes(&_Atlas.CallOpts, opHash)
 }
 
 // SurchargeRecipient is a free data retrieval call binding the contract method 0xfc61c541.
@@ -1325,37 +1553,6 @@ func (_Atlas *AtlasCallerSession) UnbondingCompleteBlock(account common.Address)
 	return _Atlas.Contract.UnbondingCompleteBlock(&_Atlas.CallOpts, account)
 }
 
-// ValidateBalances is a free data retrieval call binding the contract method 0x15827e08.
-//
-// Solidity: function validateBalances() view returns(bool valid)
-func (_Atlas *AtlasCaller) ValidateBalances(opts *bind.CallOpts) (bool, error) {
-	var out []interface{}
-	err := _Atlas.contract.Call(opts, &out, "validateBalances")
-
-	if err != nil {
-		return *new(bool), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
-
-	return out0, err
-
-}
-
-// ValidateBalances is a free data retrieval call binding the contract method 0x15827e08.
-//
-// Solidity: function validateBalances() view returns(bool valid)
-func (_Atlas *AtlasSession) ValidateBalances() (bool, error) {
-	return _Atlas.Contract.ValidateBalances(&_Atlas.CallOpts)
-}
-
-// ValidateBalances is a free data retrieval call binding the contract method 0x15827e08.
-//
-// Solidity: function validateBalances() view returns(bool valid)
-func (_Atlas *AtlasCallerSession) ValidateBalances() (bool, error) {
-	return _Atlas.Contract.ValidateBalances(&_Atlas.CallOpts)
-}
-
 // Withdrawals is a free data retrieval call binding the contract method 0xade0e93e.
 //
 // Solidity: function withdrawals() view returns(uint256)
@@ -1387,25 +1584,35 @@ func (_Atlas *AtlasCallerSession) Withdrawals() (*big.Int, error) {
 	return _Atlas.Contract.Withdrawals(&_Atlas.CallOpts)
 }
 
-// Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
+// Writeoffs is a free data retrieval call binding the contract method 0x78448bcc.
 //
-// Solidity: function approve(address spender, uint256 amount) returns(bool)
-func (_Atlas *AtlasTransactor) Approve(opts *bind.TransactOpts, spender common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _Atlas.contract.Transact(opts, "approve", spender, amount)
+// Solidity: function writeoffs() view returns(uint256)
+func (_Atlas *AtlasCaller) Writeoffs(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _Atlas.contract.Call(opts, &out, "writeoffs")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
 }
 
-// Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
+// Writeoffs is a free data retrieval call binding the contract method 0x78448bcc.
 //
-// Solidity: function approve(address spender, uint256 amount) returns(bool)
-func (_Atlas *AtlasSession) Approve(spender common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _Atlas.Contract.Approve(&_Atlas.TransactOpts, spender, amount)
+// Solidity: function writeoffs() view returns(uint256)
+func (_Atlas *AtlasSession) Writeoffs() (*big.Int, error) {
+	return _Atlas.Contract.Writeoffs(&_Atlas.CallOpts)
 }
 
-// Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
+// Writeoffs is a free data retrieval call binding the contract method 0x78448bcc.
 //
-// Solidity: function approve(address spender, uint256 amount) returns(bool)
-func (_Atlas *AtlasTransactorSession) Approve(spender common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _Atlas.Contract.Approve(&_Atlas.TransactOpts, spender, amount)
+// Solidity: function writeoffs() view returns(uint256)
+func (_Atlas *AtlasCallerSession) Writeoffs() (*big.Int, error) {
+	return _Atlas.Contract.Writeoffs(&_Atlas.CallOpts)
 }
 
 // BecomeSurchargeRecipient is a paid mutator transaction binding the contract method 0x8ebf091f.
@@ -1494,23 +1701,23 @@ func (_Atlas *AtlasTransactorSession) Contribute() (*types.Transaction, error) {
 
 // CreateExecutionEnvironment is a paid mutator transaction binding the contract method 0x4626e4a2.
 //
-// Solidity: function createExecutionEnvironment(address dAppControl) returns(address executionEnvironment)
-func (_Atlas *AtlasTransactor) CreateExecutionEnvironment(opts *bind.TransactOpts, dAppControl common.Address) (*types.Transaction, error) {
-	return _Atlas.contract.Transact(opts, "createExecutionEnvironment", dAppControl)
+// Solidity: function createExecutionEnvironment(address control) returns(address executionEnvironment)
+func (_Atlas *AtlasTransactor) CreateExecutionEnvironment(opts *bind.TransactOpts, control common.Address) (*types.Transaction, error) {
+	return _Atlas.contract.Transact(opts, "createExecutionEnvironment", control)
 }
 
 // CreateExecutionEnvironment is a paid mutator transaction binding the contract method 0x4626e4a2.
 //
-// Solidity: function createExecutionEnvironment(address dAppControl) returns(address executionEnvironment)
-func (_Atlas *AtlasSession) CreateExecutionEnvironment(dAppControl common.Address) (*types.Transaction, error) {
-	return _Atlas.Contract.CreateExecutionEnvironment(&_Atlas.TransactOpts, dAppControl)
+// Solidity: function createExecutionEnvironment(address control) returns(address executionEnvironment)
+func (_Atlas *AtlasSession) CreateExecutionEnvironment(control common.Address) (*types.Transaction, error) {
+	return _Atlas.Contract.CreateExecutionEnvironment(&_Atlas.TransactOpts, control)
 }
 
 // CreateExecutionEnvironment is a paid mutator transaction binding the contract method 0x4626e4a2.
 //
-// Solidity: function createExecutionEnvironment(address dAppControl) returns(address executionEnvironment)
-func (_Atlas *AtlasTransactorSession) CreateExecutionEnvironment(dAppControl common.Address) (*types.Transaction, error) {
-	return _Atlas.Contract.CreateExecutionEnvironment(&_Atlas.TransactOpts, dAppControl)
+// Solidity: function createExecutionEnvironment(address control) returns(address executionEnvironment)
+func (_Atlas *AtlasTransactorSession) CreateExecutionEnvironment(control common.Address) (*types.Transaction, error) {
+	return _Atlas.Contract.CreateExecutionEnvironment(&_Atlas.TransactOpts, control)
 }
 
 // Deposit is a paid mutator transaction binding the contract method 0xd0e30db0.
@@ -1555,88 +1762,67 @@ func (_Atlas *AtlasTransactorSession) DepositAndBond(amountToBond *big.Int) (*ty
 	return _Atlas.Contract.DepositAndBond(&_Atlas.TransactOpts, amountToBond)
 }
 
-// Execute is a paid mutator transaction binding the contract method 0xd3707689.
+// Execute is a paid mutator transaction binding the contract method 0x476c47f8.
 //
-// Solidity: function execute((address,uint32,address) dConfig, (address,address,uint256,uint256,uint256,uint256,uint256,address,address,address,bytes,bytes) userOp, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes)[] solverOps, address executionEnvironment, address bundler, bytes32 userOpHash) payable returns(bool auctionWon, uint256 winningSearcherIndex)
+// Solidity: function execute((address,uint32,address,uint32) dConfig, (address,address,uint256,uint256,uint256,uint256,uint256,address,address,uint32,address,bytes,bytes) userOp, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes)[] solverOps, address executionEnvironment, address bundler, bytes32 userOpHash) payable returns((bytes32,address,uint24,uint8,uint8,uint8,uint8,bool,bool,bool,bool,address) ctx)
 func (_Atlas *AtlasTransactor) Execute(opts *bind.TransactOpts, dConfig DAppConfig, userOp UserOperation, solverOps []SolverOperation, executionEnvironment common.Address, bundler common.Address, userOpHash [32]byte) (*types.Transaction, error) {
 	return _Atlas.contract.Transact(opts, "execute", dConfig, userOp, solverOps, executionEnvironment, bundler, userOpHash)
 }
 
-// Execute is a paid mutator transaction binding the contract method 0xd3707689.
+// Execute is a paid mutator transaction binding the contract method 0x476c47f8.
 //
-// Solidity: function execute((address,uint32,address) dConfig, (address,address,uint256,uint256,uint256,uint256,uint256,address,address,address,bytes,bytes) userOp, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes)[] solverOps, address executionEnvironment, address bundler, bytes32 userOpHash) payable returns(bool auctionWon, uint256 winningSearcherIndex)
+// Solidity: function execute((address,uint32,address,uint32) dConfig, (address,address,uint256,uint256,uint256,uint256,uint256,address,address,uint32,address,bytes,bytes) userOp, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes)[] solverOps, address executionEnvironment, address bundler, bytes32 userOpHash) payable returns((bytes32,address,uint24,uint8,uint8,uint8,uint8,bool,bool,bool,bool,address) ctx)
 func (_Atlas *AtlasSession) Execute(dConfig DAppConfig, userOp UserOperation, solverOps []SolverOperation, executionEnvironment common.Address, bundler common.Address, userOpHash [32]byte) (*types.Transaction, error) {
 	return _Atlas.Contract.Execute(&_Atlas.TransactOpts, dConfig, userOp, solverOps, executionEnvironment, bundler, userOpHash)
 }
 
-// Execute is a paid mutator transaction binding the contract method 0xd3707689.
+// Execute is a paid mutator transaction binding the contract method 0x476c47f8.
 //
-// Solidity: function execute((address,uint32,address) dConfig, (address,address,uint256,uint256,uint256,uint256,uint256,address,address,address,bytes,bytes) userOp, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes)[] solverOps, address executionEnvironment, address bundler, bytes32 userOpHash) payable returns(bool auctionWon, uint256 winningSearcherIndex)
+// Solidity: function execute((address,uint32,address,uint32) dConfig, (address,address,uint256,uint256,uint256,uint256,uint256,address,address,uint32,address,bytes,bytes) userOp, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes)[] solverOps, address executionEnvironment, address bundler, bytes32 userOpHash) payable returns((bytes32,address,uint24,uint8,uint8,uint8,uint8,bool,bool,bool,bool,address) ctx)
 func (_Atlas *AtlasTransactorSession) Execute(dConfig DAppConfig, userOp UserOperation, solverOps []SolverOperation, executionEnvironment common.Address, bundler common.Address, userOpHash [32]byte) (*types.Transaction, error) {
 	return _Atlas.Contract.Execute(&_Atlas.TransactOpts, dConfig, userOp, solverOps, executionEnvironment, bundler, userOpHash)
 }
 
-// Metacall is a paid mutator transaction binding the contract method 0xda91b284.
+// Metacall is a paid mutator transaction binding the contract method 0x4683d90f.
 //
-// Solidity: function metacall((address,address,uint256,uint256,uint256,uint256,uint256,address,address,address,bytes,bytes) userOp, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes)[] solverOps, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,bytes32,bytes) dAppOp) payable returns(bool auctionWon)
+// Solidity: function metacall((address,address,uint256,uint256,uint256,uint256,uint256,address,address,uint32,address,bytes,bytes) userOp, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes)[] solverOps, (address,address,uint256,uint256,address,address,bytes32,bytes32,bytes) dAppOp) payable returns(bool auctionWon)
 func (_Atlas *AtlasTransactor) Metacall(opts *bind.TransactOpts, userOp UserOperation, solverOps []SolverOperation, dAppOp DAppOperation) (*types.Transaction, error) {
 	return _Atlas.contract.Transact(opts, "metacall", userOp, solverOps, dAppOp)
 }
 
-// Metacall is a paid mutator transaction binding the contract method 0xda91b284.
+// Metacall is a paid mutator transaction binding the contract method 0x4683d90f.
 //
-// Solidity: function metacall((address,address,uint256,uint256,uint256,uint256,uint256,address,address,address,bytes,bytes) userOp, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes)[] solverOps, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,bytes32,bytes) dAppOp) payable returns(bool auctionWon)
+// Solidity: function metacall((address,address,uint256,uint256,uint256,uint256,uint256,address,address,uint32,address,bytes,bytes) userOp, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes)[] solverOps, (address,address,uint256,uint256,address,address,bytes32,bytes32,bytes) dAppOp) payable returns(bool auctionWon)
 func (_Atlas *AtlasSession) Metacall(userOp UserOperation, solverOps []SolverOperation, dAppOp DAppOperation) (*types.Transaction, error) {
 	return _Atlas.Contract.Metacall(&_Atlas.TransactOpts, userOp, solverOps, dAppOp)
 }
 
-// Metacall is a paid mutator transaction binding the contract method 0xda91b284.
+// Metacall is a paid mutator transaction binding the contract method 0x4683d90f.
 //
-// Solidity: function metacall((address,address,uint256,uint256,uint256,uint256,uint256,address,address,address,bytes,bytes) userOp, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes)[] solverOps, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,bytes32,bytes) dAppOp) payable returns(bool auctionWon)
+// Solidity: function metacall((address,address,uint256,uint256,uint256,uint256,uint256,address,address,uint32,address,bytes,bytes) userOp, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes)[] solverOps, (address,address,uint256,uint256,address,address,bytes32,bytes32,bytes) dAppOp) payable returns(bool auctionWon)
 func (_Atlas *AtlasTransactorSession) Metacall(userOp UserOperation, solverOps []SolverOperation, dAppOp DAppOperation) (*types.Transaction, error) {
 	return _Atlas.Contract.Metacall(&_Atlas.TransactOpts, userOp, solverOps, dAppOp)
 }
 
-// Permit is a paid mutator transaction binding the contract method 0xd505accf.
+// Reconcile is a paid mutator transaction binding the contract method 0xf68b84f7.
 //
-// Solidity: function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) returns()
-func (_Atlas *AtlasTransactor) Permit(opts *bind.TransactOpts, owner common.Address, spender common.Address, value *big.Int, deadline *big.Int, v uint8, r [32]byte, s [32]byte) (*types.Transaction, error) {
-	return _Atlas.contract.Transact(opts, "permit", owner, spender, value, deadline, v, r, s)
+// Solidity: function reconcile(uint256 maxApprovedGasSpend) payable returns(uint256 owed)
+func (_Atlas *AtlasTransactor) Reconcile(opts *bind.TransactOpts, maxApprovedGasSpend *big.Int) (*types.Transaction, error) {
+	return _Atlas.contract.Transact(opts, "reconcile", maxApprovedGasSpend)
 }
 
-// Permit is a paid mutator transaction binding the contract method 0xd505accf.
+// Reconcile is a paid mutator transaction binding the contract method 0xf68b84f7.
 //
-// Solidity: function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) returns()
-func (_Atlas *AtlasSession) Permit(owner common.Address, spender common.Address, value *big.Int, deadline *big.Int, v uint8, r [32]byte, s [32]byte) (*types.Transaction, error) {
-	return _Atlas.Contract.Permit(&_Atlas.TransactOpts, owner, spender, value, deadline, v, r, s)
+// Solidity: function reconcile(uint256 maxApprovedGasSpend) payable returns(uint256 owed)
+func (_Atlas *AtlasSession) Reconcile(maxApprovedGasSpend *big.Int) (*types.Transaction, error) {
+	return _Atlas.Contract.Reconcile(&_Atlas.TransactOpts, maxApprovedGasSpend)
 }
 
-// Permit is a paid mutator transaction binding the contract method 0xd505accf.
+// Reconcile is a paid mutator transaction binding the contract method 0xf68b84f7.
 //
-// Solidity: function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) returns()
-func (_Atlas *AtlasTransactorSession) Permit(owner common.Address, spender common.Address, value *big.Int, deadline *big.Int, v uint8, r [32]byte, s [32]byte) (*types.Transaction, error) {
-	return _Atlas.Contract.Permit(&_Atlas.TransactOpts, owner, spender, value, deadline, v, r, s)
-}
-
-// Reconcile is a paid mutator transaction binding the contract method 0xc6490cc2.
-//
-// Solidity: function reconcile(address environment, address solverFrom, uint256 maxApprovedGasSpend) payable returns(uint256 owed)
-func (_Atlas *AtlasTransactor) Reconcile(opts *bind.TransactOpts, environment common.Address, solverFrom common.Address, maxApprovedGasSpend *big.Int) (*types.Transaction, error) {
-	return _Atlas.contract.Transact(opts, "reconcile", environment, solverFrom, maxApprovedGasSpend)
-}
-
-// Reconcile is a paid mutator transaction binding the contract method 0xc6490cc2.
-//
-// Solidity: function reconcile(address environment, address solverFrom, uint256 maxApprovedGasSpend) payable returns(uint256 owed)
-func (_Atlas *AtlasSession) Reconcile(environment common.Address, solverFrom common.Address, maxApprovedGasSpend *big.Int) (*types.Transaction, error) {
-	return _Atlas.Contract.Reconcile(&_Atlas.TransactOpts, environment, solverFrom, maxApprovedGasSpend)
-}
-
-// Reconcile is a paid mutator transaction binding the contract method 0xc6490cc2.
-//
-// Solidity: function reconcile(address environment, address solverFrom, uint256 maxApprovedGasSpend) payable returns(uint256 owed)
-func (_Atlas *AtlasTransactorSession) Reconcile(environment common.Address, solverFrom common.Address, maxApprovedGasSpend *big.Int) (*types.Transaction, error) {
-	return _Atlas.Contract.Reconcile(&_Atlas.TransactOpts, environment, solverFrom, maxApprovedGasSpend)
+// Solidity: function reconcile(uint256 maxApprovedGasSpend) payable returns(uint256 owed)
+func (_Atlas *AtlasTransactorSession) Reconcile(maxApprovedGasSpend *big.Int) (*types.Transaction, error) {
+	return _Atlas.Contract.Reconcile(&_Atlas.TransactOpts, maxApprovedGasSpend)
 }
 
 // Redeem is a paid mutator transaction binding the contract method 0xdb006a75.
@@ -1660,67 +1846,46 @@ func (_Atlas *AtlasTransactorSession) Redeem(amount *big.Int) (*types.Transactio
 	return _Atlas.Contract.Redeem(&_Atlas.TransactOpts, amount)
 }
 
-// Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
+// SolverCall is a paid mutator transaction binding the contract method 0x982d4f82.
 //
-// Solidity: function transfer(address to, uint256 amount) returns(bool)
-func (_Atlas *AtlasTransactor) Transfer(opts *bind.TransactOpts, to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _Atlas.contract.Transact(opts, "transfer", to, amount)
+// Solidity: function solverCall((bytes32,address,uint24,uint8,uint8,uint8,uint8,bool,bool,bool,bool,address) ctx, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes) solverOp, uint256 bidAmount, uint256 gasLimit, bytes returnData) payable returns((uint256,uint256,uint256,bool,bool) solverTracker)
+func (_Atlas *AtlasTransactor) SolverCall(opts *bind.TransactOpts, ctx Context, solverOp SolverOperation, bidAmount *big.Int, gasLimit *big.Int, returnData []byte) (*types.Transaction, error) {
+	return _Atlas.contract.Transact(opts, "solverCall", ctx, solverOp, bidAmount, gasLimit, returnData)
 }
 
-// Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
+// SolverCall is a paid mutator transaction binding the contract method 0x982d4f82.
 //
-// Solidity: function transfer(address to, uint256 amount) returns(bool)
-func (_Atlas *AtlasSession) Transfer(to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _Atlas.Contract.Transfer(&_Atlas.TransactOpts, to, amount)
+// Solidity: function solverCall((bytes32,address,uint24,uint8,uint8,uint8,uint8,bool,bool,bool,bool,address) ctx, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes) solverOp, uint256 bidAmount, uint256 gasLimit, bytes returnData) payable returns((uint256,uint256,uint256,bool,bool) solverTracker)
+func (_Atlas *AtlasSession) SolverCall(ctx Context, solverOp SolverOperation, bidAmount *big.Int, gasLimit *big.Int, returnData []byte) (*types.Transaction, error) {
+	return _Atlas.Contract.SolverCall(&_Atlas.TransactOpts, ctx, solverOp, bidAmount, gasLimit, returnData)
 }
 
-// Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
+// SolverCall is a paid mutator transaction binding the contract method 0x982d4f82.
 //
-// Solidity: function transfer(address to, uint256 amount) returns(bool)
-func (_Atlas *AtlasTransactorSession) Transfer(to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _Atlas.Contract.Transfer(&_Atlas.TransactOpts, to, amount)
+// Solidity: function solverCall((bytes32,address,uint24,uint8,uint8,uint8,uint8,bool,bool,bool,bool,address) ctx, (address,address,uint256,uint256,uint256,uint256,address,address,bytes32,address,uint256,bytes,bytes) solverOp, uint256 bidAmount, uint256 gasLimit, bytes returnData) payable returns((uint256,uint256,uint256,bool,bool) solverTracker)
+func (_Atlas *AtlasTransactorSession) SolverCall(ctx Context, solverOp SolverOperation, bidAmount *big.Int, gasLimit *big.Int, returnData []byte) (*types.Transaction, error) {
+	return _Atlas.Contract.SolverCall(&_Atlas.TransactOpts, ctx, solverOp, bidAmount, gasLimit, returnData)
 }
 
-// TransferDAppERC20 is a paid mutator transaction binding the contract method 0x6625f68b.
+// TransferDAppERC20 is a paid mutator transaction binding the contract method 0xb2c5c510.
 //
-// Solidity: function transferDAppERC20(address token, address destination, uint256 amount, address user, address controller, uint32 callConfig, uint16 lockState) returns()
-func (_Atlas *AtlasTransactor) TransferDAppERC20(opts *bind.TransactOpts, token common.Address, destination common.Address, amount *big.Int, user common.Address, controller common.Address, callConfig uint32, lockState uint16) (*types.Transaction, error) {
-	return _Atlas.contract.Transact(opts, "transferDAppERC20", token, destination, amount, user, controller, callConfig, lockState)
+// Solidity: function transferDAppERC20(address token, address destination, uint256 amount, address user, address control) returns()
+func (_Atlas *AtlasTransactor) TransferDAppERC20(opts *bind.TransactOpts, token common.Address, destination common.Address, amount *big.Int, user common.Address, control common.Address) (*types.Transaction, error) {
+	return _Atlas.contract.Transact(opts, "transferDAppERC20", token, destination, amount, user, control)
 }
 
-// TransferDAppERC20 is a paid mutator transaction binding the contract method 0x6625f68b.
+// TransferDAppERC20 is a paid mutator transaction binding the contract method 0xb2c5c510.
 //
-// Solidity: function transferDAppERC20(address token, address destination, uint256 amount, address user, address controller, uint32 callConfig, uint16 lockState) returns()
-func (_Atlas *AtlasSession) TransferDAppERC20(token common.Address, destination common.Address, amount *big.Int, user common.Address, controller common.Address, callConfig uint32, lockState uint16) (*types.Transaction, error) {
-	return _Atlas.Contract.TransferDAppERC20(&_Atlas.TransactOpts, token, destination, amount, user, controller, callConfig, lockState)
+// Solidity: function transferDAppERC20(address token, address destination, uint256 amount, address user, address control) returns()
+func (_Atlas *AtlasSession) TransferDAppERC20(token common.Address, destination common.Address, amount *big.Int, user common.Address, control common.Address) (*types.Transaction, error) {
+	return _Atlas.Contract.TransferDAppERC20(&_Atlas.TransactOpts, token, destination, amount, user, control)
 }
 
-// TransferDAppERC20 is a paid mutator transaction binding the contract method 0x6625f68b.
+// TransferDAppERC20 is a paid mutator transaction binding the contract method 0xb2c5c510.
 //
-// Solidity: function transferDAppERC20(address token, address destination, uint256 amount, address user, address controller, uint32 callConfig, uint16 lockState) returns()
-func (_Atlas *AtlasTransactorSession) TransferDAppERC20(token common.Address, destination common.Address, amount *big.Int, user common.Address, controller common.Address, callConfig uint32, lockState uint16) (*types.Transaction, error) {
-	return _Atlas.Contract.TransferDAppERC20(&_Atlas.TransactOpts, token, destination, amount, user, controller, callConfig, lockState)
-}
-
-// TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
-//
-// Solidity: function transferFrom(address from, address to, uint256 amount) returns(bool)
-func (_Atlas *AtlasTransactor) TransferFrom(opts *bind.TransactOpts, from common.Address, to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _Atlas.contract.Transact(opts, "transferFrom", from, to, amount)
-}
-
-// TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
-//
-// Solidity: function transferFrom(address from, address to, uint256 amount) returns(bool)
-func (_Atlas *AtlasSession) TransferFrom(from common.Address, to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _Atlas.Contract.TransferFrom(&_Atlas.TransactOpts, from, to, amount)
-}
-
-// TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
-//
-// Solidity: function transferFrom(address from, address to, uint256 amount) returns(bool)
-func (_Atlas *AtlasTransactorSession) TransferFrom(from common.Address, to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _Atlas.Contract.TransferFrom(&_Atlas.TransactOpts, from, to, amount)
+// Solidity: function transferDAppERC20(address token, address destination, uint256 amount, address user, address control) returns()
+func (_Atlas *AtlasTransactorSession) TransferDAppERC20(token common.Address, destination common.Address, amount *big.Int, user common.Address, control common.Address) (*types.Transaction, error) {
+	return _Atlas.Contract.TransferDAppERC20(&_Atlas.TransactOpts, token, destination, amount, user, control)
 }
 
 // TransferSurchargeRecipient is a paid mutator transaction binding the contract method 0xa0531b02.
@@ -1744,25 +1909,25 @@ func (_Atlas *AtlasTransactorSession) TransferSurchargeRecipient(newRecipient co
 	return _Atlas.Contract.TransferSurchargeRecipient(&_Atlas.TransactOpts, newRecipient)
 }
 
-// TransferUserERC20 is a paid mutator transaction binding the contract method 0x2c63112c.
+// TransferUserERC20 is a paid mutator transaction binding the contract method 0x234b7ede.
 //
-// Solidity: function transferUserERC20(address token, address destination, uint256 amount, address user, address controller, uint32 callConfig, uint16 lockState) returns()
-func (_Atlas *AtlasTransactor) TransferUserERC20(opts *bind.TransactOpts, token common.Address, destination common.Address, amount *big.Int, user common.Address, controller common.Address, callConfig uint32, lockState uint16) (*types.Transaction, error) {
-	return _Atlas.contract.Transact(opts, "transferUserERC20", token, destination, amount, user, controller, callConfig, lockState)
+// Solidity: function transferUserERC20(address token, address destination, uint256 amount, address user, address control) returns()
+func (_Atlas *AtlasTransactor) TransferUserERC20(opts *bind.TransactOpts, token common.Address, destination common.Address, amount *big.Int, user common.Address, control common.Address) (*types.Transaction, error) {
+	return _Atlas.contract.Transact(opts, "transferUserERC20", token, destination, amount, user, control)
 }
 
-// TransferUserERC20 is a paid mutator transaction binding the contract method 0x2c63112c.
+// TransferUserERC20 is a paid mutator transaction binding the contract method 0x234b7ede.
 //
-// Solidity: function transferUserERC20(address token, address destination, uint256 amount, address user, address controller, uint32 callConfig, uint16 lockState) returns()
-func (_Atlas *AtlasSession) TransferUserERC20(token common.Address, destination common.Address, amount *big.Int, user common.Address, controller common.Address, callConfig uint32, lockState uint16) (*types.Transaction, error) {
-	return _Atlas.Contract.TransferUserERC20(&_Atlas.TransactOpts, token, destination, amount, user, controller, callConfig, lockState)
+// Solidity: function transferUserERC20(address token, address destination, uint256 amount, address user, address control) returns()
+func (_Atlas *AtlasSession) TransferUserERC20(token common.Address, destination common.Address, amount *big.Int, user common.Address, control common.Address) (*types.Transaction, error) {
+	return _Atlas.Contract.TransferUserERC20(&_Atlas.TransactOpts, token, destination, amount, user, control)
 }
 
-// TransferUserERC20 is a paid mutator transaction binding the contract method 0x2c63112c.
+// TransferUserERC20 is a paid mutator transaction binding the contract method 0x234b7ede.
 //
-// Solidity: function transferUserERC20(address token, address destination, uint256 amount, address user, address controller, uint32 callConfig, uint16 lockState) returns()
-func (_Atlas *AtlasTransactorSession) TransferUserERC20(token common.Address, destination common.Address, amount *big.Int, user common.Address, controller common.Address, callConfig uint32, lockState uint16) (*types.Transaction, error) {
-	return _Atlas.Contract.TransferUserERC20(&_Atlas.TransactOpts, token, destination, amount, user, controller, callConfig, lockState)
+// Solidity: function transferUserERC20(address token, address destination, uint256 amount, address user, address control) returns()
+func (_Atlas *AtlasTransactorSession) TransferUserERC20(token common.Address, destination common.Address, amount *big.Int, user common.Address, control common.Address) (*types.Transaction, error) {
+	return _Atlas.Contract.TransferUserERC20(&_Atlas.TransactOpts, token, destination, amount, user, control)
 }
 
 // Unbond is a paid mutator transaction binding the contract method 0x27de9e32.
@@ -1826,27 +1991,6 @@ func (_Atlas *AtlasSession) WithdrawSurcharge() (*types.Transaction, error) {
 // Solidity: function withdrawSurcharge() returns()
 func (_Atlas *AtlasTransactorSession) WithdrawSurcharge() (*types.Transaction, error) {
 	return _Atlas.Contract.WithdrawSurcharge(&_Atlas.TransactOpts)
-}
-
-// Fallback is a paid mutator transaction binding the contract fallback function.
-//
-// Solidity: fallback() payable returns()
-func (_Atlas *AtlasTransactor) Fallback(opts *bind.TransactOpts, calldata []byte) (*types.Transaction, error) {
-	return _Atlas.contract.RawTransact(opts, calldata)
-}
-
-// Fallback is a paid mutator transaction binding the contract fallback function.
-//
-// Solidity: fallback() payable returns()
-func (_Atlas *AtlasSession) Fallback(calldata []byte) (*types.Transaction, error) {
-	return _Atlas.Contract.Fallback(&_Atlas.TransactOpts, calldata)
-}
-
-// Fallback is a paid mutator transaction binding the contract fallback function.
-//
-// Solidity: fallback() payable returns()
-func (_Atlas *AtlasTransactorSession) Fallback(calldata []byte) (*types.Transaction, error) {
-	return _Atlas.Contract.Fallback(&_Atlas.TransactOpts, calldata)
 }
 
 // Receive is a paid mutator transaction binding the contract receive function.
@@ -2169,6 +2313,323 @@ func (_Atlas *AtlasFilterer) ParseBond(log types.Log) (*AtlasBond, error) {
 	return event, nil
 }
 
+// AtlasDAppDisabledIterator is returned from FilterDAppDisabled and is used to iterate over the raw logs and unpacked data for DAppDisabled events raised by the Atlas contract.
+type AtlasDAppDisabledIterator struct {
+	Event *AtlasDAppDisabled // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AtlasDAppDisabledIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AtlasDAppDisabled)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AtlasDAppDisabled)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AtlasDAppDisabledIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AtlasDAppDisabledIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AtlasDAppDisabled represents a DAppDisabled event raised by the Atlas contract.
+type AtlasDAppDisabled struct {
+	Control    common.Address
+	Governance common.Address
+	CallConfig uint32
+	Raw        types.Log // Blockchain specific contextual infos
+}
+
+// FilterDAppDisabled is a free log retrieval operation binding the contract event 0xfb402de0284ae6437f381fcd6b8da6639e155a56551b5a8b95d2ab6c4e007d0a.
+//
+// Solidity: event DAppDisabled(address indexed control, address indexed governance, uint32 callConfig)
+func (_Atlas *AtlasFilterer) FilterDAppDisabled(opts *bind.FilterOpts, control []common.Address, governance []common.Address) (*AtlasDAppDisabledIterator, error) {
+
+	var controlRule []interface{}
+	for _, controlItem := range control {
+		controlRule = append(controlRule, controlItem)
+	}
+	var governanceRule []interface{}
+	for _, governanceItem := range governance {
+		governanceRule = append(governanceRule, governanceItem)
+	}
+
+	logs, sub, err := _Atlas.contract.FilterLogs(opts, "DAppDisabled", controlRule, governanceRule)
+	if err != nil {
+		return nil, err
+	}
+	return &AtlasDAppDisabledIterator{contract: _Atlas.contract, event: "DAppDisabled", logs: logs, sub: sub}, nil
+}
+
+// WatchDAppDisabled is a free log subscription operation binding the contract event 0xfb402de0284ae6437f381fcd6b8da6639e155a56551b5a8b95d2ab6c4e007d0a.
+//
+// Solidity: event DAppDisabled(address indexed control, address indexed governance, uint32 callConfig)
+func (_Atlas *AtlasFilterer) WatchDAppDisabled(opts *bind.WatchOpts, sink chan<- *AtlasDAppDisabled, control []common.Address, governance []common.Address) (event.Subscription, error) {
+
+	var controlRule []interface{}
+	for _, controlItem := range control {
+		controlRule = append(controlRule, controlItem)
+	}
+	var governanceRule []interface{}
+	for _, governanceItem := range governance {
+		governanceRule = append(governanceRule, governanceItem)
+	}
+
+	logs, sub, err := _Atlas.contract.WatchLogs(opts, "DAppDisabled", controlRule, governanceRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AtlasDAppDisabled)
+				if err := _Atlas.contract.UnpackLog(event, "DAppDisabled", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseDAppDisabled is a log parse operation binding the contract event 0xfb402de0284ae6437f381fcd6b8da6639e155a56551b5a8b95d2ab6c4e007d0a.
+//
+// Solidity: event DAppDisabled(address indexed control, address indexed governance, uint32 callConfig)
+func (_Atlas *AtlasFilterer) ParseDAppDisabled(log types.Log) (*AtlasDAppDisabled, error) {
+	event := new(AtlasDAppDisabled)
+	if err := _Atlas.contract.UnpackLog(event, "DAppDisabled", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// AtlasDAppGovernanceChangedIterator is returned from FilterDAppGovernanceChanged and is used to iterate over the raw logs and unpacked data for DAppGovernanceChanged events raised by the Atlas contract.
+type AtlasDAppGovernanceChangedIterator struct {
+	Event *AtlasDAppGovernanceChanged // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AtlasDAppGovernanceChangedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AtlasDAppGovernanceChanged)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AtlasDAppGovernanceChanged)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AtlasDAppGovernanceChangedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AtlasDAppGovernanceChangedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AtlasDAppGovernanceChanged represents a DAppGovernanceChanged event raised by the Atlas contract.
+type AtlasDAppGovernanceChanged struct {
+	Control       common.Address
+	OldGovernance common.Address
+	NewGovernance common.Address
+	CallConfig    uint32
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterDAppGovernanceChanged is a free log retrieval operation binding the contract event 0xcc02b55b78457369d35dc189a074d3fc4f96a1897b405c0f1c57789f782d8bd2.
+//
+// Solidity: event DAppGovernanceChanged(address indexed control, address indexed oldGovernance, address indexed newGovernance, uint32 callConfig)
+func (_Atlas *AtlasFilterer) FilterDAppGovernanceChanged(opts *bind.FilterOpts, control []common.Address, oldGovernance []common.Address, newGovernance []common.Address) (*AtlasDAppGovernanceChangedIterator, error) {
+
+	var controlRule []interface{}
+	for _, controlItem := range control {
+		controlRule = append(controlRule, controlItem)
+	}
+	var oldGovernanceRule []interface{}
+	for _, oldGovernanceItem := range oldGovernance {
+		oldGovernanceRule = append(oldGovernanceRule, oldGovernanceItem)
+	}
+	var newGovernanceRule []interface{}
+	for _, newGovernanceItem := range newGovernance {
+		newGovernanceRule = append(newGovernanceRule, newGovernanceItem)
+	}
+
+	logs, sub, err := _Atlas.contract.FilterLogs(opts, "DAppGovernanceChanged", controlRule, oldGovernanceRule, newGovernanceRule)
+	if err != nil {
+		return nil, err
+	}
+	return &AtlasDAppGovernanceChangedIterator{contract: _Atlas.contract, event: "DAppGovernanceChanged", logs: logs, sub: sub}, nil
+}
+
+// WatchDAppGovernanceChanged is a free log subscription operation binding the contract event 0xcc02b55b78457369d35dc189a074d3fc4f96a1897b405c0f1c57789f782d8bd2.
+//
+// Solidity: event DAppGovernanceChanged(address indexed control, address indexed oldGovernance, address indexed newGovernance, uint32 callConfig)
+func (_Atlas *AtlasFilterer) WatchDAppGovernanceChanged(opts *bind.WatchOpts, sink chan<- *AtlasDAppGovernanceChanged, control []common.Address, oldGovernance []common.Address, newGovernance []common.Address) (event.Subscription, error) {
+
+	var controlRule []interface{}
+	for _, controlItem := range control {
+		controlRule = append(controlRule, controlItem)
+	}
+	var oldGovernanceRule []interface{}
+	for _, oldGovernanceItem := range oldGovernance {
+		oldGovernanceRule = append(oldGovernanceRule, oldGovernanceItem)
+	}
+	var newGovernanceRule []interface{}
+	for _, newGovernanceItem := range newGovernance {
+		newGovernanceRule = append(newGovernanceRule, newGovernanceItem)
+	}
+
+	logs, sub, err := _Atlas.contract.WatchLogs(opts, "DAppGovernanceChanged", controlRule, oldGovernanceRule, newGovernanceRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AtlasDAppGovernanceChanged)
+				if err := _Atlas.contract.UnpackLog(event, "DAppGovernanceChanged", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseDAppGovernanceChanged is a log parse operation binding the contract event 0xcc02b55b78457369d35dc189a074d3fc4f96a1897b405c0f1c57789f782d8bd2.
+//
+// Solidity: event DAppGovernanceChanged(address indexed control, address indexed oldGovernance, address indexed newGovernance, uint32 callConfig)
+func (_Atlas *AtlasFilterer) ParseDAppGovernanceChanged(log types.Log) (*AtlasDAppGovernanceChanged, error) {
+	event := new(AtlasDAppGovernanceChanged)
+	if err := _Atlas.contract.UnpackLog(event, "DAppGovernanceChanged", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // AtlasExecutionEnvironmentCreatedIterator is returned from FilterExecutionEnvironmentCreated and is used to iterate over the raw logs and unpacked data for ExecutionEnvironmentCreated events raised by the Atlas contract.
 type AtlasExecutionEnvironmentCreatedIterator struct {
 	Event *AtlasExecutionEnvironmentCreated // Event containing the contract specifics and raw log
@@ -2322,9 +2783,9 @@ func (_Atlas *AtlasFilterer) ParseExecutionEnvironmentCreated(log types.Log) (*A
 	return event, nil
 }
 
-// AtlasGasRefundSettledIterator is returned from FilterGasRefundSettled and is used to iterate over the raw logs and unpacked data for GasRefundSettled events raised by the Atlas contract.
-type AtlasGasRefundSettledIterator struct {
-	Event *AtlasGasRefundSettled // Event containing the contract specifics and raw log
+// AtlasGovernanceTransferStartedIterator is returned from FilterGovernanceTransferStarted and is used to iterate over the raw logs and unpacked data for GovernanceTransferStarted events raised by the Atlas contract.
+type AtlasGovernanceTransferStartedIterator struct {
+	Event *AtlasGovernanceTransferStarted // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2338,7 +2799,7 @@ type AtlasGasRefundSettledIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *AtlasGasRefundSettledIterator) Next() bool {
+func (it *AtlasGovernanceTransferStartedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2347,7 +2808,7 @@ func (it *AtlasGasRefundSettledIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(AtlasGasRefundSettled)
+			it.Event = new(AtlasGovernanceTransferStarted)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2362,7 +2823,7 @@ func (it *AtlasGasRefundSettledIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(AtlasGasRefundSettled)
+		it.Event = new(AtlasGovernanceTransferStarted)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2378,52 +2839,60 @@ func (it *AtlasGasRefundSettledIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *AtlasGasRefundSettledIterator) Error() error {
+func (it *AtlasGovernanceTransferStartedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *AtlasGasRefundSettledIterator) Close() error {
+func (it *AtlasGovernanceTransferStartedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// AtlasGasRefundSettled represents a GasRefundSettled event raised by the Atlas contract.
-type AtlasGasRefundSettled struct {
-	Bundler     common.Address
-	RefundedETH *big.Int
-	Raw         types.Log // Blockchain specific contextual infos
+// AtlasGovernanceTransferStarted represents a GovernanceTransferStarted event raised by the Atlas contract.
+type AtlasGovernanceTransferStarted struct {
+	PreviousGovernance common.Address
+	NewGovernance      common.Address
+	Raw                types.Log // Blockchain specific contextual infos
 }
 
-// FilterGasRefundSettled is a free log retrieval operation binding the contract event 0x390a4349501fe8d6d7f56fb3ed1ff7d9d28f12ce40b594155df3b7d313c1d5af.
+// FilterGovernanceTransferStarted is a free log retrieval operation binding the contract event 0x1c4bb4e3cab7b72da7eb9f0ae62554dda85dc7fb907c946ad2776095b95ac1ad.
 //
-// Solidity: event GasRefundSettled(address indexed bundler, uint256 refundedETH)
-func (_Atlas *AtlasFilterer) FilterGasRefundSettled(opts *bind.FilterOpts, bundler []common.Address) (*AtlasGasRefundSettledIterator, error) {
+// Solidity: event GovernanceTransferStarted(address indexed previousGovernance, address indexed newGovernance)
+func (_Atlas *AtlasFilterer) FilterGovernanceTransferStarted(opts *bind.FilterOpts, previousGovernance []common.Address, newGovernance []common.Address) (*AtlasGovernanceTransferStartedIterator, error) {
 
-	var bundlerRule []interface{}
-	for _, bundlerItem := range bundler {
-		bundlerRule = append(bundlerRule, bundlerItem)
+	var previousGovernanceRule []interface{}
+	for _, previousGovernanceItem := range previousGovernance {
+		previousGovernanceRule = append(previousGovernanceRule, previousGovernanceItem)
+	}
+	var newGovernanceRule []interface{}
+	for _, newGovernanceItem := range newGovernance {
+		newGovernanceRule = append(newGovernanceRule, newGovernanceItem)
 	}
 
-	logs, sub, err := _Atlas.contract.FilterLogs(opts, "GasRefundSettled", bundlerRule)
+	logs, sub, err := _Atlas.contract.FilterLogs(opts, "GovernanceTransferStarted", previousGovernanceRule, newGovernanceRule)
 	if err != nil {
 		return nil, err
 	}
-	return &AtlasGasRefundSettledIterator{contract: _Atlas.contract, event: "GasRefundSettled", logs: logs, sub: sub}, nil
+	return &AtlasGovernanceTransferStartedIterator{contract: _Atlas.contract, event: "GovernanceTransferStarted", logs: logs, sub: sub}, nil
 }
 
-// WatchGasRefundSettled is a free log subscription operation binding the contract event 0x390a4349501fe8d6d7f56fb3ed1ff7d9d28f12ce40b594155df3b7d313c1d5af.
+// WatchGovernanceTransferStarted is a free log subscription operation binding the contract event 0x1c4bb4e3cab7b72da7eb9f0ae62554dda85dc7fb907c946ad2776095b95ac1ad.
 //
-// Solidity: event GasRefundSettled(address indexed bundler, uint256 refundedETH)
-func (_Atlas *AtlasFilterer) WatchGasRefundSettled(opts *bind.WatchOpts, sink chan<- *AtlasGasRefundSettled, bundler []common.Address) (event.Subscription, error) {
+// Solidity: event GovernanceTransferStarted(address indexed previousGovernance, address indexed newGovernance)
+func (_Atlas *AtlasFilterer) WatchGovernanceTransferStarted(opts *bind.WatchOpts, sink chan<- *AtlasGovernanceTransferStarted, previousGovernance []common.Address, newGovernance []common.Address) (event.Subscription, error) {
 
-	var bundlerRule []interface{}
-	for _, bundlerItem := range bundler {
-		bundlerRule = append(bundlerRule, bundlerItem)
+	var previousGovernanceRule []interface{}
+	for _, previousGovernanceItem := range previousGovernance {
+		previousGovernanceRule = append(previousGovernanceRule, previousGovernanceItem)
+	}
+	var newGovernanceRule []interface{}
+	for _, newGovernanceItem := range newGovernance {
+		newGovernanceRule = append(newGovernanceRule, newGovernanceItem)
 	}
 
-	logs, sub, err := _Atlas.contract.WatchLogs(opts, "GasRefundSettled", bundlerRule)
+	logs, sub, err := _Atlas.contract.WatchLogs(opts, "GovernanceTransferStarted", previousGovernanceRule, newGovernanceRule)
 	if err != nil {
 		return nil, err
 	}
@@ -2433,8 +2902,8 @@ func (_Atlas *AtlasFilterer) WatchGasRefundSettled(opts *bind.WatchOpts, sink ch
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(AtlasGasRefundSettled)
-				if err := _Atlas.contract.UnpackLog(event, "GasRefundSettled", log); err != nil {
+				event := new(AtlasGovernanceTransferStarted)
+				if err := _Atlas.contract.UnpackLog(event, "GovernanceTransferStarted", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2455,21 +2924,21 @@ func (_Atlas *AtlasFilterer) WatchGasRefundSettled(opts *bind.WatchOpts, sink ch
 	}), nil
 }
 
-// ParseGasRefundSettled is a log parse operation binding the contract event 0x390a4349501fe8d6d7f56fb3ed1ff7d9d28f12ce40b594155df3b7d313c1d5af.
+// ParseGovernanceTransferStarted is a log parse operation binding the contract event 0x1c4bb4e3cab7b72da7eb9f0ae62554dda85dc7fb907c946ad2776095b95ac1ad.
 //
-// Solidity: event GasRefundSettled(address indexed bundler, uint256 refundedETH)
-func (_Atlas *AtlasFilterer) ParseGasRefundSettled(log types.Log) (*AtlasGasRefundSettled, error) {
-	event := new(AtlasGasRefundSettled)
-	if err := _Atlas.contract.UnpackLog(event, "GasRefundSettled", log); err != nil {
+// Solidity: event GovernanceTransferStarted(address indexed previousGovernance, address indexed newGovernance)
+func (_Atlas *AtlasFilterer) ParseGovernanceTransferStarted(log types.Log) (*AtlasGovernanceTransferStarted, error) {
+	event := new(AtlasGovernanceTransferStarted)
+	if err := _Atlas.contract.UnpackLog(event, "GovernanceTransferStarted", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// AtlasMEVPaymentFailureIterator is returned from FilterMEVPaymentFailure and is used to iterate over the raw logs and unpacked data for MEVPaymentFailure events raised by the Atlas contract.
-type AtlasMEVPaymentFailureIterator struct {
-	Event *AtlasMEVPaymentFailure // Event containing the contract specifics and raw log
+// AtlasGovernanceTransferredIterator is returned from FilterGovernanceTransferred and is used to iterate over the raw logs and unpacked data for GovernanceTransferred events raised by the Atlas contract.
+type AtlasGovernanceTransferredIterator struct {
+	Event *AtlasGovernanceTransferred // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2483,7 +2952,7 @@ type AtlasMEVPaymentFailureIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *AtlasMEVPaymentFailureIterator) Next() bool {
+func (it *AtlasGovernanceTransferredIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2492,7 +2961,7 @@ func (it *AtlasMEVPaymentFailureIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(AtlasMEVPaymentFailure)
+			it.Event = new(AtlasGovernanceTransferred)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2507,7 +2976,7 @@ func (it *AtlasMEVPaymentFailureIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(AtlasMEVPaymentFailure)
+		it.Event = new(AtlasGovernanceTransferred)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2523,54 +2992,60 @@ func (it *AtlasMEVPaymentFailureIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *AtlasMEVPaymentFailureIterator) Error() error {
+func (it *AtlasGovernanceTransferredIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *AtlasMEVPaymentFailureIterator) Close() error {
+func (it *AtlasGovernanceTransferredIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// AtlasMEVPaymentFailure represents a MEVPaymentFailure event raised by the Atlas contract.
-type AtlasMEVPaymentFailure struct {
-	Controller common.Address
-	CallConfig uint32
-	BidToken   common.Address
-	BidAmount  *big.Int
-	Raw        types.Log // Blockchain specific contextual infos
+// AtlasGovernanceTransferred represents a GovernanceTransferred event raised by the Atlas contract.
+type AtlasGovernanceTransferred struct {
+	PreviousGovernance common.Address
+	NewGovernance      common.Address
+	Raw                types.Log // Blockchain specific contextual infos
 }
 
-// FilterMEVPaymentFailure is a free log retrieval operation binding the contract event 0x47ac7e361a60b2835f2a22c12ba42fe0bdcfc613a15f45574bce05ff38c04c13.
+// FilterGovernanceTransferred is a free log retrieval operation binding the contract event 0x5f56bee8cffbe9a78652a74a60705edede02af10b0bbb888ca44b79a0d42ce80.
 //
-// Solidity: event MEVPaymentFailure(address indexed controller, uint32 callConfig, address bidToken, uint256 bidAmount)
-func (_Atlas *AtlasFilterer) FilterMEVPaymentFailure(opts *bind.FilterOpts, controller []common.Address) (*AtlasMEVPaymentFailureIterator, error) {
+// Solidity: event GovernanceTransferred(address indexed previousGovernance, address indexed newGovernance)
+func (_Atlas *AtlasFilterer) FilterGovernanceTransferred(opts *bind.FilterOpts, previousGovernance []common.Address, newGovernance []common.Address) (*AtlasGovernanceTransferredIterator, error) {
 
-	var controllerRule []interface{}
-	for _, controllerItem := range controller {
-		controllerRule = append(controllerRule, controllerItem)
+	var previousGovernanceRule []interface{}
+	for _, previousGovernanceItem := range previousGovernance {
+		previousGovernanceRule = append(previousGovernanceRule, previousGovernanceItem)
+	}
+	var newGovernanceRule []interface{}
+	for _, newGovernanceItem := range newGovernance {
+		newGovernanceRule = append(newGovernanceRule, newGovernanceItem)
 	}
 
-	logs, sub, err := _Atlas.contract.FilterLogs(opts, "MEVPaymentFailure", controllerRule)
+	logs, sub, err := _Atlas.contract.FilterLogs(opts, "GovernanceTransferred", previousGovernanceRule, newGovernanceRule)
 	if err != nil {
 		return nil, err
 	}
-	return &AtlasMEVPaymentFailureIterator{contract: _Atlas.contract, event: "MEVPaymentFailure", logs: logs, sub: sub}, nil
+	return &AtlasGovernanceTransferredIterator{contract: _Atlas.contract, event: "GovernanceTransferred", logs: logs, sub: sub}, nil
 }
 
-// WatchMEVPaymentFailure is a free log subscription operation binding the contract event 0x47ac7e361a60b2835f2a22c12ba42fe0bdcfc613a15f45574bce05ff38c04c13.
+// WatchGovernanceTransferred is a free log subscription operation binding the contract event 0x5f56bee8cffbe9a78652a74a60705edede02af10b0bbb888ca44b79a0d42ce80.
 //
-// Solidity: event MEVPaymentFailure(address indexed controller, uint32 callConfig, address bidToken, uint256 bidAmount)
-func (_Atlas *AtlasFilterer) WatchMEVPaymentFailure(opts *bind.WatchOpts, sink chan<- *AtlasMEVPaymentFailure, controller []common.Address) (event.Subscription, error) {
+// Solidity: event GovernanceTransferred(address indexed previousGovernance, address indexed newGovernance)
+func (_Atlas *AtlasFilterer) WatchGovernanceTransferred(opts *bind.WatchOpts, sink chan<- *AtlasGovernanceTransferred, previousGovernance []common.Address, newGovernance []common.Address) (event.Subscription, error) {
 
-	var controllerRule []interface{}
-	for _, controllerItem := range controller {
-		controllerRule = append(controllerRule, controllerItem)
+	var previousGovernanceRule []interface{}
+	for _, previousGovernanceItem := range previousGovernance {
+		previousGovernanceRule = append(previousGovernanceRule, previousGovernanceItem)
+	}
+	var newGovernanceRule []interface{}
+	for _, newGovernanceItem := range newGovernance {
+		newGovernanceRule = append(newGovernanceRule, newGovernanceItem)
 	}
 
-	logs, sub, err := _Atlas.contract.WatchLogs(opts, "MEVPaymentFailure", controllerRule)
+	logs, sub, err := _Atlas.contract.WatchLogs(opts, "GovernanceTransferred", previousGovernanceRule, newGovernanceRule)
 	if err != nil {
 		return nil, err
 	}
@@ -2580,8 +3055,8 @@ func (_Atlas *AtlasFilterer) WatchMEVPaymentFailure(opts *bind.WatchOpts, sink c
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(AtlasMEVPaymentFailure)
-				if err := _Atlas.contract.UnpackLog(event, "MEVPaymentFailure", log); err != nil {
+				event := new(AtlasGovernanceTransferred)
+				if err := _Atlas.contract.UnpackLog(event, "GovernanceTransferred", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2602,12 +3077,12 @@ func (_Atlas *AtlasFilterer) WatchMEVPaymentFailure(opts *bind.WatchOpts, sink c
 	}), nil
 }
 
-// ParseMEVPaymentFailure is a log parse operation binding the contract event 0x47ac7e361a60b2835f2a22c12ba42fe0bdcfc613a15f45574bce05ff38c04c13.
+// ParseGovernanceTransferred is a log parse operation binding the contract event 0x5f56bee8cffbe9a78652a74a60705edede02af10b0bbb888ca44b79a0d42ce80.
 //
-// Solidity: event MEVPaymentFailure(address indexed controller, uint32 callConfig, address bidToken, uint256 bidAmount)
-func (_Atlas *AtlasFilterer) ParseMEVPaymentFailure(log types.Log) (*AtlasMEVPaymentFailure, error) {
-	event := new(AtlasMEVPaymentFailure)
-	if err := _Atlas.contract.UnpackLog(event, "MEVPaymentFailure", log); err != nil {
+// Solidity: event GovernanceTransferred(address indexed previousGovernance, address indexed newGovernance)
+func (_Atlas *AtlasFilterer) ParseGovernanceTransferred(log types.Log) (*AtlasGovernanceTransferred, error) {
+	event := new(AtlasGovernanceTransferred)
+	if err := _Atlas.contract.UnpackLog(event, "GovernanceTransferred", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -2683,16 +3158,19 @@ func (it *AtlasMetacallResultIterator) Close() error {
 
 // AtlasMetacallResult represents a MetacallResult event raised by the Atlas contract.
 type AtlasMetacallResult struct {
-	Bundler       common.Address
-	User          common.Address
-	WinningSolver common.Address
-	Raw           types.Log // Blockchain specific contextual infos
+	Bundler                common.Address
+	User                   common.Address
+	SolverSuccessful       bool
+	DisbursementSuccessful bool
+	EthPaidToBundler       *big.Int
+	NetGasSurcharge        *big.Int
+	Raw                    types.Log // Blockchain specific contextual infos
 }
 
-// FilterMetacallResult is a free log retrieval operation binding the contract event 0xccaf53f24f4a968247a7982fa8d532542e3c75f86438a1e6d75add121f8f49ff.
+// FilterMetacallResult is a free log retrieval operation binding the contract event 0xde0b67c553d23d5f8bb4c6305ceb7112ee27f974197bee8c02502a7e36cff063.
 //
-// Solidity: event MetacallResult(address indexed bundler, address indexed user, address indexed winningSolver)
-func (_Atlas *AtlasFilterer) FilterMetacallResult(opts *bind.FilterOpts, bundler []common.Address, user []common.Address, winningSolver []common.Address) (*AtlasMetacallResultIterator, error) {
+// Solidity: event MetacallResult(address indexed bundler, address indexed user, bool solverSuccessful, bool disbursementSuccessful, uint256 ethPaidToBundler, uint256 netGasSurcharge)
+func (_Atlas *AtlasFilterer) FilterMetacallResult(opts *bind.FilterOpts, bundler []common.Address, user []common.Address) (*AtlasMetacallResultIterator, error) {
 
 	var bundlerRule []interface{}
 	for _, bundlerItem := range bundler {
@@ -2702,22 +3180,18 @@ func (_Atlas *AtlasFilterer) FilterMetacallResult(opts *bind.FilterOpts, bundler
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
 	}
-	var winningSolverRule []interface{}
-	for _, winningSolverItem := range winningSolver {
-		winningSolverRule = append(winningSolverRule, winningSolverItem)
-	}
 
-	logs, sub, err := _Atlas.contract.FilterLogs(opts, "MetacallResult", bundlerRule, userRule, winningSolverRule)
+	logs, sub, err := _Atlas.contract.FilterLogs(opts, "MetacallResult", bundlerRule, userRule)
 	if err != nil {
 		return nil, err
 	}
 	return &AtlasMetacallResultIterator{contract: _Atlas.contract, event: "MetacallResult", logs: logs, sub: sub}, nil
 }
 
-// WatchMetacallResult is a free log subscription operation binding the contract event 0xccaf53f24f4a968247a7982fa8d532542e3c75f86438a1e6d75add121f8f49ff.
+// WatchMetacallResult is a free log subscription operation binding the contract event 0xde0b67c553d23d5f8bb4c6305ceb7112ee27f974197bee8c02502a7e36cff063.
 //
-// Solidity: event MetacallResult(address indexed bundler, address indexed user, address indexed winningSolver)
-func (_Atlas *AtlasFilterer) WatchMetacallResult(opts *bind.WatchOpts, sink chan<- *AtlasMetacallResult, bundler []common.Address, user []common.Address, winningSolver []common.Address) (event.Subscription, error) {
+// Solidity: event MetacallResult(address indexed bundler, address indexed user, bool solverSuccessful, bool disbursementSuccessful, uint256 ethPaidToBundler, uint256 netGasSurcharge)
+func (_Atlas *AtlasFilterer) WatchMetacallResult(opts *bind.WatchOpts, sink chan<- *AtlasMetacallResult, bundler []common.Address, user []common.Address) (event.Subscription, error) {
 
 	var bundlerRule []interface{}
 	for _, bundlerItem := range bundler {
@@ -2727,12 +3201,8 @@ func (_Atlas *AtlasFilterer) WatchMetacallResult(opts *bind.WatchOpts, sink chan
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
 	}
-	var winningSolverRule []interface{}
-	for _, winningSolverItem := range winningSolver {
-		winningSolverRule = append(winningSolverRule, winningSolverItem)
-	}
 
-	logs, sub, err := _Atlas.contract.WatchLogs(opts, "MetacallResult", bundlerRule, userRule, winningSolverRule)
+	logs, sub, err := _Atlas.contract.WatchLogs(opts, "MetacallResult", bundlerRule, userRule)
 	if err != nil {
 		return nil, err
 	}
@@ -2764,9 +3234,9 @@ func (_Atlas *AtlasFilterer) WatchMetacallResult(opts *bind.WatchOpts, sink chan
 	}), nil
 }
 
-// ParseMetacallResult is a log parse operation binding the contract event 0xccaf53f24f4a968247a7982fa8d532542e3c75f86438a1e6d75add121f8f49ff.
+// ParseMetacallResult is a log parse operation binding the contract event 0xde0b67c553d23d5f8bb4c6305ceb7112ee27f974197bee8c02502a7e36cff063.
 //
-// Solidity: event MetacallResult(address indexed bundler, address indexed user, address indexed winningSolver)
+// Solidity: event MetacallResult(address indexed bundler, address indexed user, bool solverSuccessful, bool disbursementSuccessful, uint256 ethPaidToBundler, uint256 netGasSurcharge)
 func (_Atlas *AtlasFilterer) ParseMetacallResult(log types.Log) (*AtlasMetacallResult, error) {
 	event := new(AtlasMetacallResult)
 	if err := _Atlas.contract.UnpackLog(event, "MetacallResult", log); err != nil {
@@ -2776,9 +3246,9 @@ func (_Atlas *AtlasFilterer) ParseMetacallResult(log types.Log) (*AtlasMetacallR
 	return event, nil
 }
 
-// AtlasPostOpsCallIterator is returned from FilterPostOpsCall and is used to iterate over the raw logs and unpacked data for PostOpsCall events raised by the Atlas contract.
-type AtlasPostOpsCallIterator struct {
-	Event *AtlasPostOpsCall // Event containing the contract specifics and raw log
+// AtlasNewDAppSignatoryIterator is returned from FilterNewDAppSignatory and is used to iterate over the raw logs and unpacked data for NewDAppSignatory events raised by the Atlas contract.
+type AtlasNewDAppSignatoryIterator struct {
+	Event *AtlasNewDAppSignatory // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -2792,7 +3262,7 @@ type AtlasPostOpsCallIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *AtlasPostOpsCallIterator) Next() bool {
+func (it *AtlasNewDAppSignatoryIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -2801,7 +3271,7 @@ func (it *AtlasPostOpsCallIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(AtlasPostOpsCall)
+			it.Event = new(AtlasNewDAppSignatory)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -2816,7 +3286,7 @@ func (it *AtlasPostOpsCallIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(AtlasPostOpsCall)
+		it.Event = new(AtlasNewDAppSignatory)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -2832,42 +3302,70 @@ func (it *AtlasPostOpsCallIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *AtlasPostOpsCallIterator) Error() error {
+func (it *AtlasNewDAppSignatoryIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *AtlasPostOpsCallIterator) Close() error {
+func (it *AtlasNewDAppSignatoryIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// AtlasPostOpsCall represents a PostOpsCall event raised by the Atlas contract.
-type AtlasPostOpsCall struct {
-	Environment common.Address
-	Success     bool
-	Raw         types.Log // Blockchain specific contextual infos
+// AtlasNewDAppSignatory represents a NewDAppSignatory event raised by the Atlas contract.
+type AtlasNewDAppSignatory struct {
+	Control    common.Address
+	Governance common.Address
+	Signatory  common.Address
+	CallConfig uint32
+	Raw        types.Log // Blockchain specific contextual infos
 }
 
-// FilterPostOpsCall is a free log retrieval operation binding the contract event 0x7e8cfbbc29f299b9f787b9420dcc5601fd9cf36849a9e5fe6214191b14d81a80.
+// FilterNewDAppSignatory is a free log retrieval operation binding the contract event 0xcacb2beeeba676b69bddabab0d5f66e2733cabc804f82afd92ea5beae71934b4.
 //
-// Solidity: event PostOpsCall(address environment, bool success)
-func (_Atlas *AtlasFilterer) FilterPostOpsCall(opts *bind.FilterOpts) (*AtlasPostOpsCallIterator, error) {
+// Solidity: event NewDAppSignatory(address indexed control, address indexed governance, address indexed signatory, uint32 callConfig)
+func (_Atlas *AtlasFilterer) FilterNewDAppSignatory(opts *bind.FilterOpts, control []common.Address, governance []common.Address, signatory []common.Address) (*AtlasNewDAppSignatoryIterator, error) {
 
-	logs, sub, err := _Atlas.contract.FilterLogs(opts, "PostOpsCall")
+	var controlRule []interface{}
+	for _, controlItem := range control {
+		controlRule = append(controlRule, controlItem)
+	}
+	var governanceRule []interface{}
+	for _, governanceItem := range governance {
+		governanceRule = append(governanceRule, governanceItem)
+	}
+	var signatoryRule []interface{}
+	for _, signatoryItem := range signatory {
+		signatoryRule = append(signatoryRule, signatoryItem)
+	}
+
+	logs, sub, err := _Atlas.contract.FilterLogs(opts, "NewDAppSignatory", controlRule, governanceRule, signatoryRule)
 	if err != nil {
 		return nil, err
 	}
-	return &AtlasPostOpsCallIterator{contract: _Atlas.contract, event: "PostOpsCall", logs: logs, sub: sub}, nil
+	return &AtlasNewDAppSignatoryIterator{contract: _Atlas.contract, event: "NewDAppSignatory", logs: logs, sub: sub}, nil
 }
 
-// WatchPostOpsCall is a free log subscription operation binding the contract event 0x7e8cfbbc29f299b9f787b9420dcc5601fd9cf36849a9e5fe6214191b14d81a80.
+// WatchNewDAppSignatory is a free log subscription operation binding the contract event 0xcacb2beeeba676b69bddabab0d5f66e2733cabc804f82afd92ea5beae71934b4.
 //
-// Solidity: event PostOpsCall(address environment, bool success)
-func (_Atlas *AtlasFilterer) WatchPostOpsCall(opts *bind.WatchOpts, sink chan<- *AtlasPostOpsCall) (event.Subscription, error) {
+// Solidity: event NewDAppSignatory(address indexed control, address indexed governance, address indexed signatory, uint32 callConfig)
+func (_Atlas *AtlasFilterer) WatchNewDAppSignatory(opts *bind.WatchOpts, sink chan<- *AtlasNewDAppSignatory, control []common.Address, governance []common.Address, signatory []common.Address) (event.Subscription, error) {
 
-	logs, sub, err := _Atlas.contract.WatchLogs(opts, "PostOpsCall")
+	var controlRule []interface{}
+	for _, controlItem := range control {
+		controlRule = append(controlRule, controlItem)
+	}
+	var governanceRule []interface{}
+	for _, governanceItem := range governance {
+		governanceRule = append(governanceRule, governanceItem)
+	}
+	var signatoryRule []interface{}
+	for _, signatoryItem := range signatory {
+		signatoryRule = append(signatoryRule, signatoryItem)
+	}
+
+	logs, sub, err := _Atlas.contract.WatchLogs(opts, "NewDAppSignatory", controlRule, governanceRule, signatoryRule)
 	if err != nil {
 		return nil, err
 	}
@@ -2877,8 +3375,8 @@ func (_Atlas *AtlasFilterer) WatchPostOpsCall(opts *bind.WatchOpts, sink chan<- 
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(AtlasPostOpsCall)
-				if err := _Atlas.contract.UnpackLog(event, "PostOpsCall", log); err != nil {
+				event := new(AtlasNewDAppSignatory)
+				if err := _Atlas.contract.UnpackLog(event, "NewDAppSignatory", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -2899,148 +3397,12 @@ func (_Atlas *AtlasFilterer) WatchPostOpsCall(opts *bind.WatchOpts, sink chan<- 
 	}), nil
 }
 
-// ParsePostOpsCall is a log parse operation binding the contract event 0x7e8cfbbc29f299b9f787b9420dcc5601fd9cf36849a9e5fe6214191b14d81a80.
+// ParseNewDAppSignatory is a log parse operation binding the contract event 0xcacb2beeeba676b69bddabab0d5f66e2733cabc804f82afd92ea5beae71934b4.
 //
-// Solidity: event PostOpsCall(address environment, bool success)
-func (_Atlas *AtlasFilterer) ParsePostOpsCall(log types.Log) (*AtlasPostOpsCall, error) {
-	event := new(AtlasPostOpsCall)
-	if err := _Atlas.contract.UnpackLog(event, "PostOpsCall", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// AtlasPreOpsCallIterator is returned from FilterPreOpsCall and is used to iterate over the raw logs and unpacked data for PreOpsCall events raised by the Atlas contract.
-type AtlasPreOpsCallIterator struct {
-	Event *AtlasPreOpsCall // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *AtlasPreOpsCallIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(AtlasPreOpsCall)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(AtlasPreOpsCall)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *AtlasPreOpsCallIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *AtlasPreOpsCallIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// AtlasPreOpsCall represents a PreOpsCall event raised by the Atlas contract.
-type AtlasPreOpsCall struct {
-	Environment common.Address
-	Success     bool
-	ReturnData  []byte
-	Raw         types.Log // Blockchain specific contextual infos
-}
-
-// FilterPreOpsCall is a free log retrieval operation binding the contract event 0x32943f96b9a2a67c93967eafd91c42ca73ee7460e53f411fb1a18c31c7e42f7f.
-//
-// Solidity: event PreOpsCall(address environment, bool success, bytes returnData)
-func (_Atlas *AtlasFilterer) FilterPreOpsCall(opts *bind.FilterOpts) (*AtlasPreOpsCallIterator, error) {
-
-	logs, sub, err := _Atlas.contract.FilterLogs(opts, "PreOpsCall")
-	if err != nil {
-		return nil, err
-	}
-	return &AtlasPreOpsCallIterator{contract: _Atlas.contract, event: "PreOpsCall", logs: logs, sub: sub}, nil
-}
-
-// WatchPreOpsCall is a free log subscription operation binding the contract event 0x32943f96b9a2a67c93967eafd91c42ca73ee7460e53f411fb1a18c31c7e42f7f.
-//
-// Solidity: event PreOpsCall(address environment, bool success, bytes returnData)
-func (_Atlas *AtlasFilterer) WatchPreOpsCall(opts *bind.WatchOpts, sink chan<- *AtlasPreOpsCall) (event.Subscription, error) {
-
-	logs, sub, err := _Atlas.contract.WatchLogs(opts, "PreOpsCall")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(AtlasPreOpsCall)
-				if err := _Atlas.contract.UnpackLog(event, "PreOpsCall", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParsePreOpsCall is a log parse operation binding the contract event 0x32943f96b9a2a67c93967eafd91c42ca73ee7460e53f411fb1a18c31c7e42f7f.
-//
-// Solidity: event PreOpsCall(address environment, bool success, bytes returnData)
-func (_Atlas *AtlasFilterer) ParsePreOpsCall(log types.Log) (*AtlasPreOpsCall, error) {
-	event := new(AtlasPreOpsCall)
-	if err := _Atlas.contract.UnpackLog(event, "PreOpsCall", log); err != nil {
+// Solidity: event NewDAppSignatory(address indexed control, address indexed governance, address indexed signatory, uint32 callConfig)
+func (_Atlas *AtlasFilterer) ParseNewDAppSignatory(log types.Log) (*AtlasNewDAppSignatory, error) {
+	event := new(AtlasNewDAppSignatory)
+	if err := _Atlas.contract.UnpackLog(event, "NewDAppSignatory", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -3192,9 +3554,9 @@ func (_Atlas *AtlasFilterer) ParseRedeem(log types.Log) (*AtlasRedeem, error) {
 	return event, nil
 }
 
-// AtlasSolverExecutionIterator is returned from FilterSolverExecution and is used to iterate over the raw logs and unpacked data for SolverExecution events raised by the Atlas contract.
-type AtlasSolverExecutionIterator struct {
-	Event *AtlasSolverExecution // Event containing the contract specifics and raw log
+// AtlasRemovedDAppSignatoryIterator is returned from FilterRemovedDAppSignatory and is used to iterate over the raw logs and unpacked data for RemovedDAppSignatory events raised by the Atlas contract.
+type AtlasRemovedDAppSignatoryIterator struct {
+	Event *AtlasRemovedDAppSignatory // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -3208,7 +3570,7 @@ type AtlasSolverExecutionIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *AtlasSolverExecutionIterator) Next() bool {
+func (it *AtlasRemovedDAppSignatoryIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -3217,7 +3579,7 @@ func (it *AtlasSolverExecutionIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(AtlasSolverExecution)
+			it.Event = new(AtlasRemovedDAppSignatory)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -3232,7 +3594,7 @@ func (it *AtlasSolverExecutionIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(AtlasSolverExecution)
+		it.Event = new(AtlasRemovedDAppSignatory)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -3248,53 +3610,70 @@ func (it *AtlasSolverExecutionIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *AtlasSolverExecutionIterator) Error() error {
+func (it *AtlasRemovedDAppSignatoryIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *AtlasSolverExecutionIterator) Close() error {
+func (it *AtlasRemovedDAppSignatoryIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// AtlasSolverExecution represents a SolverExecution event raised by the Atlas contract.
-type AtlasSolverExecution struct {
-	Solver common.Address
-	Index  *big.Int
-	IsWin  bool
-	Raw    types.Log // Blockchain specific contextual infos
+// AtlasRemovedDAppSignatory represents a RemovedDAppSignatory event raised by the Atlas contract.
+type AtlasRemovedDAppSignatory struct {
+	Control    common.Address
+	Governance common.Address
+	Signatory  common.Address
+	CallConfig uint32
+	Raw        types.Log // Blockchain specific contextual infos
 }
 
-// FilterSolverExecution is a free log retrieval operation binding the contract event 0x20ecaac325cd57efaf6df656e93d1f89ecc1b0a8d3a053542fc9a58745697d6c.
+// FilterRemovedDAppSignatory is a free log retrieval operation binding the contract event 0x90a400fe7fe676a24908d5f730fe6d38072340bc8f74e18a543132d840bfe5ce.
 //
-// Solidity: event SolverExecution(address indexed solver, uint256 index, bool isWin)
-func (_Atlas *AtlasFilterer) FilterSolverExecution(opts *bind.FilterOpts, solver []common.Address) (*AtlasSolverExecutionIterator, error) {
+// Solidity: event RemovedDAppSignatory(address indexed control, address indexed governance, address indexed signatory, uint32 callConfig)
+func (_Atlas *AtlasFilterer) FilterRemovedDAppSignatory(opts *bind.FilterOpts, control []common.Address, governance []common.Address, signatory []common.Address) (*AtlasRemovedDAppSignatoryIterator, error) {
 
-	var solverRule []interface{}
-	for _, solverItem := range solver {
-		solverRule = append(solverRule, solverItem)
+	var controlRule []interface{}
+	for _, controlItem := range control {
+		controlRule = append(controlRule, controlItem)
+	}
+	var governanceRule []interface{}
+	for _, governanceItem := range governance {
+		governanceRule = append(governanceRule, governanceItem)
+	}
+	var signatoryRule []interface{}
+	for _, signatoryItem := range signatory {
+		signatoryRule = append(signatoryRule, signatoryItem)
 	}
 
-	logs, sub, err := _Atlas.contract.FilterLogs(opts, "SolverExecution", solverRule)
+	logs, sub, err := _Atlas.contract.FilterLogs(opts, "RemovedDAppSignatory", controlRule, governanceRule, signatoryRule)
 	if err != nil {
 		return nil, err
 	}
-	return &AtlasSolverExecutionIterator{contract: _Atlas.contract, event: "SolverExecution", logs: logs, sub: sub}, nil
+	return &AtlasRemovedDAppSignatoryIterator{contract: _Atlas.contract, event: "RemovedDAppSignatory", logs: logs, sub: sub}, nil
 }
 
-// WatchSolverExecution is a free log subscription operation binding the contract event 0x20ecaac325cd57efaf6df656e93d1f89ecc1b0a8d3a053542fc9a58745697d6c.
+// WatchRemovedDAppSignatory is a free log subscription operation binding the contract event 0x90a400fe7fe676a24908d5f730fe6d38072340bc8f74e18a543132d840bfe5ce.
 //
-// Solidity: event SolverExecution(address indexed solver, uint256 index, bool isWin)
-func (_Atlas *AtlasFilterer) WatchSolverExecution(opts *bind.WatchOpts, sink chan<- *AtlasSolverExecution, solver []common.Address) (event.Subscription, error) {
+// Solidity: event RemovedDAppSignatory(address indexed control, address indexed governance, address indexed signatory, uint32 callConfig)
+func (_Atlas *AtlasFilterer) WatchRemovedDAppSignatory(opts *bind.WatchOpts, sink chan<- *AtlasRemovedDAppSignatory, control []common.Address, governance []common.Address, signatory []common.Address) (event.Subscription, error) {
 
-	var solverRule []interface{}
-	for _, solverItem := range solver {
-		solverRule = append(solverRule, solverItem)
+	var controlRule []interface{}
+	for _, controlItem := range control {
+		controlRule = append(controlRule, controlItem)
+	}
+	var governanceRule []interface{}
+	for _, governanceItem := range governance {
+		governanceRule = append(governanceRule, governanceItem)
+	}
+	var signatoryRule []interface{}
+	for _, signatoryItem := range signatory {
+		signatoryRule = append(signatoryRule, signatoryItem)
 	}
 
-	logs, sub, err := _Atlas.contract.WatchLogs(opts, "SolverExecution", solverRule)
+	logs, sub, err := _Atlas.contract.WatchLogs(opts, "RemovedDAppSignatory", controlRule, governanceRule, signatoryRule)
 	if err != nil {
 		return nil, err
 	}
@@ -3304,8 +3683,8 @@ func (_Atlas *AtlasFilterer) WatchSolverExecution(opts *bind.WatchOpts, sink cha
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(AtlasSolverExecution)
-				if err := _Atlas.contract.UnpackLog(event, "SolverExecution", log); err != nil {
+				event := new(AtlasRemovedDAppSignatory)
+				if err := _Atlas.contract.UnpackLog(event, "RemovedDAppSignatory", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -3326,12 +3705,12 @@ func (_Atlas *AtlasFilterer) WatchSolverExecution(opts *bind.WatchOpts, sink cha
 	}), nil
 }
 
-// ParseSolverExecution is a log parse operation binding the contract event 0x20ecaac325cd57efaf6df656e93d1f89ecc1b0a8d3a053542fc9a58745697d6c.
+// ParseRemovedDAppSignatory is a log parse operation binding the contract event 0x90a400fe7fe676a24908d5f730fe6d38072340bc8f74e18a543132d840bfe5ce.
 //
-// Solidity: event SolverExecution(address indexed solver, uint256 index, bool isWin)
-func (_Atlas *AtlasFilterer) ParseSolverExecution(log types.Log) (*AtlasSolverExecution, error) {
-	event := new(AtlasSolverExecution)
-	if err := _Atlas.contract.UnpackLog(event, "SolverExecution", log); err != nil {
+// Solidity: event RemovedDAppSignatory(address indexed control, address indexed governance, address indexed signatory, uint32 callConfig)
+func (_Atlas *AtlasFilterer) ParseRemovedDAppSignatory(log types.Log) (*AtlasRemovedDAppSignatory, error) {
+	event := new(AtlasRemovedDAppSignatory)
+	if err := _Atlas.contract.UnpackLog(event, "RemovedDAppSignatory", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -4192,288 +4571,6 @@ func (_Atlas *AtlasFilterer) WatchUnbond(opts *bind.WatchOpts, sink chan<- *Atla
 func (_Atlas *AtlasFilterer) ParseUnbond(log types.Log) (*AtlasUnbond, error) {
 	event := new(AtlasUnbond)
 	if err := _Atlas.contract.UnpackLog(event, "Unbond", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// AtlasUserCallIterator is returned from FilterUserCall and is used to iterate over the raw logs and unpacked data for UserCall events raised by the Atlas contract.
-type AtlasUserCallIterator struct {
-	Event *AtlasUserCall // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *AtlasUserCallIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(AtlasUserCall)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(AtlasUserCall)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *AtlasUserCallIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *AtlasUserCallIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// AtlasUserCall represents a UserCall event raised by the Atlas contract.
-type AtlasUserCall struct {
-	Environment common.Address
-	Success     bool
-	ReturnData  []byte
-	Raw         types.Log // Blockchain specific contextual infos
-}
-
-// FilterUserCall is a free log retrieval operation binding the contract event 0xc753e45077e0333d261b6ae90f2f18d7c9cecc7bad6f004b2a483a3cb00b2b85.
-//
-// Solidity: event UserCall(address environment, bool success, bytes returnData)
-func (_Atlas *AtlasFilterer) FilterUserCall(opts *bind.FilterOpts) (*AtlasUserCallIterator, error) {
-
-	logs, sub, err := _Atlas.contract.FilterLogs(opts, "UserCall")
-	if err != nil {
-		return nil, err
-	}
-	return &AtlasUserCallIterator{contract: _Atlas.contract, event: "UserCall", logs: logs, sub: sub}, nil
-}
-
-// WatchUserCall is a free log subscription operation binding the contract event 0xc753e45077e0333d261b6ae90f2f18d7c9cecc7bad6f004b2a483a3cb00b2b85.
-//
-// Solidity: event UserCall(address environment, bool success, bytes returnData)
-func (_Atlas *AtlasFilterer) WatchUserCall(opts *bind.WatchOpts, sink chan<- *AtlasUserCall) (event.Subscription, error) {
-
-	logs, sub, err := _Atlas.contract.WatchLogs(opts, "UserCall")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(AtlasUserCall)
-				if err := _Atlas.contract.UnpackLog(event, "UserCall", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseUserCall is a log parse operation binding the contract event 0xc753e45077e0333d261b6ae90f2f18d7c9cecc7bad6f004b2a483a3cb00b2b85.
-//
-// Solidity: event UserCall(address environment, bool success, bytes returnData)
-func (_Atlas *AtlasFilterer) ParseUserCall(log types.Log) (*AtlasUserCall, error) {
-	event := new(AtlasUserCall)
-	if err := _Atlas.contract.UnpackLog(event, "UserCall", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// AtlasUserTxResultIterator is returned from FilterUserTxResult and is used to iterate over the raw logs and unpacked data for UserTxResult events raised by the Atlas contract.
-type AtlasUserTxResultIterator struct {
-	Event *AtlasUserTxResult // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *AtlasUserTxResultIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(AtlasUserTxResult)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(AtlasUserTxResult)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *AtlasUserTxResultIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *AtlasUserTxResultIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// AtlasUserTxResult represents a UserTxResult event raised by the Atlas contract.
-type AtlasUserTxResult struct {
-	User          common.Address
-	ValueReturned *big.Int
-	GasRefunded   *big.Int
-	Raw           types.Log // Blockchain specific contextual infos
-}
-
-// FilterUserTxResult is a free log retrieval operation binding the contract event 0xea1c7d02ed469d8ee042fe1710cdd7406bc6568f46607fdb0af29fb03e4a82b5.
-//
-// Solidity: event UserTxResult(address indexed user, uint256 valueReturned, uint256 gasRefunded)
-func (_Atlas *AtlasFilterer) FilterUserTxResult(opts *bind.FilterOpts, user []common.Address) (*AtlasUserTxResultIterator, error) {
-
-	var userRule []interface{}
-	for _, userItem := range user {
-		userRule = append(userRule, userItem)
-	}
-
-	logs, sub, err := _Atlas.contract.FilterLogs(opts, "UserTxResult", userRule)
-	if err != nil {
-		return nil, err
-	}
-	return &AtlasUserTxResultIterator{contract: _Atlas.contract, event: "UserTxResult", logs: logs, sub: sub}, nil
-}
-
-// WatchUserTxResult is a free log subscription operation binding the contract event 0xea1c7d02ed469d8ee042fe1710cdd7406bc6568f46607fdb0af29fb03e4a82b5.
-//
-// Solidity: event UserTxResult(address indexed user, uint256 valueReturned, uint256 gasRefunded)
-func (_Atlas *AtlasFilterer) WatchUserTxResult(opts *bind.WatchOpts, sink chan<- *AtlasUserTxResult, user []common.Address) (event.Subscription, error) {
-
-	var userRule []interface{}
-	for _, userItem := range user {
-		userRule = append(userRule, userItem)
-	}
-
-	logs, sub, err := _Atlas.contract.WatchLogs(opts, "UserTxResult", userRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(AtlasUserTxResult)
-				if err := _Atlas.contract.UnpackLog(event, "UserTxResult", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseUserTxResult is a log parse operation binding the contract event 0xea1c7d02ed469d8ee042fe1710cdd7406bc6568f46607fdb0af29fb03e4a82b5.
-//
-// Solidity: event UserTxResult(address indexed user, uint256 valueReturned, uint256 gasRefunded)
-func (_Atlas *AtlasFilterer) ParseUserTxResult(log types.Log) (*AtlasUserTxResult, error) {
-	event := new(AtlasUserTxResult)
-	if err := _Atlas.contract.UnpackLog(event, "UserTxResult", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

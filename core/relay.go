@@ -137,7 +137,7 @@ func (r *Relay) auctionCompleteCallback(bundleOps *operation.BundleOperations) {
 		return
 	}
 
-	nonce, relayErr := r.getNextNonce(selectedSignatory, utils.FlagDAppNoncesSequenced(dAppConfig.CallConfig))
+	nonce, relayErr := r.getDappNextNonce(selectedSignatory)
 	if relayErr != nil {
 		log.Info("failed to get next nonce", "err", relayErr.Message)
 		return
