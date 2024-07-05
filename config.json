@@ -1,5 +1,6 @@
 {
   "network": {
+    "chain_id": 0,
     "rpc_url": ""
   },
   "contracts": {

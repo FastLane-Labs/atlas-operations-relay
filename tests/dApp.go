@@ -9,7 +9,7 @@ import (
 )
 
 func newDappOperation(userOp *operation.UserOperation, solverOps []*operation.SolverOperation) *operation.DAppOperation {
-	userOpHash, _ := userOp.Hash(false)
+	userOpHash, _ := userOp.Hash(false, &conf.Relay.Eip712.Domain)
 
 	dAppControlContract, err := dAppControl.NewDAppControl(userOp.Control, ethClient)
 	if err != nil {
@@ -38,12 +38,12 @@ func newDappOperation(userOp *operation.UserOperation, solverOps []*operation.So
 		Signature:     []byte(""),
 	}
 
-	proofHash, err := dAppOp.ProofHash()
-	if err != nil {
-		panic(err)
+	dAppOpHash, relayErr := dAppOp.Hash(&conf.Relay.Eip712.Domain)
+	if relayErr != nil {
+		panic(relayErr)
 	}
 
-	dAppOp.Signature, _ = utils.SignEip712Message(atlasDomainSeparator, proofHash, userPk)
+	dAppOp.Signature, _ = utils.SignMessage(dAppOpHash.Bytes(), userPk)
 
 	return dAppOp
 }

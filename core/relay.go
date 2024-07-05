@@ -40,8 +40,6 @@ type Relay struct {
 	atlETHContract            *atlETH.AtlETH
 	storageContract           *storage.Storage
 	atlasVerificationContract *atlasVerification.AtlasVerification
-
-	atlasDomainSeparator common.Hash
 }
 
 func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
@@ -60,22 +58,16 @@ func NewRelay(ethClient *ethclient.Client, config *config.Config) *Relay {
 		panic(err)
 	}
 
-	atlasDomainSeparator, err := atlasVerificationContract.GetDomainSeparator(nil)
-	if err != nil {
-		panic(err)
-	}
-
 	r := &Relay{
 		config:                    config,
 		ethClient:                 ethClient,
 		atlETHContract:            atlETHContract,
 		storageContract:           storageContract,
 		atlasVerificationContract: atlasVerificationContract,
-		atlasDomainSeparator:      atlasDomainSeparator,
 	}
 
-	r.auctionManager = auction.NewManager(ethClient, config, atlasDomainSeparator, r.solverGasLimit, r.balanceOfBonded, r.reputationScore, r.getDAppConfig, r.auctionCompleteCallback)
-	r.bundleManager = bundle.NewManager(ethClient, config, atlasDomainSeparator, r.getDAppConfig, r.auctionManager.IsAuctionOngoing)
+	r.auctionManager = auction.NewManager(ethClient, config, r.solverGasLimit, r.balanceOfBonded, r.reputationScore, r.getDAppConfig, r.auctionCompleteCallback)
+	r.bundleManager = bundle.NewManager(ethClient, config, r.getDAppConfig, r.auctionManager.IsAuctionOngoing)
 	r.server = NewServer(NewRouter(NewApi(r)), r.auctionManager.NewSolverOperation, r.auctionManager.GetSolverOperationStatus, r.getDAppSignatories)
 
 	return r
@@ -99,7 +91,7 @@ func (r *Relay) auctionCompleteCallback(bundleOps *operation.BundleOperations) {
 		return
 	}
 
-	userOpHash, relayErr := bundleOps.UserOperation.Hash(utils.FlagTrustedOpHash(dAppConfig.CallConfig))
+	userOpHash, relayErr := bundleOps.UserOperation.Hash(utils.FlagTrustedOpHash(dAppConfig.CallConfig), &r.config.Relay.Eip712.Domain)
 	if relayErr != nil {
 		log.Info("failed to compute user operation hash", "err", relayErr.Message)
 		return
@@ -154,15 +146,15 @@ func (r *Relay) auctionCompleteCallback(bundleOps *operation.BundleOperations) {
 		CallChainHash: callChainHash,
 	}
 
-	proofHash, err := bundleOps.DAppOperation.ProofHash()
-	if err != nil {
-		log.Info("failed to compute dApp proof hash", "err", err)
+	dAppOpHash, relayErr := bundleOps.DAppOperation.Hash(&r.config.Relay.Eip712.Domain)
+	if relayErr != nil {
+		log.Info("failed to compute dApp operation hash", "err", relayErr.Message)
 		return
 	}
 
-	bundleOps.DAppOperation.Signature, err = utils.SignEip712Message(r.atlasDomainSeparator, proofHash, selectedSignatoryPk)
+	bundleOps.DAppOperation.Signature, err = utils.SignMessage(dAppOpHash.Bytes(), selectedSignatoryPk)
 	if err != nil {
-		log.Info("failed to sign dApp proof hash", "err", err)
+		log.Info("failed to sign dApp operation", "err", err)
 		return
 	}
 

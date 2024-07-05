@@ -21,19 +21,19 @@ func generateDAppOperation() *DAppOperation {
 	}
 }
 
-func TestDAppOperationProofHash(t *testing.T) {
+func TestDAppOperationHash(t *testing.T) {
 	t.Parallel()
 
 	dAppOp := generateDAppOperation()
-	want := common.HexToHash("0xd71b1989258522f5316e5fabd7b6e171897f96c5807f8261da600d1aac7da71d")
+	want := common.HexToHash("0x19f8a2e775a072f45728d1d87bcfff85ca5fecdf674f261af2a5c8c70b37a453")
 
-	result, err := dAppOp.ProofHash()
+	result, err := dAppOp.Hash(&Eip712DomainTest)
 	if err != nil {
-		t.Errorf("DAppOperation.proofHash() error = %v", err)
+		t.Errorf("DAppOperation.Hash() error = %v", err)
 	}
 
 	if result != want {
-		t.Errorf("DAppOperation.proofHash() = %v, want %v", result, want)
+		t.Errorf("DAppOperation.Hash() = %v, want %v", result, want)
 	}
 }
 
@@ -41,13 +41,10 @@ func TestDAppOperationCheckSignature(t *testing.T) {
 	t.Parallel()
 
 	dAppOp := generateDAppOperation()
+	dAppOp.From = common.HexToAddress("0xB764B6545d283C0E547952763F8a843394295da1")
+	dAppOp.Signature = common.FromHex("0x741bd1cc70e34a39d763ae23d0d94c6a9156b10ba9a4cead3e847d4f15ad6edf4a7a60b875f1cb1795358b7a395b422659b7336f2f3a90453f8c2a16369e69d81c")
 
-	dAppOp.From = common.HexToAddress("0xb8BE63EC949a4aBD643404Ad1c78d3cca29D671A")
-	domainSeparator := common.HexToHash("0x82b5c47bb09eca2c93143f36f8fde6567050d39f3611535aab530d4f15fa5d0f")
-
-	dAppOp.Signature = common.FromHex("0f4c1dc7452c3e85b138bad755fa531dc034b795c236594db2f10ff49be1ee1a28db2f9064117b352c67272afbf5a513feadef9d9b7c428f55e96067920386861b")
-
-	relayErr := dAppOp.checkSignature(domainSeparator)
+	relayErr := dAppOp.checkSignature(&Eip712DomainTest)
 	if relayErr != nil {
 		t.Errorf("DAppOperation.checkSignature() error = %v", relayErr)
 	}

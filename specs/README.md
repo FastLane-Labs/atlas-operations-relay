@@ -82,7 +82,6 @@ Note that all simulations and validation referenced here can be easily done by c
 - 2002: user operation's 'to' field must be atlas contract address
 - 2003: user operation's deadline exceeded
 - 2004: failed to compute user operation hash
-- 2005: failed to compute user proof hash
 - 2006: user operation has invalid signature
 - 2007: user operation's gas limit exceeded
 
@@ -92,7 +91,6 @@ Note that all simulations and validation referenced here can be easily done by c
 - 2102: solver operation's maxFeePerGas must be equal or higher the user operation
 - 2103: solver operation's deadline exceeded or lower than user operation's
 - 2104: solver operation's dApp control does not match the user operation's
-- 2105: failed to compute solver proof hash
 - 2106: solver operation has invalid signature
 - 2107: failed to compute solver operation hash
 
@@ -103,7 +101,6 @@ Note that all simulations and validation referenced here can be easily done by c
 - 2203: dApp operation's dApp control does not match the user operation's
 - 2204: dApp operation's user operation hash does not match the user operation's
 - 2205: dApp operation's call chain hash is invalid
-- 2206: failed to compute dApp proof hash
 - 2207: dApp operation has invalid signature
 - 2208: dApp operation's gas limit exceeded
 

@@ -49,7 +49,7 @@ func newDemoUserOperation() *operation.UserOperation {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	nonce, err := atlasVerification.GetUserNextNonce(nil, userEoa, false)
 	if err != nil {
 		panic(err)
@@ -70,14 +70,14 @@ func newDemoUserOperation() *operation.UserOperation {
 		Signature:    nil,
 	}
 
-	proofHash, err := userOp.ProofHash()
-	if err != nil {
-		panic(err)
+	userOpHash, relayErr := userOp.Hash(false, &conf.Relay.Eip712.Domain)
+	if relayErr != nil {
+		panic(relayErr)
 	}
 
-	userOp.Signature, _ = utils.SignEip712Message(atlasDomainSeparator, proofHash, userPk)
+	userOp.Signature, _ = utils.SignMessage(userOpHash.Bytes(), userPk)
 
-	if err := userOp.Validate(ethClient, conf.Contracts.Atlas, atlasDomainSeparator, conf.Relay.Gas.MaxPerUserOperation); err != nil {
+	if err := userOp.Validate(ethClient, conf.Contracts.Atlas, &conf.Relay.Eip712.Domain, conf.Relay.Gas.MaxPerUserOperation); err != nil {
 		panic(err)
 	}
 
@@ -85,7 +85,7 @@ func newDemoUserOperation() *operation.UserOperation {
 }
 
 func sendUserRequest(userOp *operation.UserOperation) error {
-	userOpHash, relayErr := userOp.Hash(false)
+	userOpHash, relayErr := userOp.Hash(false, &conf.Relay.Eip712.Domain)
 	if relayErr != nil {
 		return relayErr
 	}
@@ -192,7 +192,7 @@ func sendBundleOperation(userOp *operation.UserOperation, solverOps []*operation
 		return fmt.Errorf("expected status code 200, got %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
-	userOpHash, _ := userOp.Hash(false)
+	userOpHash, _ := userOp.Hash(false, &conf.Relay.Eip712.Domain)
 	log.Info("relay sent bundleOps", "userOpHash", userOpHash.Hex(), "nSolverOps", len(bundleOps.SolverOperations))
 
 	return nil

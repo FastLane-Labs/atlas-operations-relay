@@ -9,6 +9,7 @@ import (
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
 var (
@@ -186,7 +187,7 @@ func (a *Auction) addSolverStatusesCompletionSub(solverOpHash common.Hash, subCh
 	a.solverStatusesCompletionSubs[solverOpHash] = append(a.solverStatusesCompletionSubs[solverOpHash], subChan)
 }
 
-func (a *Auction) addSolverOp(solverOp *operation.SolverOperationWithScore) (common.Hash, *relayerror.Error) {
+func (a *Auction) addSolverOp(solverOp *operation.SolverOperationWithScore, eip712Domain *apitypes.TypedDataDomain) (common.Hash, *relayerror.Error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -200,7 +201,7 @@ func (a *Auction) addSolverOp(solverOp *operation.SolverOperationWithScore) (com
 		return common.Hash{}, ErrSolverAlreadyParticipating
 	}
 
-	solverOpHash, relayErr := solverOp.SolverOperation.Hash()
+	solverOpHash, relayErr := solverOp.SolverOperation.Hash(eip712Domain)
 	if relayErr != nil {
 		return common.Hash{}, relayErr
 	}

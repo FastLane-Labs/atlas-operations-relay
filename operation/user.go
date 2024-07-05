@@ -1,7 +1,6 @@
 package operation
 
 import (
-	"bytes"
 	"context"
 	"math/big"
 	"math/rand"
@@ -12,8 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
 var (
@@ -21,13 +20,8 @@ var (
 	ErrUserOpInvalidToField   = relayerror.NewError(2002, "user operation's 'to' field must be atlas contract address")
 	ErrUserOpDeadlineExceeded = relayerror.NewError(2003, "user operation's deadline exceeded")
 	ErrUserOpComputeHash      = relayerror.NewError(2004, "failed to compute user operation hash")
-	ErrUserOpComputeProofHash = relayerror.NewError(2005, "failed to compute user proof hash")
 	ErrUserOpSignatureInvalid = relayerror.NewError(2006, "user operation has invalid signature")
 	ErrUserOpGasLimitExceeded = relayerror.NewError(2007, "user operation's gas limit exceeded")
-)
-
-var (
-	USER_TYPE_HASH = crypto.Keccak256Hash([]byte("UserOperation(address from,address to,uint256 value,uint256 gas,uint256 maxFeePerGas,uint256 nonce,uint256 deadline,address dapp,address control,uint32 callConfig,address sessionKey,bytes data)"))
 )
 
 var (
@@ -47,28 +41,8 @@ var (
 		{Name: "signature", Type: "bytes", InternalType: "bytes"},
 	})
 
-	userProofHashSolType, _ = abi.NewType("tuple", "struct UserProofHash", []abi.ArgumentMarshaling{
-		{Name: "userTypeHash", Type: "bytes32", InternalType: "bytes32"},
-		{Name: "from", Type: "address", InternalType: "address"},
-		{Name: "to", Type: "address", InternalType: "address"},
-		{Name: "value", Type: "uint256", InternalType: "uint256"},
-		{Name: "gas", Type: "uint256", InternalType: "uint256"},
-		{Name: "maxFeePerGas", Type: "uint256", InternalType: "uint256"},
-		{Name: "nonce", Type: "uint256", InternalType: "uint256"},
-		{Name: "deadline", Type: "uint256", InternalType: "uint256"},
-		{Name: "dapp", Type: "address", InternalType: "address"},
-		{Name: "control", Type: "address", InternalType: "address"},
-		{Name: "callConfig", Type: "uint32", InternalType: "uint32"},
-		{Name: "sessionKey", Type: "address", InternalType: "address"},
-		{Name: "data", Type: "bytes32", InternalType: "bytes32"},
-	})
-
 	userOpArgs = abi.Arguments{
 		{Type: userOpSolType, Name: "userOperation"},
-	}
-
-	userProofHashArgs = abi.Arguments{
-		{Type: userProofHashSolType, Name: "proofHash"},
 	}
 )
 
@@ -152,7 +126,7 @@ func (u *UserOperation) EncodeToRaw() *UserOperationRaw {
 	}
 }
 
-func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
+func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Address, eip712Domain *apitypes.TypedDataDomain, gasLimit *big.Int) *relayerror.Error {
 	if u.To != atlas {
 		return ErrUserOpInvalidToField
 	}
@@ -173,7 +147,7 @@ func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Addre
 
 	// Check the signature only if it's set
 	if len(u.Signature) > 0 {
-		if relayErr := u.checkSignature(atlasDomainSeparator); relayErr != nil {
+		if relayErr := u.checkSignature(eip712Domain); relayErr != nil {
 			return relayErr
 		}
 	}
@@ -181,86 +155,105 @@ func (u *UserOperation) Validate(ethClient *ethclient.Client, atlas common.Addre
 	return nil
 }
 
-func (u *UserOperation) Hash(altHash bool) (common.Hash, *relayerror.Error) {
-	var (
-		packed []byte
-		err    error
-	)
+func (u *UserOperation) Hash(trusted bool, eip712Domain *apitypes.TypedDataDomain) (common.Hash, *relayerror.Error) {
+	hash, _, err := apitypes.TypedDataAndHash(apitypes.TypedData{
+		Types:       u.toTypedDataTypes(trusted),
+		PrimaryType: "UserOperation",
+		Domain:      *eip712Domain,
+		Message:     u.toTypedDataMessage(trusted),
+	})
 
-	if altHash {
-		packed = bytes.Join([][]byte{
-			u.From.Bytes(),
-			u.To.Bytes(),
-			u.Dapp.Bytes(),
-			u.Control.Bytes(),
-			big.NewInt(int64(u.CallConfig)).Bytes(),
-			u.SessionKey.Bytes(),
-		}, nil)
-	} else {
-		packed, err = u.AbiEncode()
-		if err != nil {
-			return common.Hash{}, ErrUserOpComputeHash.AddError(err)
-		}
+	if err != nil {
+		return common.Hash{}, ErrUserOpComputeHash.AddError(err)
 	}
 
-	return crypto.Keccak256Hash(packed), nil
+	return common.BytesToHash(hash), nil
 }
 
 func (u *UserOperation) AbiEncode() ([]byte, error) {
 	return userOpArgs.Pack(&u)
 }
 
-func (u *UserOperation) ProofHash() (common.Hash, error) {
-	proofHash := struct {
-		UserTypeHash common.Hash
-		From         common.Address
-		To           common.Address
-		Value        *big.Int
-		Gas          *big.Int
-		MaxFeePerGas *big.Int
-		Nonce        *big.Int
-		Deadline     *big.Int
-		Dapp         common.Address
-		Control      common.Address
-		CallConfig   *big.Int
-		SessionKey   common.Address
-		Data         common.Hash
-	}{
-		USER_TYPE_HASH,
-		u.From,
-		u.To,
-		u.Value,
-		u.Gas,
-		u.MaxFeePerGas,
-		u.Nonce,
-		u.Deadline,
-		u.Dapp,
-		u.Control,
-		big.NewInt(int64(u.CallConfig)),
-		u.SessionKey,
-		crypto.Keccak256Hash(u.Data),
+func (u *UserOperation) toTypedDataTypes(trusted bool) apitypes.Types {
+	t := apitypes.Types{
+		"EIP712Domain": []apitypes.Type{
+			{Name: "name", Type: "string"},
+			{Name: "version", Type: "string"},
+			{Name: "chainId", Type: "uint256"},
+			{Name: "verifyingContract", Type: "address"},
+		},
 	}
 
-	packed, err := userProofHashArgs.Pack(&proofHash)
-	if err != nil {
-		return common.Hash{}, err
+	if trusted {
+		t["UserOperation"] = []apitypes.Type{
+			{Name: "from", Type: "address"},
+			{Name: "to", Type: "address"},
+			{Name: "dapp", Type: "address"},
+			{Name: "control", Type: "address"},
+			{Name: "callConfig", Type: "uint32"},
+			{Name: "sessionKey", Type: "address"},
+		}
+	} else {
+		t["UserOperation"] = []apitypes.Type{
+			{Name: "from", Type: "address"},
+			{Name: "to", Type: "address"},
+			{Name: "value", Type: "uint256"},
+			{Name: "gas", Type: "uint256"},
+			{Name: "maxFeePerGas", Type: "uint256"},
+			{Name: "nonce", Type: "uint256"},
+			{Name: "deadline", Type: "uint256"},
+			{Name: "dapp", Type: "address"},
+			{Name: "control", Type: "address"},
+			{Name: "callConfig", Type: "uint32"},
+			{Name: "sessionKey", Type: "address"},
+			{Name: "data", Type: "bytes"},
+		}
 	}
-	return crypto.Keccak256Hash(packed), nil
+
+	return t
 }
 
-func (u *UserOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
+func (u *UserOperation) toTypedDataMessage(trusted bool) apitypes.TypedDataMessage {
+	if trusted {
+		return apitypes.TypedDataMessage{
+			"from":       u.From.Hex(),
+			"to":         u.To.Hex(),
+			"dapp":       u.Dapp.Hex(),
+			"control":    u.Control.Hex(),
+			"callConfig": big.NewInt(int64(u.CallConfig)),
+			"sessionKey": u.SessionKey.Hex(),
+		}
+	}
+
+	return apitypes.TypedDataMessage{
+		"from":         u.From.Hex(),
+		"to":           u.To.Hex(),
+		"value":        new(big.Int).Set(u.Value),
+		"gas":          new(big.Int).Set(u.Gas),
+		"maxFeePerGas": new(big.Int).Set(u.MaxFeePerGas),
+		"nonce":        new(big.Int).Set(u.Nonce),
+		"deadline":     new(big.Int).Set(u.Deadline),
+		"dapp":         u.Dapp.Hex(),
+		"control":      u.Control.Hex(),
+		"callConfig":   big.NewInt(int64(u.CallConfig)),
+		"sessionKey":   u.SessionKey.Hex(),
+		"data":         u.Data,
+	}
+}
+
+func (u *UserOperation) checkSignature(eip712Domain *apitypes.TypedDataDomain) *relayerror.Error {
 	if len(u.Signature) != 65 {
 		log.Info("invalid user operation signature length", "length", len(u.Signature))
 		return ErrUserOpInvalidSignature
 	}
 
-	proofHash, err := u.ProofHash()
-	if err != nil {
-		log.Info("failed to compute user proof hash", "err", err)
-		return ErrUserOpComputeProofHash.AddError(err)
+	userOpHash, relayErr := u.Hash(false, eip712Domain)
+	if relayErr != nil {
+		log.Info("failed to compute user operation hash", "err", relayErr.Message)
+		return relayErr
 	}
 
-	signer, err := utils.RecoverEip712Signer(domainSeparator, proofHash, u.Signature)
+	signer, err := utils.RecoverSigner(userOpHash.Bytes(), u.Signature)
 	if err != nil {
 		log.Info("failed to recover user public key", "err", err)
 		return ErrUserOpSignatureInvalid.AddError(err)

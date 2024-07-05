@@ -176,12 +176,12 @@ func solveUserOperation(userOperationPartialRaw *operation.UserOperationPartialR
 		Signature:    nil,
 	}
 
-	proofHash, err := solverOp.ProofHash()
-	if err != nil {
-		panic(err)
+	solverOpHash, relayErr := solverOp.Hash(&conf.Relay.Eip712.Domain)
+	if relayErr != nil {
+		panic(relayErr)
 	}
 
-	solverOp.Signature, _ = utils.SignEip712Message(atlasDomainSeparator, proofHash, solverPk)
+	solverOp.Signature, _ = utils.SignMessage(solverOpHash.Bytes(), solverPk)
 
 	return solverOp
 }

@@ -5,13 +5,14 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
 var (
-	ethClient            *ethclient.Client
-	atlasDomainSeparator common.Hash
+	ethClient *ethclient.Client
 
 	chainId     int64 = 11155111 //sepolia
 	sendAtlasTx bool  = false    //true -> send tx to the network, false -> do everything apart from sending
@@ -35,7 +36,8 @@ var (
 
 	conf = &config.Config{
 		Network: config.Network{
-			RpcUrl: "https://rpc.sepolia.org/",
+			ChainId: 11155111,
+			RpcUrl:  "https://rpc.sepolia.org/",
 		},
 		Contracts: config.Contracts{
 			Atlas:             common.HexToAddress("0xab654945B45D32465f83bC8B1a13F075c89F7246"),
@@ -46,6 +48,14 @@ var (
 			Simulations: true,
 			Auction: config.Auction{
 				Duration: 5 * time.Second,
+			},
+			Eip712: config.Eip712{
+				Domain: apitypes.TypedDataDomain{
+					Name:              "AtlasVerification",
+					Version:           "1.0",
+					ChainId:           math.NewHexOrDecimal256(chainId),
+					VerifyingContract: "0x95c8B9Cff6c3ff7E119B1D70C8E10c07D5160AD6",
+				},
 			},
 		},
 	}

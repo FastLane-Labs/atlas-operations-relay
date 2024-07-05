@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
 var (
@@ -21,7 +23,8 @@ var (
 
 type configJson struct {
 	Network struct {
-		RpcUrl string `json:"rpc_url"`
+		ChainId uint64 `json:"chain_id"`
+		RpcUrl  string `json:"rpc_url"`
 	} `json:"network"`
 
 	Contracts struct {
@@ -44,7 +47,8 @@ type configJson struct {
 }
 
 type Network struct {
-	RpcUrl string
+	ChainId uint64
+	RpcUrl  string
 }
 
 type Contracts struct {
@@ -63,11 +67,16 @@ type Gas struct {
 	MaxPerDAppOperation *big.Int
 }
 
+type Eip712 struct {
+	Domain apitypes.TypedDataDomain
+}
+
 type Relay struct {
 	Simulations bool
 	Auction     Auction
 	Gas         Gas
 	Signatories map[common.Address]*ecdsa.PrivateKey
+	Eip712      Eip712
 }
 
 type Config struct {
@@ -87,6 +96,13 @@ func Load() *Config {
 	config.parseFlags()
 	config.parseEnv()
 	config.Validate()
+
+	config.Relay.Eip712.Domain = apitypes.TypedDataDomain{
+		Name:              "AtlasVerification",
+		Version:           "1.0",
+		ChainId:           math.NewHexOrDecimal256(int64(config.Network.ChainId)),
+		VerifyingContract: config.Contracts.AtlasVerification.Hex(),
+	}
 
 	return config
 }
