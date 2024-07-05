@@ -152,6 +152,7 @@ func (c *Config) parseConfigFile() {
 }
 
 func (c *Config) parseFlags() {
+	chainIdPtr := flag.Uint64("network.chain_id", 0, "Chain ID")
 	networkRpcUrlPtr := flag.String("network.rpc_url", "", "Ethereum RPC URL")
 	contractsAtlasPtr := flag.String("contracts.atlas", "", "Atlas contract address")
 	contractsAtlasVerificationPtr := flag.String("contracts.atlasVerification", "", "AtlasVerification contract address")
@@ -162,6 +163,8 @@ func (c *Config) parseFlags() {
 	relayGasMaxPerUserOperationPtr := flag.Uint64("relay.gas.max_per_user_operation", 0, "Max gas per user operation")
 	relayGasMaxPerDAppOperationPtr := flag.Uint64("relay.gas.max_per_dApp_operation", 0, "Max gas per dApp operation")
 	flag.Parse()
+
+	c.Network.ChainId = *chainIdPtr
 
 	if len(*networkRpcUrlPtr) > 0 {
 		c.Network.RpcUrl = *networkRpcUrlPtr
@@ -225,6 +228,10 @@ func (c *Config) parseEnv() {
 }
 
 func (c *Config) Validate() {
+	if c.Network.ChainId == 0 {
+		panic("network.chain_id is required")
+	}
+
 	if len(c.Network.RpcUrl) == 0 {
 		panic("network.rpc_url is required")
 	}
