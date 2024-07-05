@@ -22,12 +22,12 @@ import (
 
 func newDemoSwapIntent() *SwapIntent {
 	return &SwapIntent{
-		TokenUserBuys:          tokenA,
-		AmountUserBuys:         big.NewInt(200e12),
-		TokenUserSells:         tokenB,
-		AmountUserSells:        big.NewInt(1e12),
-		AuctionBaseCurrency:    common.HexToAddress("0x0"),
-		Conditions:             make([]Condition, 0),
+		TokenUserBuys:       tokenA,
+		AmountUserBuys:      big.NewInt(200e12),
+		TokenUserSells:      tokenB,
+		AmountUserSells:     big.NewInt(1e12),
+		AuctionBaseCurrency: common.HexToAddress("0x0"),
+		Conditions:          make([]Condition, 0),
 	}
 }
 
@@ -81,7 +81,7 @@ func newDemoUserOperation() *operation.UserOperation {
 		Signature:    nil,
 	}
 
-	userOpHash, relayErr := userOp.Hash(false, &conf.Relay.Eip712.Domain)
+	userOpHash, relayErr := userOp.Hash(true, &conf.Relay.Eip712.Domain)
 	if relayErr != nil {
 		panic(relayErr)
 	}

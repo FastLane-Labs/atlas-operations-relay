@@ -247,7 +247,9 @@ func (u *UserOperation) checkSignature(eip712Domain *apitypes.TypedDataDomain) *
 		return ErrUserOpInvalidSignature
 	}
 
-	userOpHash, relayErr := u.Hash(false, eip712Domain)
+	trustedOpHash := utils.FlagTrustedOpHash(u.CallConfig)
+
+	userOpHash, relayErr := u.Hash(trustedOpHash, eip712Domain)
 	if relayErr != nil {
 		log.Info("failed to compute user operation hash", "err", relayErr.Message)
 		return relayErr
