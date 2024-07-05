@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlasVerification"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/utils"
@@ -55,6 +56,16 @@ func newDemoUserOperation() *operation.UserOperation {
 		panic(err)
 	}
 
+	dAppControlContract, err := dAppControl.NewDAppControl(swapIntentDAppControl, ethClient)
+	if err != nil {
+		panic(err)
+	}
+
+	callConfig, err := dAppControlContract.CALLCONFIG(nil)
+	if err != nil {
+		panic(err)
+	}
+
 	userOp := &operation.UserOperation{
 		From:         userEoa,
 		To:           conf.Contracts.Atlas,
@@ -65,6 +76,7 @@ func newDemoUserOperation() *operation.UserOperation {
 		Value:        big.NewInt(0),
 		Dapp:         swapIntentDAppControl,
 		Control:      swapIntentDAppControl,
+		CallConfig:   callConfig,
 		SessionKey:   common.HexToAddress("0x0"),
 		Data:         data,
 		Signature:    nil,

@@ -304,5 +304,18 @@
     ],
     "stateMutability": "payable",
     "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "CALL_CONFIG",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ]
