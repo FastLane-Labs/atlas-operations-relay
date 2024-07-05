@@ -68,8 +68,6 @@ func (d *DAppOperationRaw) Decode() *DAppOperation {
 	return &DAppOperation{
 		From:          d.From,
 		To:            d.To,
-		Value:         d.Value.ToInt(),
-		Gas:           d.Gas.ToInt(),
 		Nonce:         d.Nonce.ToInt(),
 		Deadline:      d.Deadline.ToInt(),
 		Control:       d.Control,
@@ -84,8 +82,6 @@ func (d *DAppOperationRaw) Decode() *DAppOperation {
 type DAppOperation struct {
 	From          common.Address
 	To            common.Address
-	Value         *big.Int
-	Gas           *big.Int
 	Nonce         *big.Int
 	Deadline      *big.Int
 	Control       common.Address
@@ -99,8 +95,6 @@ func GenerateSimulationDAppOperation(userOpHash common.Hash, userOp *UserOperati
 	return &DAppOperation{
 		From:          common.HexToAddress("0x0"),
 		To:            common.HexToAddress("0x0"),
-		Value:         big.NewInt(0),
-		Gas:           big.NewInt(100000),
 		Nonce:         big.NewInt(0),
 		Deadline:      userOp.Deadline,
 		Control:       userOp.Control,
@@ -115,8 +109,6 @@ func (d *DAppOperation) EncodeToRaw() *DAppOperationRaw {
 	return &DAppOperationRaw{
 		From:          d.From,
 		To:            d.To,
-		Value:         (*hexutil.Big)(d.Value),
-		Gas:           (*hexutil.Big)(d.Gas),
 		Nonce:         (*hexutil.Big)(d.Nonce),
 		Deadline:      (*hexutil.Big)(d.Deadline),
 		Control:       d.Control,
@@ -134,10 +126,6 @@ func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, 
 
 	if d.To != atlas {
 		return ErrDAppOpInvalidToField
-	}
-
-	if d.Gas.Cmp(gasLimit) > 0 {
-		return ErrDAppOpGasLimitExceeded
 	}
 
 	if d.Deadline.Cmp(userOp.Deadline) < 0 {
@@ -170,8 +158,6 @@ func (d *DAppOperation) ProofHash() (common.Hash, error) {
 		DAppTypeHash  common.Hash
 		From          common.Address
 		To            common.Address
-		Value         *big.Int
-		Gas           *big.Int
 		Nonce         *big.Int
 		Deadline      *big.Int
 		Control       common.Address
@@ -182,8 +168,6 @@ func (d *DAppOperation) ProofHash() (common.Hash, error) {
 		DAPP_TYPE_HASH,
 		d.From,
 		d.To,
-		d.Value,
-		d.Gas,
 		d.Nonce,
 		d.Deadline,
 		d.Control,

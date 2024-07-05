@@ -11,8 +11,6 @@ func generateDAppOperation() *DAppOperation {
 	return &DAppOperation{
 		From:          common.HexToAddress("0x1"),
 		To:            common.HexToAddress("0x2"),
-		Value:         big.NewInt(100),
-		Gas:           big.NewInt(200),
 		Nonce:         big.NewInt(300),
 		Deadline:      big.NewInt(400),
 		Control:       common.HexToAddress("0x3"),

@@ -146,8 +146,6 @@ func (r *Relay) auctionCompleteCallback(bundleOps *operation.BundleOperations) {
 	bundleOps.DAppOperation = &operation.DAppOperation{
 		From:          selectedSignatory,
 		To:            r.config.Contracts.Atlas,
-		Value:         new(big.Int).Set(common.Big0),
-		Gas:           new(big.Int).Set(r.config.Relay.Gas.MaxPerDAppOperation),
 		Nonce:         nonce,
 		Deadline:      new(big.Int).Set(bundleOps.UserOperation.Deadline),
 		Control:       bundleOps.UserOperation.Control,

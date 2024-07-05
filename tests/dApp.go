@@ -29,8 +29,6 @@ func newDappOperation(userOp *operation.UserOperation, solverOps []*operation.So
 	dAppOp := &operation.DAppOperation{
 		From:          userOp.From,
 		To:            conf.Contracts.Atlas,
-		Value:         big.NewInt(0),
-		Gas:           big.NewInt(100000),
 		Nonce:         big.NewInt(0),
 		Deadline:      userOp.Deadline,
 		Control:       userOp.Control,
