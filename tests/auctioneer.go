@@ -27,7 +27,6 @@ func newDemoSwapIntent() *SwapIntent {
 		TokenUserSells:         tokenB,
 		AmountUserSells:        big.NewInt(1e12),
 		AuctionBaseCurrency:    common.HexToAddress("0x0"),
-		SolverMustReimburseGas: false,
 		Conditions:             make([]Condition, 0),
 	}
 }

@@ -18,7 +18,6 @@ var (
 		{Name: "tokenUserSells", Type: "address", InternalType: "address"},
 		{Name: "amountUserSells", Type: "uint256", InternalType: "uint256"},
 		{Name: "auctionBaseCurrency", Type: "address", InternalType: "address"},
-		{Name: "solverMustReimburseGas", Type: "bool", InternalType: "bool"},
 		{
 			Name:         "conditions",
 			Type:         "tuple[]",
@@ -41,13 +40,12 @@ type Condition struct {
 }
 
 type SwapIntent struct {
-	TokenUserBuys          common.Address
-	AmountUserBuys         *big.Int
-	TokenUserSells         common.Address
-	AmountUserSells        *big.Int
-	AuctionBaseCurrency    common.Address
-	SolverMustReimburseGas bool
-	Conditions             []Condition
+	TokenUserBuys       common.Address
+	AmountUserBuys      *big.Int
+	TokenUserSells      common.Address
+	AmountUserSells     *big.Int
+	AuctionBaseCurrency common.Address
+	Conditions          []Condition
 }
 
 func (i *SwapIntent) abiEncode() ([]byte, error) {
@@ -82,25 +80,23 @@ func swapIntentAbiDecode(input []byte) (*SwapIntent, error) {
 	}
 
 	decoded_struct := unpacked[0].(struct {
-		TokenUserBuys          common.Address `json:"tokenUserBuys"`
-		AmountUserBuys         *big.Int       `json:"amountUserBuys"`
-		TokenUserSells         common.Address `json:"tokenUserSells"`
-		AmountUserSells        *big.Int       `json:"amountUserSells"`
-		AuctionBaseCurrency    common.Address `json:"auctionBaseCurrency"`
-		SolverMustReimburseGas bool           `json:"solverMustReimburseGas"`
-		Conditions             []struct {
+		TokenUserBuys       common.Address `json:"tokenUserBuys"`
+		AmountUserBuys      *big.Int       `json:"amountUserBuys"`
+		TokenUserSells      common.Address `json:"tokenUserSells"`
+		AmountUserSells     *big.Int       `json:"amountUserSells"`
+		AuctionBaseCurrency common.Address `json:"auctionBaseCurrency"`
+		Conditions          []struct {
 			Antecedent common.Address `json:"antecedent"`
 			Context    []uint8        `json:"context"`
 		} `json:"conditions"`
 	})
 
 	return &SwapIntent{
-		TokenUserBuys:          decoded_struct.TokenUserBuys,
-		AmountUserBuys:         decoded_struct.AmountUserBuys,
-		TokenUserSells:         decoded_struct.TokenUserSells,
-		AmountUserSells:        decoded_struct.AmountUserSells,
-		AuctionBaseCurrency:    decoded_struct.AuctionBaseCurrency,
-		SolverMustReimburseGas: decoded_struct.SolverMustReimburseGas,
-		Conditions:             make([]Condition, len(decoded_struct.Conditions)),
+		TokenUserBuys:       decoded_struct.TokenUserBuys,
+		AmountUserBuys:      decoded_struct.AmountUserBuys,
+		TokenUserSells:      decoded_struct.TokenUserSells,
+		AmountUserSells:     decoded_struct.AmountUserSells,
+		AuctionBaseCurrency: decoded_struct.AuctionBaseCurrency,
+		Conditions:          make([]Condition, len(decoded_struct.Conditions)),
 	}, nil
 }
