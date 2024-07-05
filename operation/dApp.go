@@ -33,8 +33,6 @@ var (
 		{Name: "dAppTypeHash", Type: "bytes32", InternalType: "bytes32"},
 		{Name: "from", Type: "address", InternalType: "address"},
 		{Name: "to", Type: "address", InternalType: "address"},
-		{Name: "value", Type: "uint256", InternalType: "uint256"},
-		{Name: "gas", Type: "uint256", InternalType: "uint256"},
 		{Name: "nonce", Type: "uint256", InternalType: "uint256"},
 		{Name: "deadline", Type: "uint256", InternalType: "uint256"},
 		{Name: "control", Type: "address", InternalType: "address"},
@@ -53,8 +51,6 @@ var (
 type DAppOperationRaw struct {
 	From          common.Address `json:"from" validate:"required"`
 	To            common.Address `json:"to" validate:"required"`
-	Value         *hexutil.Big   `json:"value" validate:"required"`
-	Gas           *hexutil.Big   `json:"gas" validate:"required"`
 	Nonce         *hexutil.Big   `json:"nonce" validate:"required"`
 	Deadline      *hexutil.Big   `json:"deadline" validate:"required"`
 	Control       common.Address `json:"control" validate:"required"`

@@ -22,7 +22,7 @@ func TestBundleOperationsCallChainHashWithRequiredPreOps(t *testing.T) {
 	t.Parallel()
 
 	bundleOps := generateBundleOperations()
-	want := common.HexToHash("0xbb6a59376026161b088c50619219ae0ca70d2574ef8bf0346064910a4564624a")
+	want := common.HexToHash("0x65d9f83fb5c1b5fcce7fd60775bb6b40eccdd87d220ac4000f3e119d6c3d2a47")
 
 	result, err := bundleOps.CallChainHash(4, common.HexToAddress("0x4"))
 	if err != nil {
