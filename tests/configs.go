@@ -23,7 +23,7 @@ var (
 	tokenA                = common.HexToAddress("0x7439E9Bb6D8a84dd3A23fe621A30F95403F87fB9")
 	tokenB                = common.HexToAddress("0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9")
 	swapIntentDAppControl = common.HexToAddress("0x60d7B59c6743C25b29a7aEe6F5a37c07B1A6Cff3")
-	simpleRfqSolver       = common.HexToAddress("0xF951B4E6696db170Bb5d81FcC951abfdB9b72aD1")
+	simpleRfqSolver       = common.HexToAddress("0x12f1D679c09A050c2b8259e4B1dE14e315F07822")
 
 	userPk, _ = crypto.ToECDSA(common.FromHex("0d3414024a8d727a824933d47460fd9ea5d65f88feec92761a476405cf2d5922"))
 	userEoa   = crypto.PubkeyToAddress(userPk.PublicKey) // 0xeA402251DA4365c12BF9A3C9d88029A04988A712
