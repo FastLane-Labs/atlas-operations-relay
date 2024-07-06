@@ -81,7 +81,7 @@ func newDemoUserOperation() *operation.UserOperation {
 		Signature:    nil,
 	}
 
-	userOpHash, relayErr := userOp.Hash(true, &conf.Relay.Eip712.Domain)
+	userOpHash, relayErr := userOp.Hash(false, &conf.Relay.Eip712.Domain)
 	if relayErr != nil {
 		panic(relayErr)
 	}

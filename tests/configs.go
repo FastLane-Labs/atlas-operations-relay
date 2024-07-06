@@ -54,7 +54,7 @@ var (
 					Name:              "AtlasVerification",
 					Version:           "1.0",
 					ChainId:           math.NewHexOrDecimal256(chainId),
-					VerifyingContract: "0x95c8B9Cff6c3ff7E119B1D70C8E10c07D5160AD6",
+					VerifyingContract: "0x26Bb4e798116Bb01f26A47EDA2597814BDC18467",
 				},
 			},
 		},
