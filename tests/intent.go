@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"encoding/hex"
 	"fmt"
 	"math/big"
 
@@ -67,7 +66,6 @@ func (i *SwapIntent) abiEncodeWithSelector() ([]byte, error) {
 		return nil, fmt.Errorf("method %s not found in swapIntentDappControl ABI", methodName)
 	}
 	selector := method.ID
-	fmt.Println("selector", hex.EncodeToString(selector))
 
 	return append(selector, encoded...), nil
 }
