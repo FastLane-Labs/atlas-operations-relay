@@ -81,12 +81,13 @@ func newDemoUserOperation() *operation.UserOperation {
 		Signature:    nil,
 	}
 
-	userOpHash, relayErr := userOp.Hash(false, &conf.Relay.Eip712.Domain)
+	// User always signs the full hash, hence `false` is passed
+	userOpHashForSigning, relayErr := userOp.Hash(false, &conf.Relay.Eip712.Domain)
 	if relayErr != nil {
 		panic(relayErr)
 	}
 
-	userOp.Signature, _ = utils.SignMessage(userOpHash.Bytes(), userPk)
+	userOp.Signature, _ = utils.SignMessage(userOpHashForSigning.Bytes(), userPk)
 
 	if err := userOp.Validate(ethClient, conf.Contracts.Atlas, &conf.Relay.Eip712.Domain, conf.Relay.Gas.MaxPerUserOperation); err != nil {
 		panic(err)
@@ -96,7 +97,7 @@ func newDemoUserOperation() *operation.UserOperation {
 }
 
 func sendUserRequest(userOp *operation.UserOperation) error {
-	userOpHash, relayErr := userOp.Hash(false, &conf.Relay.Eip712.Domain)
+	userOpHash, relayErr := userOp.Hash(utils.FlagTrustedOpHash(userOp.CallConfig), &conf.Relay.Eip712.Domain)
 	if relayErr != nil {
 		return relayErr
 	}

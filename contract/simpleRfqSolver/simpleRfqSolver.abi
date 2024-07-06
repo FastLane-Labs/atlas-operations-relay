@@ -1,0 +1,139 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "weth",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "atlas",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "fallback",
+    "stateMutability": "payable"
+  },
+  {
+    "type": "receive",
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "WETH_ADDRESS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "atlasSolverCall",
+    "inputs": [
+      {
+        "name": "solverOpFrom",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "executionEnvironment",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "bidToken",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "bidAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "solverOpData",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "fulfillRFQ",
+    "inputs": [
+      {
+        "name": "swapIntent",
+        "type": "tuple",
+        "internalType": "struct SwapIntent",
+        "components": [
+          {
+            "name": "tokenUserBuys",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "amountUserBuys",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "tokenUserSells",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "amountUserSells",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "auctionBaseCurrency",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "conditions",
+            "type": "tuple[]",
+            "internalType": "struct Condition[]",
+            "components": [
+              {
+                "name": "antecedent",
+                "type": "address",
+                "internalType": "address"
+              },
+              {
+                "name": "context",
+                "type": "bytes",
+                "internalType": "bytes"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "executionEnvironment",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  }
+]
