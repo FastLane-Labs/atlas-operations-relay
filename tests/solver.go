@@ -197,7 +197,7 @@ func solverData(swapIntent *SwapIntent, executionEnvironment common.Address) ([]
 		return nil, fmt.Errorf("failed to pack inputs: %v", err)
 	}
 
-	return append(common.Hex2Bytes(solverFulfillFuncSelector), data...), nil
+	return append(method.ID, data...), nil
 }
 
 func getSolverWsConnection() (*websocket.Conn, *http.Response) {

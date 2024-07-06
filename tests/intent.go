@@ -1,17 +1,16 @@
 package tests
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/swapIntentDappControl"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 var (
-	swapIntentFuncSelector    = "83a6992a"
-	solverFulfillFuncSelector = "491274c5"
-
 	swapIntentSolType, _ = abi.NewType("tuple", "struct SwapIntent", []abi.ArgumentMarshaling{
 		{Name: "tokenUserBuys", Type: "address", InternalType: "address"},
 		{Name: "amountUserBuys", Type: "uint256", InternalType: "uint256"},
@@ -58,7 +57,18 @@ func (i *SwapIntent) abiEncodeWithSelector() ([]byte, error) {
 		return nil, err
 	}
 
-	selector := common.Hex2Bytes(swapIntentFuncSelector)
+	swapIntentDappControlAbi, err := swapIntentDappControl.SwapIntentDappControlMetaData.GetAbi()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get swapIntentDappControl ABI: %w", err)
+	}
+	methodName := "swap"
+	method, exists := swapIntentDappControlAbi.Methods[methodName]
+	if !exists {
+		return nil, fmt.Errorf("method %s not found in swapIntentDappControl ABI", methodName)
+	}
+	selector := method.ID
+	fmt.Println("selector", hex.EncodeToString(selector))
+
 	return append(selector, encoded...), nil
 }
 
