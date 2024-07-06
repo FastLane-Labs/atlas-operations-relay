@@ -265,7 +265,11 @@ func (am *Manager) simulateSolverOperation(userOp *operation.UserOperation, user
 		return nil
 	}
 
-	dAppOp := operation.GenerateSimulationDAppOperation(userOpHash, userOp)
+	dAppOp, err := operation.GenerateSimulationDAppOperation(userOpHash, userOp, []*operation.SolverOperation{solverOp})
+	if err != nil {
+		log.Info("failed to generate simulation dapp operation", "err", err, "userOpHash", userOpHash.Hex())
+		return relayerror.ErrServerInternal
+	}
 
 	pData, err := contract.SimulatorAbi.Pack("simSolverCall", *userOp, *solverOp, *dAppOp)
 	if err != nil {

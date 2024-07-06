@@ -1,6 +1,7 @@
 package operation
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
@@ -64,18 +65,27 @@ type DAppOperation struct {
 	Signature     []byte
 }
 
-func GenerateSimulationDAppOperation(userOpHash common.Hash, userOp *UserOperation) *DAppOperation {
-	return &DAppOperation{
-		From:          common.HexToAddress("0x0"),
-		To:            common.HexToAddress("0x0"),
+func GenerateSimulationDAppOperation(userOpHash common.Hash, userOp *UserOperation, solverOps []*SolverOperation) (*DAppOperation, error) {
+	dAppOp := &DAppOperation{
+		From:          common.Address{},
+		To:            userOp.To,
 		Nonce:         big.NewInt(0),
 		Deadline:      userOp.Deadline,
 		Control:       userOp.Control,
 		Bundler:       common.HexToAddress("0x0"),
 		UserOpHash:    userOpHash,
-		CallChainHash: common.HexToHash("0x0"),
+		CallChainHash: common.Hash{},
 		Signature:     []byte(""),
 	}
+
+	if utils.FlagVerifyCallChainHash(userOp.CallConfig) {
+		callChainHash, err := (&BundleOperations{UserOperation: userOp, SolverOperations: solverOps}).CallChainHash(userOp.CallConfig, userOp.Control)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute call chain hash: %w", err)
+		}
+		dAppOp.CallChainHash = callChainHash
+	}
+	return dAppOp, nil
 }
 
 func (d *DAppOperation) EncodeToRaw() *DAppOperationRaw {
