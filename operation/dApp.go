@@ -67,12 +67,12 @@ type DAppOperation struct {
 
 func GenerateSimulationDAppOperation(userOpHash common.Hash, userOp *UserOperation, solverOps []*SolverOperation) (*DAppOperation, error) {
 	dAppOp := &DAppOperation{
-		From:          common.Address{},
+		From:          userOp.SessionKey,
 		To:            userOp.To,
 		Nonce:         big.NewInt(0),
 		Deadline:      userOp.Deadline,
 		Control:       userOp.Control,
-		Bundler:       common.HexToAddress("0x0"),
+		Bundler:       common.Address{},
 		UserOpHash:    userOpHash,
 		CallChainHash: common.Hash{},
 		Signature:     []byte(""),

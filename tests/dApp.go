@@ -9,7 +9,7 @@ import (
 )
 
 func newDappOperation(userOp *operation.UserOperation, solverOps []*operation.SolverOperation) *operation.DAppOperation {
-	userOpHash, _ := userOp.Hash(false, &conf.Relay.Eip712.Domain)
+	userOpHash, _ := userOp.Hash(utils.FlagTrustedOpHash(userOp.CallConfig), &conf.Relay.Eip712.Domain)
 
 	dAppControlContract, err := dAppControl.NewDAppControl(userOp.Control, ethClient)
 	if err != nil {
@@ -27,7 +27,7 @@ func newDappOperation(userOp *operation.UserOperation, solverOps []*operation.So
 	}
 
 	dAppOp := &operation.DAppOperation{
-		From:          userOp.From,
+		From:          bundlerEoa,
 		To:            conf.Contracts.Atlas,
 		Nonce:         big.NewInt(0),
 		Deadline:      userOp.Deadline,
@@ -43,7 +43,7 @@ func newDappOperation(userOp *operation.UserOperation, solverOps []*operation.So
 		panic(relayErr)
 	}
 
-	dAppOp.Signature, _ = utils.SignMessage(dAppOpHash.Bytes(), userPk)
+	dAppOp.Signature, _ = utils.SignMessage(dAppOpHash.Bytes(), bundlerPk)
 
 	return dAppOp
 }

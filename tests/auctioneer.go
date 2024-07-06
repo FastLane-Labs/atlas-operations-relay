@@ -65,7 +65,7 @@ func newDemoUserOperation() *operation.UserOperation {
 	userOp := &operation.UserOperation{
 		From:         userEoa,
 		To:           conf.Contracts.Atlas,
-		Deadline:     big.NewInt(int64(currentBlock) + 100),
+		Deadline:     big.NewInt(int64(currentBlock) + 100 + rand.Int63n(1000)),
 		Gas:          big.NewInt(100000),
 		Nonce:        nonce,
 		MaxFeePerGas: big.NewInt(150e9),
@@ -73,10 +73,9 @@ func newDemoUserOperation() *operation.UserOperation {
 		Dapp:         swapIntentDAppControl,
 		Control:      swapIntentDAppControl,
 		CallConfig:   callConfig,
-		// Randomize the session key so that a new userOp is created every time with a different userOpHash (trusted)
-		SessionKey: common.HexToAddress(fmt.Sprintf("0x%x", rand.Int63())),
-		Data:       data,
-		Signature:  nil,
+		SessionKey:   bundlerEoa,
+		Data:         data,
+		Signature:    nil,
 	}
 
 	// User always signs the full hash, hence `false` is passed

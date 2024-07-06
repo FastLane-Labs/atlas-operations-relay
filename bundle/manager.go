@@ -134,13 +134,14 @@ func (bm *Manager) simulateBundle(bundleOps *operation.BundleOperations, userOpH
 		}
 	}
 	gasLimit += bm.config.Relay.Gas.MaxPerDAppOperation.Uint64()
+	gasLimit += 1000000 // Add gas for validateCalls and others
 
 	_, err = bm.ethClient.CallContract(
 		context.Background(),
 		ethereum.CallMsg{
 			From:      bundleOps.DAppOperation.Bundler,
 			To:        &bm.config.Contracts.Atlas,
-			Gas:       gasLimit + 1000000, // Add gas for validateCalls and others
+			Gas:       gasLimit,
 			GasFeeCap: gasPrice,
 			Data:      pData,
 		},
@@ -150,6 +151,9 @@ func (bm *Manager) simulateBundle(bundleOps *operation.BundleOperations, userOpH
 	if err != nil {
 		log.Info("metacall simulation failed", "err", err, "userOpHash", userOpHash.Hex())
 		log.Debug("metacall pData", "pData", hex.EncodeToString(pData))
+		log.Debug("metacall gasLimit", "gasLimit", gasLimit)
+		log.Debug("metacall gasPrice", "gasPrice", gasPrice)
+
 		return ErrBundleFailedSimulation.AddError(err)
 	}
 
