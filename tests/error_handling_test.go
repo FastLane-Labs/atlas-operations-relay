@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -81,7 +82,7 @@ func badSolverOpTest(t *testing.T, solveUserOpFunc solveUserOpFunc) {
 		t.Fatal(err)
 	}
 
-	userOpHash, _ := userOp.Hash(false, &conf.Relay.Eip712.Domain)
+	userOpHash, _ := userOp.Hash(utils.FlagTrustedOpHash(userOp.CallConfig), &conf.Relay.Eip712.Domain)
 	solverOps, err := retreiveSolverOps(userOpHash, true)
 	if err != nil {
 		t.Fatal(err)
