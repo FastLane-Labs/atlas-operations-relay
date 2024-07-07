@@ -29,9 +29,9 @@ func TestSolverOperationHash(t *testing.T) {
 	t.Parallel()
 
 	solverOp := generateSolverOperation()
-	want := common.HexToHash("0xa56fe9ac02f8a4ae19dabe3d31635519cabd843a612210dd7711184e3fc943c3")
+	want := common.HexToHash("0x36ff5301f530e9175cca32acbac7bc6798d5be0c04372ba3f05149b2455c5405")
 
-	result, err := solverOp.Hash()
+	result, err := solverOp.Hash(&Eip712DomainTest)
 	if err != nil {
 		t.Errorf("SolverOperation.Hash() error = %v", err)
 	}
@@ -57,31 +57,14 @@ func TestSolverOperationAbiEncode(t *testing.T) {
 	}
 }
 
-func TestSolverOperationProofHash(t *testing.T) {
-	t.Parallel()
-
-	solverOp := generateSolverOperation()
-	want := common.HexToHash("0xf50a1c5bfaa8fbe671ccd340a43661b90c70cdbde9ea42254f7a0606ef39ab79")
-
-	result, err := solverOp.ProofHash()
-	if err != nil {
-		t.Errorf("SolverOperation.proofHash() error = %v", err)
-	}
-
-	if result != want {
-		t.Errorf("SolverOperation.proofHash() = %v, want %v", result, want)
-	}
-}
-
 func TestSolverOperationCheckSignature(t *testing.T) {
 	t.Parallel()
 
 	solverOp := generateSolverOperation()
-	solverOp.From = common.HexToAddress("0xbab20eE47D62C288EBAFd1A938B193561E48C1Da")
-	solverOp.Signature = common.FromHex("0xb6c553426561570bd818ffb611f5182a9b0ce672aa2c73568a8fc5af7bbe71dc596141b7ac63286bba9145cc052dedef1874baea53ee02447ba7750ee97f23831c")
-	domainSeparator := common.HexToHash("0x82b5c47bb09eca2c93143f36f8fde6567050d39f3611535aab530d4f15fa5d0f")
+	solverOp.From = common.HexToAddress("0xB764B6545d283C0E547952763F8a843394295da1")
+	solverOp.Signature = common.FromHex("0x8e8d89974eb665dea669d922ad26d055b835d426fb60885a40d439ea213deb8204ce569ad60caa3fe8892656fa189a28ab2c71b02135b9b9d746d6ac12b87b6c1c")
 
-	relayErr := solverOp.checkSignature(domainSeparator)
+	relayErr := solverOp.checkSignature(&Eip712DomainTest)
 	if relayErr != nil {
 		t.Errorf("SolverOperation.checkSignature() error = %v", relayErr)
 	}

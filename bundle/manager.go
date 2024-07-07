@@ -36,22 +36,19 @@ type Manager struct {
 	// Indexed by userOpHash
 	bundles map[common.Hash]*Bundle
 
-	atlasDomainSeparator common.Hash
-
 	getDAppConfig    getDAppConfigFn
 	isAuctionOngoing isAuctionOngoingFn
 
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, getDAppConfig getDAppConfigFn, isAuctionOngoing isAuctionOngoingFn) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, getDAppConfig getDAppConfigFn, isAuctionOngoing isAuctionOngoingFn) *Manager {
 	bm := &Manager{
-		ethClient:            ethClient,
-		config:               config,
-		bundles:              make(map[common.Hash]*Bundle),
-		atlasDomainSeparator: atlasDomainSeparator,
-		getDAppConfig:        getDAppConfig,
-		isAuctionOngoing:     isAuctionOngoing,
+		ethClient:        ethClient,
+		config:           config,
+		bundles:          make(map[common.Hash]*Bundle),
+		getDAppConfig:    getDAppConfig,
+		isAuctionOngoing: isAuctionOngoing,
 	}
 
 	go bm.bundlesCleaner()
@@ -77,7 +74,7 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 		return common.Hash{}, nil, relayErr
 	}
 
-	userOpHash, relayErr := bundleOps.UserOperation.Hash(utils.FlagTrustedOpHash(dAppConfig.CallConfig))
+	userOpHash, relayErr := bundleOps.UserOperation.Hash(utils.FlagTrustedOpHash(dAppConfig.CallConfig), &bm.config.Relay.Eip712.Domain)
 	if relayErr != nil {
 		log.Info("failed to compute user operation hash", "err", relayErr.Message)
 		return common.Hash{}, nil, relayErr
@@ -88,7 +85,7 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 		return common.Hash{}, nil, auction.ErrAuctionOngoing
 	}
 
-	relayErr = bundleOps.Validate(bm.ethClient, userOpHash, bm.config.Contracts.Atlas, bm.atlasDomainSeparator, bm.config.Relay.Gas.MaxPerUserOperation, bm.config.Relay.Gas.MaxPerDAppOperation, dAppConfig)
+	relayErr = bundleOps.Validate(bm.ethClient, userOpHash, bm.config.Contracts.Atlas, &bm.config.Relay.Eip712.Domain, bm.config.Relay.Gas.MaxPerUserOperation, dAppConfig)
 	if relayErr != nil {
 		log.Info("invalid dApp operation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, nil, relayErr
@@ -136,14 +133,15 @@ func (bm *Manager) simulateBundle(bundleOps *operation.BundleOperations, userOpH
 			gasPrice.Set(solverOp.MaxFeePerGas)
 		}
 	}
-	gasLimit += bm.config.Relay.Gas.MaxPerDAppOperation.Uint64()
+
+	gasLimit += 1000000 // Add gas for validateCalls and others
 
 	_, err = bm.ethClient.CallContract(
 		context.Background(),
 		ethereum.CallMsg{
 			From:      bundleOps.DAppOperation.Bundler,
 			To:        &bm.config.Contracts.Atlas,
-			Gas:       gasLimit + 1000000, // Add gas for validateCalls and others
+			Gas:       gasLimit,
 			GasFeeCap: gasPrice,
 			Data:      pData,
 		},
@@ -153,6 +151,9 @@ func (bm *Manager) simulateBundle(bundleOps *operation.BundleOperations, userOpH
 	if err != nil {
 		log.Info("metacall simulation failed", "err", err, "userOpHash", userOpHash.Hex())
 		log.Debug("metacall pData", "pData", hex.EncodeToString(pData))
+		log.Debug("metacall gasLimit", "gasLimit", gasLimit)
+		log.Debug("metacall gasPrice", "gasPrice", gasPrice)
+
 		return ErrBundleFailedSimulation.AddError(err)
 	}
 

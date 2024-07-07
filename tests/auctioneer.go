@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"io"
 	"math/big"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlasVerification"
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/utils"
@@ -21,17 +21,16 @@ import (
 
 func newDemoSwapIntent() *SwapIntent {
 	return &SwapIntent{
-		TokenUserBuys:          tokenA,
-		AmountUserBuys:         big.NewInt(200e12),
-		TokenUserSells:         tokenB,
-		AmountUserSells:        big.NewInt(1e12),
-		AuctionBaseCurrency:    common.HexToAddress("0x0"),
-		SolverMustReimburseGas: false,
-		Conditions:             make([]Condition, 0),
+		TokenUserBuys:       tokenA,
+		AmountUserBuys:      big.NewInt(200e12),
+		TokenUserSells:      tokenB,
+		AmountUserSells:     big.NewInt(1e12),
+		AuctionBaseCurrency: common.HexToAddress("0x0"),
+		Conditions:          make([]Condition, 0),
 	}
 }
 
-func newDemoUserOperation() *operation.UserOperation {
+func newDemoUserOperation(sessionKey common.Address) *operation.UserOperation {
 	currentBlock, err := ethClient.BlockNumber(context.Background())
 	if err != nil {
 		panic(err)
@@ -42,15 +41,22 @@ func newDemoUserOperation() *operation.UserOperation {
 		panic(err)
 	}
 
-	//randomize the deadline so that a new userOp is created every time with a different userOpHash
-	deadline := big.NewInt(int64(currentBlock) + 100 + rand.Int63n(1000))
-
 	atlasVerification, err := atlasVerification.NewAtlasVerification(conf.Contracts.AtlasVerification, ethClient)
 	if err != nil {
 		panic(err)
 	}
-	
-	nonce, err := atlasVerification.GetNextNonce(nil, userEoa, false)
+
+	nonce, err := atlasVerification.GetUserNextNonce(nil, userEoa, false)
+	if err != nil {
+		panic(err)
+	}
+
+	dAppControlContract, err := dAppControl.NewDAppControl(swapIntentDAppControl, ethClient)
+	if err != nil {
+		panic(err)
+	}
+
+	callConfig, err := dAppControlContract.CALLCONFIG(nil)
 	if err != nil {
 		panic(err)
 	}
@@ -58,26 +64,28 @@ func newDemoUserOperation() *operation.UserOperation {
 	userOp := &operation.UserOperation{
 		From:         userEoa,
 		To:           conf.Contracts.Atlas,
-		Deadline:     deadline,
+		Deadline:     big.NewInt(int64(currentBlock) + 1000),
 		Gas:          big.NewInt(100000),
 		Nonce:        nonce,
 		MaxFeePerGas: big.NewInt(150e9),
 		Value:        big.NewInt(0),
 		Dapp:         swapIntentDAppControl,
 		Control:      swapIntentDAppControl,
-		SessionKey:   common.HexToAddress("0x0"),
+		CallConfig:   callConfig,
+		SessionKey:   sessionKey,
 		Data:         data,
 		Signature:    nil,
 	}
 
-	proofHash, err := userOp.ProofHash()
-	if err != nil {
-		panic(err)
+	// User always signs the full hash, hence `false` is passed
+	userOpHashForSigning, relayErr := userOp.Hash(false, &conf.Relay.Eip712.Domain)
+	if relayErr != nil {
+		panic(relayErr)
 	}
 
-	userOp.Signature, _ = utils.SignEip712Message(atlasDomainSeparator, proofHash, userPk)
+	userOp.Signature, _ = utils.SignMessage(userOpHashForSigning.Bytes(), userPk)
 
-	if err := userOp.Validate(ethClient, conf.Contracts.Atlas, atlasDomainSeparator, conf.Relay.Gas.MaxPerUserOperation); err != nil {
+	if err := userOp.Validate(ethClient, conf.Contracts.Atlas, &conf.Relay.Eip712.Domain, conf.Relay.Gas.MaxPerUserOperation); err != nil {
 		panic(err)
 	}
 
@@ -85,7 +93,7 @@ func newDemoUserOperation() *operation.UserOperation {
 }
 
 func sendUserRequest(userOp *operation.UserOperation) error {
-	userOpHash, relayErr := userOp.Hash(false)
+	userOpHash, relayErr := userOp.Hash(utils.FlagTrustedOpHash(userOp.CallConfig), &conf.Relay.Eip712.Domain)
 	if relayErr != nil {
 		return relayErr
 	}
@@ -192,7 +200,7 @@ func sendBundleOperation(userOp *operation.UserOperation, solverOps []*operation
 		return fmt.Errorf("expected status code 200, got %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
-	userOpHash, _ := userOp.Hash(false)
+	userOpHash, _ := userOp.Hash(false, &conf.Relay.Eip712.Domain)
 	log.Info("relay sent bundleOps", "userOpHash", userOpHash.Hex(), "nSolverOps", len(bundleOps.SolverOperations))
 
 	return nil

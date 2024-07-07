@@ -2,11 +2,14 @@ package tests
 
 import (
 	"encoding/json"
+	"fmt"
+	"math/rand"
 	"os"
 	"testing"
 
-	"github.com/FastLane-Labs/atlas-operations-relay/contract/atlasVerification"
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -15,16 +18,6 @@ func TestMain(m *testing.M) {
 
 	var err error
 	ethClient, err = ethclient.Dial(conf.Network.RpcUrl)
-	if err != nil {
-		panic(err)
-	}
-
-	atlasVerification, err := atlasVerification.NewAtlasVerification(conf.Contracts.AtlasVerification, ethClient)
-	if err != nil {
-		panic(err)
-	}
-
-	atlasDomainSeparator, err = atlasVerification.GetDomainSeparator(nil)
 	if err != nil {
 		panic(err)
 	}
@@ -47,14 +40,14 @@ func TestIntegration(t *testing.T) {
 	go runBundler(bundlerPk, bundlerReceiveChan, bundlerSendChan)
 
 	//send user request
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(governanceEoa)
 	err := sendUserRequest(userOp)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	//user requests solver solutions
-	userOpHash, _ := userOp.Hash(false)
+	userOpHash, _ := userOp.Hash(utils.FlagTrustedOpHash(userOp.CallConfig), &conf.Relay.Eip712.Domain)
 	solverOps, err := retreiveSolverOps(userOpHash, true)
 	if err != nil {
 		t.Fatal(err)
@@ -106,14 +99,14 @@ func TestSolverHttp(t *testing.T) {
 	go runSolver(false, solveUserOperation, make(chan struct{}))
 
 	//send user request
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(common.HexToAddress(fmt.Sprintf("0x%x", rand.Int63())))
 	err := sendUserRequest(userOp)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	//user requests solver solutions
-	userOpHash, _ := userOp.Hash(false)
+	userOpHash, _ := userOp.Hash(utils.FlagTrustedOpHash(userOp.CallConfig), &conf.Relay.Eip712.Domain)
 	solverOps, err := retreiveSolverOps(userOpHash, true)
 	if err != nil {
 		t.Fatal(err)

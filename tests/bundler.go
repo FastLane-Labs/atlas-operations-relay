@@ -131,8 +131,6 @@ func newAtlasTx(bundleRequest *operation.BundleOperations) (*types.Transaction, 
 	atlas_dappOp := atlas.DAppOperation{
 		From:          bundleRequest.DAppOperation.From,
 		To:            bundleRequest.DAppOperation.To,
-		Value:         bundleRequest.DAppOperation.Value,
-		Gas:           bundleRequest.DAppOperation.Gas,
 		Nonce:         bundleRequest.DAppOperation.Nonce,
 		Deadline:      bundleRequest.DAppOperation.Deadline,
 		Control:       bundleRequest.DAppOperation.Control,

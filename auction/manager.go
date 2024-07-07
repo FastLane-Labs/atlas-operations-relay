@@ -47,8 +47,6 @@ type Manager struct {
 
 	solverOpHashToAuction map[common.Hash]*Auction
 
-	atlasDomainSeparator common.Hash
-
 	solverGasLimit          solverGasLimitFn
 	balanceOfBonded         balanceOfBondedFn
 	reputationScore         reputationScoreFn
@@ -58,13 +56,12 @@ type Manager struct {
 	mu sync.RWMutex
 }
 
-func NewManager(ethClient *ethclient.Client, config *config.Config, atlasDomainSeparator common.Hash, solverGasLimit solverGasLimitFn, balanceOfBonded balanceOfBondedFn, reputationScore reputationScoreFn, getDAppConfig getDAppConfigFn, auctionCompleteCallback auctionCompleteCallbackFn) *Manager {
+func NewManager(ethClient *ethclient.Client, config *config.Config, solverGasLimit solverGasLimitFn, balanceOfBonded balanceOfBondedFn, reputationScore reputationScoreFn, getDAppConfig getDAppConfigFn, auctionCompleteCallback auctionCompleteCallbackFn) *Manager {
 	am := &Manager{
 		ethClient:               ethClient,
 		config:                  config,
 		auctions:                make(map[common.Hash]*Auction),
 		solverOpHashToAuction:   make(map[common.Hash]*Auction),
-		atlasDomainSeparator:    atlasDomainSeparator,
 		solverGasLimit:          solverGasLimit,
 		balanceOfBonded:         balanceOfBonded,
 		reputationScore:         reputationScore,
@@ -95,13 +92,13 @@ func (am *Manager) NewUserOperation(userOp *operation.UserOperation, hints []com
 		return common.Hash{}, nil, relayErr
 	}
 
-	userOpHash, relayErr := userOp.Hash(utils.FlagTrustedOpHash(dAppConfig.CallConfig))
+	userOpHash, relayErr := userOp.Hash(utils.FlagTrustedOpHash(dAppConfig.CallConfig), &am.config.Relay.Eip712.Domain)
 	if relayErr != nil {
 		log.Info("failed to compute user operation hash", "err", relayErr.Message)
 		return common.Hash{}, nil, relayErr
 	}
 
-	if relayErr := userOp.Validate(am.ethClient, am.config.Contracts.Atlas, am.atlasDomainSeparator, am.config.Relay.Gas.MaxPerUserOperation); relayErr != nil {
+	if relayErr := userOp.Validate(am.ethClient, am.config.Contracts.Atlas, &am.config.Relay.Eip712.Domain, am.config.Relay.Gas.MaxPerUserOperation); relayErr != nil {
 		log.Info("invalid user operation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, nil, relayErr
 	}
@@ -170,7 +167,7 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) (comm
 		return common.Hash{}, ErrAuctionNotFound
 	}
 
-	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, am.atlasDomainSeparator, auction.solverGasLimit)
+	relayErr := solverOp.Validate(auction.userOp, am.config.Contracts.Atlas, &am.config.Relay.Eip712.Domain, auction.solverGasLimit)
 	if relayErr != nil {
 		log.Info("invalid solver operation", "err", relayErr.Message, "userOpHash", auction.userOpHash.Hex())
 		return common.Hash{}, relayErr
@@ -193,7 +190,7 @@ func (am *Manager) NewSolverOperation(solverOp *operation.SolverOperation) (comm
 		Score:           am.reputationScore(solverOp.From),
 	}
 
-	solverOpHash, relayErr := auction.addSolverOp(solverOpWithScore)
+	solverOpHash, relayErr := auction.addSolverOp(solverOpWithScore, &am.config.Relay.Eip712.Domain)
 	if relayErr != nil {
 		return common.Hash{}, relayErr
 	}
@@ -268,7 +265,11 @@ func (am *Manager) simulateSolverOperation(userOp *operation.UserOperation, user
 		return nil
 	}
 
-	dAppOp := operation.GenerateSimulationDAppOperation(userOpHash, userOp)
+	dAppOp, err := operation.GenerateSimulationDAppOperation(userOpHash, userOp, []*operation.SolverOperation{solverOp})
+	if err != nil {
+		log.Info("failed to generate simulation dapp operation", "err", err, "userOpHash", userOpHash.Hex())
+		return relayerror.ErrServerInternal
+	}
 
 	pData, err := contract.SimulatorAbi.Pack("simSolverCall", *userOp, *solverOp, *dAppOp)
 	if err != nil {

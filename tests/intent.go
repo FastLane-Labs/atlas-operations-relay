@@ -4,21 +4,18 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/FastLane-Labs/atlas-operations-relay/contract/swapIntentDappControl"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 var (
-	swapIntentFuncSelector    = "83a6992a"
-	solverFulfillFuncSelector = "491274c5"
-
 	swapIntentSolType, _ = abi.NewType("tuple", "struct SwapIntent", []abi.ArgumentMarshaling{
 		{Name: "tokenUserBuys", Type: "address", InternalType: "address"},
 		{Name: "amountUserBuys", Type: "uint256", InternalType: "uint256"},
 		{Name: "tokenUserSells", Type: "address", InternalType: "address"},
 		{Name: "amountUserSells", Type: "uint256", InternalType: "uint256"},
 		{Name: "auctionBaseCurrency", Type: "address", InternalType: "address"},
-		{Name: "solverMustReimburseGas", Type: "bool", InternalType: "bool"},
 		{
 			Name:         "conditions",
 			Type:         "tuple[]",
@@ -41,13 +38,12 @@ type Condition struct {
 }
 
 type SwapIntent struct {
-	TokenUserBuys          common.Address
-	AmountUserBuys         *big.Int
-	TokenUserSells         common.Address
-	AmountUserSells        *big.Int
-	AuctionBaseCurrency    common.Address
-	SolverMustReimburseGas bool
-	Conditions             []Condition
+	TokenUserBuys       common.Address
+	AmountUserBuys      *big.Int
+	TokenUserSells      common.Address
+	AmountUserSells     *big.Int
+	AuctionBaseCurrency common.Address
+	Conditions          []Condition
 }
 
 func (i *SwapIntent) abiEncode() ([]byte, error) {
@@ -60,7 +56,17 @@ func (i *SwapIntent) abiEncodeWithSelector() ([]byte, error) {
 		return nil, err
 	}
 
-	selector := common.Hex2Bytes(swapIntentFuncSelector)
+	swapIntentDappControlAbi, err := swapIntentDappControl.SwapIntentDappControlMetaData.GetAbi()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get swapIntentDappControl ABI: %w", err)
+	}
+	methodName := "swap"
+	method, exists := swapIntentDappControlAbi.Methods[methodName]
+	if !exists {
+		return nil, fmt.Errorf("method %s not found in swapIntentDappControl ABI", methodName)
+	}
+	selector := method.ID
+
 	return append(selector, encoded...), nil
 }
 
@@ -82,25 +88,23 @@ func swapIntentAbiDecode(input []byte) (*SwapIntent, error) {
 	}
 
 	decoded_struct := unpacked[0].(struct {
-		TokenUserBuys          common.Address `json:"tokenUserBuys"`
-		AmountUserBuys         *big.Int       `json:"amountUserBuys"`
-		TokenUserSells         common.Address `json:"tokenUserSells"`
-		AmountUserSells        *big.Int       `json:"amountUserSells"`
-		AuctionBaseCurrency    common.Address `json:"auctionBaseCurrency"`
-		SolverMustReimburseGas bool           `json:"solverMustReimburseGas"`
-		Conditions             []struct {
+		TokenUserBuys       common.Address `json:"tokenUserBuys"`
+		AmountUserBuys      *big.Int       `json:"amountUserBuys"`
+		TokenUserSells      common.Address `json:"tokenUserSells"`
+		AmountUserSells     *big.Int       `json:"amountUserSells"`
+		AuctionBaseCurrency common.Address `json:"auctionBaseCurrency"`
+		Conditions          []struct {
 			Antecedent common.Address `json:"antecedent"`
 			Context    []uint8        `json:"context"`
 		} `json:"conditions"`
 	})
 
 	return &SwapIntent{
-		TokenUserBuys:          decoded_struct.TokenUserBuys,
-		AmountUserBuys:         decoded_struct.AmountUserBuys,
-		TokenUserSells:         decoded_struct.TokenUserSells,
-		AmountUserSells:        decoded_struct.AmountUserSells,
-		AuctionBaseCurrency:    decoded_struct.AuctionBaseCurrency,
-		SolverMustReimburseGas: decoded_struct.SolverMustReimburseGas,
-		Conditions:             make([]Condition, len(decoded_struct.Conditions)),
+		TokenUserBuys:       decoded_struct.TokenUserBuys,
+		AmountUserBuys:      decoded_struct.AmountUserBuys,
+		TokenUserSells:      decoded_struct.TokenUserSells,
+		AmountUserSells:     decoded_struct.AmountUserSells,
+		AuctionBaseCurrency: decoded_struct.AuctionBaseCurrency,
+		Conditions:          make([]Condition, len(decoded_struct.Conditions)),
 	}, nil
 }

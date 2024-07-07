@@ -176,12 +176,12 @@ func solveUserOperation(userOperationPartialRaw *operation.UserOperationPartialR
 		Signature:    nil,
 	}
 
-	proofHash, err := solverOp.ProofHash()
-	if err != nil {
-		panic(err)
+	solverOpHash, relayErr := solverOp.Hash(&conf.Relay.Eip712.Domain)
+	if relayErr != nil {
+		panic(relayErr)
 	}
 
-	solverOp.Signature, _ = utils.SignEip712Message(atlasDomainSeparator, proofHash, solverPk)
+	solverOp.Signature, _ = utils.SignMessage(solverOpHash.Bytes(), solverPk)
 
 	return solverOp
 }
@@ -197,7 +197,7 @@ func solverData(swapIntent *SwapIntent, executionEnvironment common.Address) ([]
 		return nil, fmt.Errorf("failed to pack inputs: %v", err)
 	}
 
-	return append(common.Hex2Bytes(solverFulfillFuncSelector), data...), nil
+	return append(method.ID, data...), nil
 }
 
 func getSolverWsConnection() (*websocket.Conn, *http.Response) {

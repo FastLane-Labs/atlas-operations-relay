@@ -3,11 +3,14 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math/big"
+	"math/rand"
 	"net/http"
 	"testing"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
+	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -76,12 +79,12 @@ func badSolverOpTest(t *testing.T, solveUserOpFunc solveUserOpFunc) {
 	go runSolver(true, solveUserOpFunc, solverDone)
 
 	//successful user operation
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(common.HexToAddress(fmt.Sprintf("0x%x", rand.Int63())))
 	if err := sendUserRequest(userOp); err != nil {
 		t.Fatal(err)
 	}
 
-	userOpHash, _ := userOp.Hash(false)
+	userOpHash, _ := userOp.Hash(utils.FlagTrustedOpHash(userOp.CallConfig), &conf.Relay.Eip712.Domain)
 	solverOps, err := retreiveSolverOps(userOpHash, true)
 	if err != nil {
 		t.Fatal(err)
@@ -95,25 +98,25 @@ func badSolverOpTest(t *testing.T, solveUserOpFunc solveUserOpFunc) {
 }
 
 func faultyUserOpBadSignature() *operation.UserOperation {
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(common.HexToAddress(fmt.Sprintf("0x%x", rand.Int63())))
 	userOp.Signature = []byte("bad signature")
 	return userOp
 }
 
 func faultyUserOpBadDeadline() *operation.UserOperation {
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(common.HexToAddress(fmt.Sprintf("0x%x", rand.Int63())))
 	userOp.Deadline = big.NewInt(0)
 	return userOp
 }
 
 func faultyUserOpGasTooHigh() *operation.UserOperation {
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(common.HexToAddress(fmt.Sprintf("0x%x", rand.Int63())))
 	userOp.MaxFeePerGas = big.NewInt(1000_000)
 	return userOp
 }
 
 func faultyUserOpBadData() *operation.UserOperation {
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(common.HexToAddress(fmt.Sprintf("0x%x", rand.Int63())))
 	userOp.Data = []byte("bad data")
 	return userOp
 }

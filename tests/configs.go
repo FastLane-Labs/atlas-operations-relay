@@ -5,13 +5,14 @@ import (
 
 	"github.com/FastLane-Labs/atlas-operations-relay/config"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
 var (
-	ethClient            *ethclient.Client
-	atlasDomainSeparator common.Hash
+	ethClient *ethclient.Client
 
 	chainId     int64 = 11155111 //sepolia
 	sendAtlasTx bool  = false    //true -> send tx to the network, false -> do everything apart from sending
@@ -21,8 +22,8 @@ var (
 
 	tokenA                = common.HexToAddress("0x7439E9Bb6D8a84dd3A23fe621A30F95403F87fB9")
 	tokenB                = common.HexToAddress("0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9")
-	swapIntentDAppControl = common.HexToAddress("0xe9c7bEAF3da67d3FB00708ADAE8ab62e578246d7")
-	simpleRfqSolver       = common.HexToAddress("0x2670c2366c889B4CF4813BAeA48b9cfe2B298998")
+	swapIntentDAppControl = common.HexToAddress("0x60d7B59c6743C25b29a7aEe6F5a37c07B1A6Cff3")
+	simpleRfqSolver       = common.HexToAddress("0x12f1D679c09A050c2b8259e4B1dE14e315F07822")
 
 	userPk, _ = crypto.ToECDSA(common.FromHex("0d3414024a8d727a824933d47460fd9ea5d65f88feec92761a476405cf2d5922"))
 	userEoa   = crypto.PubkeyToAddress(userPk.PublicKey) // 0xeA402251DA4365c12BF9A3C9d88029A04988A712
@@ -33,19 +34,33 @@ var (
 	bundlerPk, _ = crypto.ToECDSA(common.FromHex("586af44cb6f500bdcdbea0e4411916dfc4806e7df43504da5bdfe144dd78f895"))
 	bundlerEoa   = crypto.PubkeyToAddress(bundlerPk.PublicKey) // 0xEdB89106f2293ed2bAAbA1e8E844306412cB39Fe
 
+	// The governance account that deployed the dApp control contract is the same as the bundler.
+	// Separating variables for clarity.
+	governancePk  = bundlerPk
+	governanceEoa = bundlerEoa
+
 	conf = &config.Config{
 		Network: config.Network{
-			RpcUrl: "https://rpc.sepolia.org/",
+			ChainId: uint64(chainId),
+			RpcUrl:  "https://rpc.sepolia.org/",
 		},
 		Contracts: config.Contracts{
-			Atlas:             common.HexToAddress("0xab654945B45D32465f83bC8B1a13F075c89F7246"),
-			AtlasVerification: common.HexToAddress("0x95c8B9Cff6c3ff7E119B1D70C8E10c07D5160AD6"),
-			Simulator:         common.HexToAddress("0xa76a0CD24769241F890B322c39ABDd52aa962094"),
+			Atlas:             common.HexToAddress("0x1Be854EeA3D753db001aC7A1aaE7Eb30f9B1166a"),
+			AtlasVerification: common.HexToAddress("0x26Bb4e798116Bb01f26A47EDA2597814BDC18467"),
+			Simulator:         common.HexToAddress("0xCF9Db077FFC7Ae39210e00468bf94021adFb51a0"),
 		},
 		Relay: config.Relay{
 			Simulations: true,
 			Auction: config.Auction{
 				Duration: 5 * time.Second,
+			},
+			Eip712: config.Eip712{
+				Domain: apitypes.TypedDataDomain{
+					Name:              "AtlasVerification",
+					Version:           "1.0",
+					ChainId:           math.NewHexOrDecimal256(chainId),
+					VerifyingContract: "0x26Bb4e798116Bb01f26A47EDA2597814BDC18467",
+				},
 			},
 		},
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
 var (
@@ -18,17 +18,12 @@ var (
 	ErrSolverOpMaxFeePerGasTooLow  = relayerror.NewError(2102, "solver operation's maxFeePerGas must be equal or higher the user operation")
 	ErrSolverOpDeadlineTooLow      = relayerror.NewError(2103, "solver operation's deadline exceeded or lower than user operation's")
 	ErrSolverOpDAppControlMismatch = relayerror.NewError(2104, "solver operation's dApp control does not match the user operation's")
-	ErrSolverOpComputeProofHash    = relayerror.NewError(2105, "failed to compute solver proof hash")
 	ErrSolverOpSignatureInvalid    = relayerror.NewError(2106, "solver operation has invalid signature")
 	ErrSolverOpComputeHash         = relayerror.NewError(2107, "failed to compute solver operation hash")
 )
 
 var (
-	SOLVER_TYPE_HASH = crypto.Keccak256Hash([]byte("SolverOperation(address from,address to,uint256 value,uint256 gas,uint256 maxFeePerGas,uint256 deadline,address dapp,address control,bytes32 userOpHash,address bidToken,uint256 bidAmount,bytes32 data)"))
-)
-
-var (
-	solverOpSolType, _ = abi.NewType("tuple", "struct SolverOperation", []abi.ArgumentMarshaling{
+	solverOpStructArgs = []abi.ArgumentMarshaling{
 		{Name: "from", Type: "address", InternalType: "address"},
 		{Name: "to", Type: "address", InternalType: "address"},
 		{Name: "value", Type: "uint256", InternalType: "uint256"},
@@ -42,30 +37,17 @@ var (
 		{Name: "bidAmount", Type: "uint256", InternalType: "uint256"},
 		{Name: "data", Type: "bytes", InternalType: "bytes"},
 		{Name: "signature", Type: "bytes", InternalType: "bytes"},
-	})
+	}
 
-	solverProofHashSolType, _ = abi.NewType("tuple", "struct SolverProofHash", []abi.ArgumentMarshaling{
-		{Name: "solverTypeHash", Type: "bytes32", InternalType: "bytes32"},
-		{Name: "from", Type: "address", InternalType: "address"},
-		{Name: "to", Type: "address", InternalType: "address"},
-		{Name: "value", Type: "uint256", InternalType: "uint256"},
-		{Name: "gas", Type: "uint256", InternalType: "uint256"},
-		{Name: "maxFeePerGas", Type: "uint256", InternalType: "uint256"},
-		{Name: "deadline", Type: "uint256", InternalType: "uint256"},
-		{Name: "solver", Type: "address", InternalType: "address"},
-		{Name: "control", Type: "address", InternalType: "address"},
-		{Name: "userOpHash", Type: "bytes32", InternalType: "bytes32"},
-		{Name: "bidToken", Type: "address", InternalType: "address"},
-		{Name: "bidAmount", Type: "uint256", InternalType: "uint256"},
-		{Name: "data", Type: "bytes32", InternalType: "bytes32"},
-	})
+	solverOpSolType, _      = abi.NewType("tuple", "struct SolverOperation", solverOpStructArgs)
+	solverOpArraySolType, _ = abi.NewType("tuple[]", "struct SolverOperation[]", solverOpStructArgs)
 
 	solverOpArgs = abi.Arguments{
 		{Type: solverOpSolType, Name: "solverOperation"},
 	}
 
-	solverProofHashArgs = abi.Arguments{
-		{Type: solverProofHashSolType, Name: "proofHash"},
+	solverOpArrayArgs = abi.Arguments{
+		{Type: solverOpArraySolType, Name: "solverOperations"},
 	}
 )
 
@@ -168,7 +150,7 @@ func (s *SolverOperation) EncodeToRaw() *SolverOperationRaw {
 	}
 }
 
-func (s *SolverOperation) Validate(userOperation *UserOperation, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit uint32) *relayerror.Error {
+func (s *SolverOperation) Validate(userOperation *UserOperation, atlas common.Address, eip712Domain *apitypes.TypedDataDomain, gasLimit uint32) *relayerror.Error {
 	if s.To != atlas {
 		return ErrSolverOpInvalidToField
 	}
@@ -189,7 +171,7 @@ func (s *SolverOperation) Validate(userOperation *UserOperation, atlas common.Ad
 		return ErrSolverOpDAppControlMismatch
 	}
 
-	relayErr := s.checkSignature(atlasDomainSeparator)
+	relayErr := s.checkSignature(eip712Domain)
 	if relayErr != nil {
 		return relayErr
 	}
@@ -197,69 +179,80 @@ func (s *SolverOperation) Validate(userOperation *UserOperation, atlas common.Ad
 	return nil
 }
 
-func (s *SolverOperation) Hash() (common.Hash, *relayerror.Error) {
-	packed, err := s.AbiEncode()
+func (s *SolverOperation) Hash(eip712Domain *apitypes.TypedDataDomain) (common.Hash, *relayerror.Error) {
+	hash, _, err := apitypes.TypedDataAndHash(apitypes.TypedData{
+		Types:       s.toTypedDataTypes(),
+		PrimaryType: "SolverOperation",
+		Domain:      *eip712Domain,
+		Message:     s.toTypedDataMessage(),
+	})
+
 	if err != nil {
 		return common.Hash{}, ErrSolverOpComputeHash.AddError(err)
 	}
-	return crypto.Keccak256Hash(packed), nil
+
+	return common.BytesToHash(hash), nil
 }
 
 func (s *SolverOperation) AbiEncode() ([]byte, error) {
 	return solverOpArgs.Pack(&s)
 }
 
-func (s *SolverOperation) ProofHash() (common.Hash, error) {
-	proofHash := struct {
-		SolverTypeHash common.Hash
-		From           common.Address
-		To             common.Address
-		Value          *big.Int
-		Gas            *big.Int
-		MaxFeePerGas   *big.Int
-		Deadline       *big.Int
-		Solver         common.Address
-		Control        common.Address
-		UserOpHash     common.Hash
-		BidToken       common.Address
-		BidAmount      *big.Int
-		Data           common.Hash
-	}{
-		SOLVER_TYPE_HASH,
-		s.From,
-		s.To,
-		s.Value,
-		s.Gas,
-		s.MaxFeePerGas,
-		s.Deadline,
-		s.Solver,
-		s.Control,
-		s.UserOpHash,
-		s.BidToken,
-		s.BidAmount,
-		crypto.Keccak256Hash(s.Data),
+func (s *SolverOperation) toTypedDataTypes() apitypes.Types {
+	return apitypes.Types{
+		"EIP712Domain": []apitypes.Type{
+			{Name: "name", Type: "string"},
+			{Name: "version", Type: "string"},
+			{Name: "chainId", Type: "uint256"},
+			{Name: "verifyingContract", Type: "address"},
+		},
+		"SolverOperation": []apitypes.Type{
+			{Name: "from", Type: "address"},
+			{Name: "to", Type: "address"},
+			{Name: "value", Type: "uint256"},
+			{Name: "gas", Type: "uint256"},
+			{Name: "maxFeePerGas", Type: "uint256"},
+			{Name: "deadline", Type: "uint256"},
+			{Name: "solver", Type: "address"},
+			{Name: "control", Type: "address"},
+			{Name: "userOpHash", Type: "bytes32"},
+			{Name: "bidToken", Type: "address"},
+			{Name: "bidAmount", Type: "uint256"},
+			{Name: "data", Type: "bytes"},
+		},
 	}
-
-	packed, err := solverProofHashArgs.Pack(&proofHash)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	return crypto.Keccak256Hash(packed), nil
 }
 
-func (s *SolverOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
+func (s *SolverOperation) toTypedDataMessage() apitypes.TypedDataMessage {
+	return apitypes.TypedDataMessage{
+		"from":         s.From.Hex(),
+		"to":           s.To.Hex(),
+		"value":        new(big.Int).Set(s.Value),
+		"gas":          new(big.Int).Set(s.Gas),
+		"maxFeePerGas": new(big.Int).Set(s.MaxFeePerGas),
+		"deadline":     new(big.Int).Set(s.Deadline),
+		"solver":       s.Solver.Hex(),
+		"control":      s.Control.Hex(),
+		"userOpHash":   s.UserOpHash.Hex(),
+		"bidToken":     s.BidToken.Hex(),
+		"bidAmount":    new(big.Int).Set(s.BidAmount),
+		"data":         s.Data,
+	}
+}
+
+func (s *SolverOperation) checkSignature(eip712Domain *apitypes.TypedDataDomain) *relayerror.Error {
 	if len(s.Signature) != 65 {
 		log.Info("invalid solver operation signature length", "length", len(s.Signature))
 		return ErrSolverOpSignatureInvalid
 	}
 
-	proofHash, err := s.ProofHash()
-	if err != nil {
-		log.Info("failed to compute solver proof hash", "err", err)
-		return ErrSolverOpComputeProofHash.AddError(err)
+	solverOpHash, relayErr := s.Hash(eip712Domain)
+	if relayErr != nil {
+		log.Info("failed to compute solver operation hash", "err", relayErr.Message)
+		return relayErr
 	}
 
-	signer, err := utils.RecoverEip712Signer(domainSeparator, proofHash, s.Signature)
+	signer, err := utils.RecoverSigner(solverOpHash.Bytes(), s.Signature)
 	if err != nil {
 		log.Info("failed to recover solver public key", "err", err)
 		return ErrSolverOpSignatureInvalid.AddError(err)
@@ -271,4 +264,15 @@ func (s *SolverOperation) checkSignature(domainSeparator common.Hash) *relayerro
 	}
 
 	return nil
+}
+
+// Array of solver operations
+type SolverOperations []*SolverOperation
+
+func (s SolverOperations) AbiEncode() ([]byte, error) {
+	solverOps := make([]SolverOperation, len(s))
+	for i, solverOp := range s {
+		solverOps[i] = *solverOp
+	}
+	return solverOpArrayArgs.Pack(solverOps)
 }

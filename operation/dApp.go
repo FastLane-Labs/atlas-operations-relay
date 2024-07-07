@@ -1,15 +1,15 @@
 package operation
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/FastLane-Labs/atlas-operations-relay/utils"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
 var (
@@ -19,33 +19,9 @@ var (
 	ErrDAppOpDAppControlMismatch        = relayerror.NewError(2203, "dApp operation's dApp control does not match the user operation's")
 	ErrDAppOpUserOpHashMismatch         = relayerror.NewError(2204, "dApp operation's user operation hash does not match the user operation's")
 	ErrDAppOpInvalidCallChainHash       = relayerror.NewError(2205, "dApp operation's call chain hash is invalid")
-	ErrDAppOpComputeProofHash           = relayerror.NewError(2206, "failed to compute dApp proof hash")
 	ErrDappOpSignatureInvalid           = relayerror.NewError(2207, "dApp operation has invalid signature")
 	ErrDAppOpGasLimitExceeded           = relayerror.NewError(2208, "dApp operation's gas limit exceeded")
-)
-
-var (
-	DAPP_TYPE_HASH = crypto.Keccak256Hash([]byte("DAppApproval(address from,address to,uint256 value,uint256 gas,uint256 nonce,uint256 deadline,address control,address bundler,bytes32 userOpHash,bytes32 callChainHash)"))
-)
-
-var (
-	dAppProofHashSolType, _ = abi.NewType("tuple", "struct DappProofHash", []abi.ArgumentMarshaling{
-		{Name: "dAppTypeHash", Type: "bytes32", InternalType: "bytes32"},
-		{Name: "from", Type: "address", InternalType: "address"},
-		{Name: "to", Type: "address", InternalType: "address"},
-		{Name: "value", Type: "uint256", InternalType: "uint256"},
-		{Name: "gas", Type: "uint256", InternalType: "uint256"},
-		{Name: "nonce", Type: "uint256", InternalType: "uint256"},
-		{Name: "deadline", Type: "uint256", InternalType: "uint256"},
-		{Name: "control", Type: "address", InternalType: "address"},
-		{Name: "bundler", Type: "address", InternalType: "address"},
-		{Name: "userOpHash", Type: "bytes32", InternalType: "bytes32"},
-		{Name: "callChainHash", Type: "bytes32", InternalType: "bytes32"},
-	})
-
-	dAppProofHashArgs = abi.Arguments{
-		{Type: dAppProofHashSolType, Name: "proofHash"},
-	}
+	ErrDAppOpComputeHash                = relayerror.NewError(2209, "failed to compute dApp operation hash")
 )
 
 // External representation of a dApp operation,
@@ -53,8 +29,6 @@ var (
 type DAppOperationRaw struct {
 	From          common.Address `json:"from" validate:"required"`
 	To            common.Address `json:"to" validate:"required"`
-	Value         *hexutil.Big   `json:"value" validate:"required"`
-	Gas           *hexutil.Big   `json:"gas" validate:"required"`
 	Nonce         *hexutil.Big   `json:"nonce" validate:"required"`
 	Deadline      *hexutil.Big   `json:"deadline" validate:"required"`
 	Control       common.Address `json:"control" validate:"required"`
@@ -68,8 +42,6 @@ func (d *DAppOperationRaw) Decode() *DAppOperation {
 	return &DAppOperation{
 		From:          d.From,
 		To:            d.To,
-		Value:         d.Value.ToInt(),
-		Gas:           d.Gas.ToInt(),
 		Nonce:         d.Nonce.ToInt(),
 		Deadline:      d.Deadline.ToInt(),
 		Control:       d.Control,
@@ -84,8 +56,6 @@ func (d *DAppOperationRaw) Decode() *DAppOperation {
 type DAppOperation struct {
 	From          common.Address
 	To            common.Address
-	Value         *big.Int
-	Gas           *big.Int
 	Nonce         *big.Int
 	Deadline      *big.Int
 	Control       common.Address
@@ -95,28 +65,33 @@ type DAppOperation struct {
 	Signature     []byte
 }
 
-func GenerateSimulationDAppOperation(userOpHash common.Hash, userOp *UserOperation) *DAppOperation {
-	return &DAppOperation{
-		From:          common.HexToAddress("0x0"),
-		To:            common.HexToAddress("0x0"),
-		Value:         big.NewInt(0),
-		Gas:           big.NewInt(100000),
+func GenerateSimulationDAppOperation(userOpHash common.Hash, userOp *UserOperation, solverOps []*SolverOperation) (*DAppOperation, error) {
+	dAppOp := &DAppOperation{
+		From:          common.Address{},
+		To:            userOp.To,
 		Nonce:         big.NewInt(0),
 		Deadline:      userOp.Deadline,
 		Control:       userOp.Control,
-		Bundler:       common.HexToAddress("0x0"),
+		Bundler:       common.Address{},
 		UserOpHash:    userOpHash,
-		CallChainHash: common.HexToHash("0x0"),
+		CallChainHash: common.Hash{},
 		Signature:     []byte(""),
 	}
+
+	if utils.FlagVerifyCallChainHash(userOp.CallConfig) {
+		callChainHash, err := (&BundleOperations{UserOperation: userOp, SolverOperations: solverOps}).CallChainHash(userOp.CallConfig, userOp.Control)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute call chain hash: %w", err)
+		}
+		dAppOp.CallChainHash = callChainHash
+	}
+	return dAppOp, nil
 }
 
 func (d *DAppOperation) EncodeToRaw() *DAppOperationRaw {
 	return &DAppOperationRaw{
 		From:          d.From,
 		To:            d.To,
-		Value:         (*hexutil.Big)(d.Value),
-		Gas:           (*hexutil.Big)(d.Gas),
 		Nonce:         (*hexutil.Big)(d.Nonce),
 		Deadline:      (*hexutil.Big)(d.Deadline),
 		Control:       d.Control,
@@ -127,17 +102,13 @@ func (d *DAppOperation) EncodeToRaw() *DAppOperationRaw {
 	}
 }
 
-func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, callChainHash common.Hash, atlas common.Address, atlasDomainSeparator common.Hash, gasLimit *big.Int) *relayerror.Error {
+func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, callChainHash common.Hash, atlas common.Address, eip712Domain *apitypes.TypedDataDomain) *relayerror.Error {
 	if userOp.SessionKey != (common.Address{}) && d.From != userOp.SessionKey {
 		return ErrDAppOpFromDoesNotMatchSessionKey
 	}
 
 	if d.To != atlas {
 		return ErrDAppOpInvalidToField
-	}
-
-	if d.Gas.Cmp(gasLimit) > 0 {
-		return ErrDAppOpGasLimitExceeded
 	}
 
 	if d.Deadline.Cmp(userOp.Deadline) < 0 {
@@ -157,7 +128,7 @@ func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, 
 		return ErrDAppOpInvalidCallChainHash
 	}
 
-	relayErr := d.checkSignature(atlasDomainSeparator)
+	relayErr := d.checkSignature(eip712Domain)
 	if relayErr != nil {
 		return relayErr
 	}
@@ -165,53 +136,68 @@ func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, 
 	return nil
 }
 
-func (d *DAppOperation) ProofHash() (common.Hash, error) {
-	proofHash := struct {
-		DAppTypeHash  common.Hash
-		From          common.Address
-		To            common.Address
-		Value         *big.Int
-		Gas           *big.Int
-		Nonce         *big.Int
-		Deadline      *big.Int
-		Control       common.Address
-		Bundler       common.Address
-		UserOpHash    common.Hash
-		CallChainHash common.Hash
-	}{
-		DAPP_TYPE_HASH,
-		d.From,
-		d.To,
-		d.Value,
-		d.Gas,
-		d.Nonce,
-		d.Deadline,
-		d.Control,
-		d.Bundler,
-		d.UserOpHash,
-		d.CallChainHash,
+func (d *DAppOperation) Hash(eip712Domain *apitypes.TypedDataDomain) (common.Hash, *relayerror.Error) {
+	hash, _, err := apitypes.TypedDataAndHash(apitypes.TypedData{
+		Types:       d.toTypedDataTypes(),
+		PrimaryType: "DAppOperation",
+		Domain:      *eip712Domain,
+		Message:     d.toTypedDataMessage(),
+	})
+
+	if err != nil {
+		return common.Hash{}, ErrDAppOpComputeHash.AddError(err)
 	}
 
-	packed, err := dAppProofHashArgs.Pack(&proofHash)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	return crypto.Keccak256Hash(packed), nil
+	return common.BytesToHash(hash), nil
 }
 
-func (d *DAppOperation) checkSignature(domainSeparator common.Hash) *relayerror.Error {
+func (d *DAppOperation) toTypedDataTypes() apitypes.Types {
+	return apitypes.Types{
+		"EIP712Domain": []apitypes.Type{
+			{Name: "name", Type: "string"},
+			{Name: "version", Type: "string"},
+			{Name: "chainId", Type: "uint256"},
+			{Name: "verifyingContract", Type: "address"},
+		},
+		"DAppOperation": []apitypes.Type{
+			{Name: "from", Type: "address"},
+			{Name: "to", Type: "address"},
+			{Name: "nonce", Type: "uint256"},
+			{Name: "deadline", Type: "uint256"},
+			{Name: "control", Type: "address"},
+			{Name: "bundler", Type: "address"},
+			{Name: "userOpHash", Type: "bytes32"},
+			{Name: "callChainHash", Type: "bytes32"},
+		},
+	}
+}
+
+func (d *DAppOperation) toTypedDataMessage() apitypes.TypedDataMessage {
+	return apitypes.TypedDataMessage{
+		"from":          d.From.Hex(),
+		"to":            d.To.Hex(),
+		"nonce":         new(big.Int).Set(d.Nonce),
+		"deadline":      new(big.Int).Set(d.Deadline),
+		"control":       d.Control.Hex(),
+		"bundler":       d.Bundler.Hex(),
+		"userOpHash":    d.UserOpHash.Hex(),
+		"callChainHash": d.CallChainHash.Hex(),
+	}
+}
+
+func (d *DAppOperation) checkSignature(eip712Domain *apitypes.TypedDataDomain) *relayerror.Error {
 	if len(d.Signature) != 65 {
 		log.Info("invalid dappOp signature length", "length", len(d.Signature))
 		return ErrDappOpSignatureInvalid
 	}
 
-	proofHash, err := d.ProofHash()
-	if err != nil {
-		log.Info("failed to compute dApp proof hash", "err", err)
-		return ErrDAppOpComputeProofHash.AddError(err)
+	dAppOpHash, relayErr := d.Hash(eip712Domain)
+	if relayErr != nil {
+		log.Info("failed to compute dApp operation hash", "err", relayErr.Message)
+		return relayErr
 	}
 
-	signer, err := utils.RecoverEip712Signer(domainSeparator, proofHash, d.Signature)
+	signer, err := utils.RecoverSigner(dAppOpHash.Bytes(), d.Signature)
 	if err != nil {
 		log.Info("failed to recover dApp public key", "err", err)
 		return ErrDappOpSignatureInvalid.AddError(err)

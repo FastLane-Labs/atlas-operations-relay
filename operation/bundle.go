@@ -3,15 +3,14 @@ package operation
 import (
 	"math/big"
 
-	"github.com/FastLane-Labs/atlas-operations-relay/contract"
 	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/log"
 	"github.com/FastLane-Labs/atlas-operations-relay/relayerror"
 	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
 // External representation of a bundle of operations,
@@ -41,7 +40,7 @@ func (args *BundleOperationsRaw) Decode() *BundleOperations {
 // Internal representation of a bundle of operations
 type BundleOperations struct {
 	UserOperation    *UserOperation
-	SolverOperations []*SolverOperation
+	SolverOperations SolverOperations
 	DAppOperation    *DAppOperation
 }
 
@@ -58,9 +57,9 @@ func (b *BundleOperations) EncodeToRaw() *BundleOperationsRaw {
 	}
 }
 
-func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash common.Hash, atlas common.Address, atlasDomainSeparator common.Hash, userOpGasLimit *big.Int, dAppOpGasLimit *big.Int, dAppConfig *dAppControl.DAppConfig) *relayerror.Error {
+func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash common.Hash, atlas common.Address, eip712Domain *apitypes.TypedDataDomain, userOpGasLimit *big.Int, dAppConfig *dAppControl.DAppConfig) *relayerror.Error {
 	// Re-validate user operation
-	if relayErr := b.UserOperation.Validate(ethClient, atlas, atlasDomainSeparator, userOpGasLimit); relayErr != nil {
+	if relayErr := b.UserOperation.Validate(ethClient, atlas, eip712Domain, userOpGasLimit); relayErr != nil {
 		return relayErr
 	}
 
@@ -77,7 +76,7 @@ func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash comm
 		}
 	}
 
-	if relayErr := b.DAppOperation.Validate(userOpHash, b.UserOperation, callChainHash, atlas, atlasDomainSeparator, dAppOpGasLimit); relayErr != nil {
+	if relayErr := b.DAppOperation.Validate(userOpHash, b.UserOperation, callChainHash, atlas, eip712Domain); relayErr != nil {
 		return relayErr
 	}
 
@@ -85,23 +84,10 @@ func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash comm
 }
 
 func (b *BundleOperations) CallChainHash(callConfig uint32, dAppControl common.Address) (common.Hash, error) {
-	counter := big.NewInt(0)
-	var callSequenceHash common.Hash
+	callSequence := []byte{}
 
 	if utils.FlagRequirePreOps(callConfig) {
-		preOpsEncoded, err := contract.DappControlAbi.Pack("preOpsCall", b.UserOperation)
-		if err != nil {
-			return common.Hash{}, err
-		}
-
-		callSequenceHash = crypto.Keccak256Hash(
-			callSequenceHash.Bytes(),
-			dAppControl.Bytes(),
-			preOpsEncoded,
-			math.U256Bytes(counter),
-		)
-
-		counter.Add(counter, common.Big1)
+		callSequence = append(callSequence, dAppControl.Bytes()...)
 	}
 
 	userOpAbiEncoded, err := b.UserOperation.AbiEncode()
@@ -109,28 +95,13 @@ func (b *BundleOperations) CallChainHash(callConfig uint32, dAppControl common.A
 		return common.Hash{}, err
 	}
 
-	callSequenceHash = crypto.Keccak256Hash(
-		callSequenceHash.Bytes(),
-		userOpAbiEncoded,
-		math.U256Bytes(counter),
-	)
-
-	counter.Add(counter, common.Big1)
-
-	for _, solverOp := range b.SolverOperations {
-		solverOpAbiEncoded, err := solverOp.AbiEncode()
-		if err != nil {
-			return common.Hash{}, err
-		}
-
-		callSequenceHash = crypto.Keccak256Hash(
-			callSequenceHash.Bytes(),
-			solverOpAbiEncoded,
-			math.U256Bytes(counter),
-		)
-
-		counter.Add(counter, common.Big1)
+	solverOpsAbiEncoded, err := b.SolverOperations.AbiEncode()
+	if err != nil {
+		return common.Hash{}, err
 	}
 
-	return callSequenceHash, nil
+	callSequence = append(callSequence, userOpAbiEncoded...)
+	callSequence = append(callSequence, solverOpsAbiEncoded...)
+
+	return crypto.Keccak256Hash(callSequence), nil
 }
