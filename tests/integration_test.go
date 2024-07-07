@@ -2,11 +2,14 @@ package tests
 
 import (
 	"encoding/json"
+	"fmt"
+	"math/rand"
 	"os"
 	"testing"
 
 	"github.com/FastLane-Labs/atlas-operations-relay/core"
 	"github.com/FastLane-Labs/atlas-operations-relay/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -37,7 +40,7 @@ func TestIntegration(t *testing.T) {
 	go runBundler(bundlerPk, bundlerReceiveChan, bundlerSendChan)
 
 	//send user request
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(governanceEoa)
 	err := sendUserRequest(userOp)
 	if err != nil {
 		t.Fatal(err)
@@ -96,14 +99,14 @@ func TestSolverHttp(t *testing.T) {
 	go runSolver(false, solveUserOperation, make(chan struct{}))
 
 	//send user request
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(common.HexToAddress(fmt.Sprintf("0x%x", rand.Int63())))
 	err := sendUserRequest(userOp)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	//user requests solver solutions
-	userOpHash, _ := userOp.Hash(false, &conf.Relay.Eip712.Domain)
+	userOpHash, _ := userOp.Hash(utils.FlagTrustedOpHash(userOp.CallConfig), &conf.Relay.Eip712.Domain)
 	solverOps, err := retreiveSolverOps(userOpHash, true)
 	if err != nil {
 		t.Fatal(err)

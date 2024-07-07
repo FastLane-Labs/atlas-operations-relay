@@ -562,7 +562,6 @@ func (s *Server) NewSignatoryRequest(userOpHash common.Hash, userOp *operation.U
 		signatories, relayErr = s.getDAppSignatories(userOp.Control)
 		if relayErr != nil {
 			log.Info("failed to get dApp signatories", "control", userOp.Control.Hex(), "err", relayErr.Message)
-			registerBundleError(userOpHash, relayerror.ErrServerInternal)
 			return
 		}
 	}
@@ -579,7 +578,6 @@ func (s *Server) NewSignatoryRequest(userOpHash common.Hash, userOp *operation.U
 
 	if len(signingRequest.candidatesSignatories) == 0 {
 		log.Info("no online signatory", "control", userOp.Control.Hex())
-		registerBundleError(userOpHash, ErrSignatoryOffline)
 		return
 	}
 

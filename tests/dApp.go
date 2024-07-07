@@ -27,7 +27,7 @@ func newDappOperation(userOp *operation.UserOperation, solverOps []*operation.So
 	}
 
 	dAppOp := &operation.DAppOperation{
-		From:          bundlerEoa,
+		From:          governanceEoa,
 		To:            conf.Contracts.Atlas,
 		Nonce:         big.NewInt(0),
 		Deadline:      userOp.Deadline,
@@ -43,7 +43,7 @@ func newDappOperation(userOp *operation.UserOperation, solverOps []*operation.So
 		panic(relayErr)
 	}
 
-	dAppOp.Signature, _ = utils.SignMessage(dAppOpHash.Bytes(), bundlerPk)
+	dAppOp.Signature, _ = utils.SignMessage(dAppOpHash.Bytes(), governancePk)
 
 	return dAppOp
 }

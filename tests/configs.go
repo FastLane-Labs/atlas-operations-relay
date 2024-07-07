@@ -34,6 +34,11 @@ var (
 	bundlerPk, _ = crypto.ToECDSA(common.FromHex("586af44cb6f500bdcdbea0e4411916dfc4806e7df43504da5bdfe144dd78f895"))
 	bundlerEoa   = crypto.PubkeyToAddress(bundlerPk.PublicKey) // 0xEdB89106f2293ed2bAAbA1e8E844306412cB39Fe
 
+	// The governance account that deployed the dApp control contract is the same as the bundler.
+	// Separating variables for clarity.
+	governancePk  = bundlerPk
+	governanceEoa = bundlerEoa
+
 	conf = &config.Config{
 		Network: config.Network{
 			ChainId: 11155111,

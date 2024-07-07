@@ -3,7 +3,9 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math/big"
+	"math/rand"
 	"net/http"
 	"testing"
 
@@ -77,7 +79,7 @@ func badSolverOpTest(t *testing.T, solveUserOpFunc solveUserOpFunc) {
 	go runSolver(true, solveUserOpFunc, solverDone)
 
 	//successful user operation
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(common.HexToAddress(fmt.Sprintf("0x%x", rand.Int63())))
 	if err := sendUserRequest(userOp); err != nil {
 		t.Fatal(err)
 	}
@@ -96,25 +98,25 @@ func badSolverOpTest(t *testing.T, solveUserOpFunc solveUserOpFunc) {
 }
 
 func faultyUserOpBadSignature() *operation.UserOperation {
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(common.HexToAddress(fmt.Sprintf("0x%x", rand.Int63())))
 	userOp.Signature = []byte("bad signature")
 	return userOp
 }
 
 func faultyUserOpBadDeadline() *operation.UserOperation {
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(common.HexToAddress(fmt.Sprintf("0x%x", rand.Int63())))
 	userOp.Deadline = big.NewInt(0)
 	return userOp
 }
 
 func faultyUserOpGasTooHigh() *operation.UserOperation {
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(common.HexToAddress(fmt.Sprintf("0x%x", rand.Int63())))
 	userOp.MaxFeePerGas = big.NewInt(1000_000)
 	return userOp
 }
 
 func faultyUserOpBadData() *operation.UserOperation {
-	userOp := newDemoUserOperation()
+	userOp := newDemoUserOperation(common.HexToAddress(fmt.Sprintf("0x%x", rand.Int63())))
 	userOp.Data = []byte("bad data")
 	return userOp
 }

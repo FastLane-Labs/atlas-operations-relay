@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"math/big"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -31,7 +30,7 @@ func newDemoSwapIntent() *SwapIntent {
 	}
 }
 
-func newDemoUserOperation() *operation.UserOperation {
+func newDemoUserOperation(sessionKey common.Address) *operation.UserOperation {
 	currentBlock, err := ethClient.BlockNumber(context.Background())
 	if err != nil {
 		panic(err)
@@ -65,7 +64,7 @@ func newDemoUserOperation() *operation.UserOperation {
 	userOp := &operation.UserOperation{
 		From:         userEoa,
 		To:           conf.Contracts.Atlas,
-		Deadline:     big.NewInt(int64(currentBlock) + 100 + rand.Int63n(1000)),
+		Deadline:     big.NewInt(int64(currentBlock) + 1000),
 		Gas:          big.NewInt(100000),
 		Nonce:        nonce,
 		MaxFeePerGas: big.NewInt(150e9),
@@ -73,7 +72,7 @@ func newDemoUserOperation() *operation.UserOperation {
 		Dapp:         swapIntentDAppControl,
 		Control:      swapIntentDAppControl,
 		CallConfig:   callConfig,
-		SessionKey:   bundlerEoa,
+		SessionKey:   sessionKey,
 		Data:         data,
 		Signature:    nil,
 	}
