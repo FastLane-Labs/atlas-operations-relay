@@ -85,7 +85,7 @@ func (bm *Manager) NewBundle(bundleOps *operation.BundleOperations) (common.Hash
 		return common.Hash{}, nil, auction.ErrAuctionOngoing
 	}
 
-	relayErr = bundleOps.Validate(bm.ethClient, userOpHash, bm.config.Contracts.Atlas, &bm.config.Relay.Eip712.Domain, bm.config.Relay.Gas.MaxPerUserOperation, bm.config.Relay.Gas.MaxPerDAppOperation, dAppConfig)
+	relayErr = bundleOps.Validate(bm.ethClient, userOpHash, bm.config.Contracts.Atlas, &bm.config.Relay.Eip712.Domain, bm.config.Relay.Gas.MaxPerUserOperation, dAppConfig)
 	if relayErr != nil {
 		log.Info("invalid dApp operation", "err", relayErr.Message, "userOpHash", userOpHash.Hex())
 		return common.Hash{}, nil, relayErr
@@ -133,7 +133,7 @@ func (bm *Manager) simulateBundle(bundleOps *operation.BundleOperations, userOpH
 			gasPrice.Set(solverOp.MaxFeePerGas)
 		}
 	}
-	gasLimit += bm.config.Relay.Gas.MaxPerDAppOperation.Uint64()
+
 	gasLimit += 1000000 // Add gas for validateCalls and others
 
 	_, err = bm.ethClient.CallContract(

@@ -102,7 +102,7 @@ func (d *DAppOperation) EncodeToRaw() *DAppOperationRaw {
 	}
 }
 
-func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, callChainHash common.Hash, atlas common.Address, eip712Domain *apitypes.TypedDataDomain, gasLimit *big.Int) *relayerror.Error {
+func (d *DAppOperation) Validate(userOpHash common.Hash, userOp *UserOperation, callChainHash common.Hash, atlas common.Address, eip712Domain *apitypes.TypedDataDomain) *relayerror.Error {
 	if userOp.SessionKey != (common.Address{}) && d.From != userOp.SessionKey {
 		return ErrDAppOpFromDoesNotMatchSessionKey
 	}

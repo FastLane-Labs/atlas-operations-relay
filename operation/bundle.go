@@ -57,7 +57,7 @@ func (b *BundleOperations) EncodeToRaw() *BundleOperationsRaw {
 	}
 }
 
-func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash common.Hash, atlas common.Address, eip712Domain *apitypes.TypedDataDomain, userOpGasLimit *big.Int, dAppOpGasLimit *big.Int, dAppConfig *dAppControl.DAppConfig) *relayerror.Error {
+func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash common.Hash, atlas common.Address, eip712Domain *apitypes.TypedDataDomain, userOpGasLimit *big.Int, dAppConfig *dAppControl.DAppConfig) *relayerror.Error {
 	// Re-validate user operation
 	if relayErr := b.UserOperation.Validate(ethClient, atlas, eip712Domain, userOpGasLimit); relayErr != nil {
 		return relayErr
@@ -76,7 +76,7 @@ func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash comm
 		}
 	}
 
-	if relayErr := b.DAppOperation.Validate(userOpHash, b.UserOperation, callChainHash, atlas, eip712Domain, dAppOpGasLimit); relayErr != nil {
+	if relayErr := b.DAppOperation.Validate(userOpHash, b.UserOperation, callChainHash, atlas, eip712Domain); relayErr != nil {
 		return relayErr
 	}
 

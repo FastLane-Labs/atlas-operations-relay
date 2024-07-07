@@ -15,8 +15,7 @@
       "max_solutions": 0
     },
     "gas": {
-      "max_per_user_operation": 0,
-      "max_per_dApp_operation": 0
+      "max_per_user_operation": 0
     }
   }
 }

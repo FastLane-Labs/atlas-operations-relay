@@ -41,7 +41,6 @@ type configJson struct {
 		} `json:"auction,omitempty"`
 		Gas struct {
 			MaxPerUserOperation uint64 `json:"max_per_user_operation,omitempty"`
-			MaxPerDAppOperation uint64 `json:"max_per_dApp_operation,omitempty"`
 		} `json:"gas,omitempty"`
 	} `json:"relay,omitempty"`
 }
@@ -64,7 +63,6 @@ type Auction struct {
 
 type Gas struct {
 	MaxPerUserOperation *big.Int
-	MaxPerDAppOperation *big.Int
 }
 
 type Eip712 struct {
@@ -148,7 +146,6 @@ func (c *Config) parseConfigFile() {
 
 	c.Relay.Auction.Duration = time.Duration(configJson.Relay.Auction.Duration * uint64(time.Millisecond))
 	c.Relay.Gas.MaxPerUserOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerUserOperation)
-	c.Relay.Gas.MaxPerDAppOperation = new(big.Int).SetUint64(configJson.Relay.Gas.MaxPerDAppOperation)
 }
 
 func (c *Config) parseFlags() {
@@ -161,7 +158,6 @@ func (c *Config) parseFlags() {
 	relayAuctionDurationPtr := flag.Uint64("relay.auction.duration", 0, "Auction duration in milliseconds")
 	relayAuctionMaxSolutionsPtr := flag.Uint64("relay.auction.max_solutions", 0, "Max solutions per auction")
 	relayGasMaxPerUserOperationPtr := flag.Uint64("relay.gas.max_per_user_operation", 0, "Max gas per user operation")
-	relayGasMaxPerDAppOperationPtr := flag.Uint64("relay.gas.max_per_dApp_operation", 0, "Max gas per dApp operation")
 	flag.Parse()
 
 	c.Network.ChainId = *chainIdPtr
@@ -203,10 +199,6 @@ func (c *Config) parseFlags() {
 
 	if *relayGasMaxPerUserOperationPtr > 0 {
 		c.Relay.Gas.MaxPerUserOperation = new(big.Int).SetUint64(*relayGasMaxPerUserOperationPtr)
-	}
-
-	if *relayGasMaxPerDAppOperationPtr > 0 {
-		c.Relay.Gas.MaxPerDAppOperation = new(big.Int).SetUint64(*relayGasMaxPerDAppOperationPtr)
 	}
 }
 
@@ -258,9 +250,5 @@ func (c *Config) Validate() {
 
 	if c.Relay.Gas.MaxPerUserOperation == nil || c.Relay.Gas.MaxPerUserOperation.Cmp(common.Big0) == 0 {
 		c.Relay.Gas.MaxPerUserOperation = new(big.Int).Set(defaultOperationGasLimit)
-	}
-
-	if c.Relay.Gas.MaxPerDAppOperation == nil || c.Relay.Gas.MaxPerDAppOperation.Cmp(common.Big0) == 0 {
-		c.Relay.Gas.MaxPerDAppOperation = new(big.Int).Set(defaultOperationGasLimit)
 	}
 }
