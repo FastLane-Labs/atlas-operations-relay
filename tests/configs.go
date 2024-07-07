@@ -41,7 +41,7 @@ var (
 
 	conf = &config.Config{
 		Network: config.Network{
-			ChainId: 11155111,
+			ChainId: uint64(chainId),
 			RpcUrl:  "https://rpc.sepolia.org/",
 		},
 		Contracts: config.Contracts{
