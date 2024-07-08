@@ -134,7 +134,7 @@ func (bm *Manager) simulateBundle(bundleOps *operation.BundleOperations, userOpH
 		}
 	}
 
-	gasLimit += 1000000 // Add gas for validateCalls and others
+	gasLimit += 2000000 // Add gas for validateCalls and others
 
 	_, err = bm.ethClient.CallContract(
 		context.Background(),
