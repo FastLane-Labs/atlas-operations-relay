@@ -29,7 +29,7 @@ var (
 )
 
 var (
-	ATLETH_BONDED_BALANCE_MULTI_REQ = big.NewInt(3)
+	ATLETH_BONDED_BALANCE_MULTI_REQ = big.NewInt(1)
 )
 
 type solverGasLimitFn func(common.Address) (uint32, *relayerror.Error)
