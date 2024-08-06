@@ -107,10 +107,11 @@ var (
 type newSolverOperationFn func(*operation.SolverOperation) (common.Hash, *relayerror.Error)
 type getSolverOperationStatusFn func(common.Hash, chan *auction.SolverStatus) (*auction.SolverStatus, *relayerror.Error)
 type getDAppSignatoriesFn func(common.Address) ([]common.Address, *relayerror.Error)
-type setAtlasTxHashFn func(common.Hash) *relayerror.Error
+type setAtlasTxHashFn func(common.Hash, bool) *relayerror.Error
 type setRelayErrorFn func(*relayerror.Error) *relayerror.Error
 type submitBundleOperationsFn func(*operation.BundleOperations) (string, *relayerror.Error)
 type registerBundleErrorFn func(common.Hash, *relayerror.Error)
+type notifyCompletionSubsFn func()
 
 type RequestParams struct {
 	Topic           string                         `json:"topic"`
@@ -253,11 +254,14 @@ func (c *Conn) isSignatory() bool {
 }
 
 type bundlingRequest struct {
-	candidatesBundlers map[common.Address]*Conn
-	offlineBundlers    map[common.Address]bool
-	setAtlasTxHash     setAtlasTxHashFn
-	setRelayError      setRelayErrorFn
-	doneChan           chan struct{}
+	multiBundler          bool
+	candidatesBundlers    map[common.Address]*Conn
+	offlineBundlers       map[common.Address]bool
+	setAtlasTxHash        setAtlasTxHashFn
+	setRelayError         setRelayErrorFn
+	notifyCompletionSubs  notifyCompletionSubsFn
+	doneChan              chan struct{}
+	multiBundlerDoneChans map[common.Address]chan struct{}
 }
 
 type SigningRequest struct {
@@ -441,13 +445,16 @@ func (s *Server) BroadcastUserOperationPartial(userOperationPartialRaw *operatio
 	s.publish(broadcast)
 }
 
-func (s *Server) ForwardBundle(bundleOps *operation.BundleOperations, setAtlasTxHash setAtlasTxHashFn, setRelayError setRelayErrorFn) *relayerror.Error {
+func (s *Server) ForwardBundle(bundleOps *operation.BundleOperations, setAtlasTxHash setAtlasTxHashFn, setRelayError setRelayErrorFn, notifyCompletionSubs notifyCompletionSubsFn) *relayerror.Error {
 	bundlingRequest := &bundlingRequest{
-		candidatesBundlers: make(map[common.Address]*Conn),
-		offlineBundlers:    make(map[common.Address]bool),
-		setAtlasTxHash:     setAtlasTxHash,
-		setRelayError:      setRelayError,
-		doneChan:           make(chan struct{}),
+		multiBundler:          bundleOps.DAppOperation.Bundler == (common.Address{}),
+		candidatesBundlers:    make(map[common.Address]*Conn),
+		offlineBundlers:       make(map[common.Address]bool),
+		setAtlasTxHash:        setAtlasTxHash,
+		setRelayError:         setRelayError,
+		notifyCompletionSubs:  notifyCompletionSubs,
+		multiBundlerDoneChans: make(map[common.Address]chan struct{}),
+		doneChan:              make(chan struct{}),
 	}
 
 	var firstCandidate *Conn
@@ -455,28 +462,35 @@ func (s *Server) ForwardBundle(bundleOps *operation.BundleOperations, setAtlasTx
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	primaryBundler, primaryOnline := s.bundlers[bundleOps.DAppOperation.Bundler]
-	if primaryOnline {
-		firstCandidate = primaryBundler
-		bundlingRequest.candidatesBundlers[bundleOps.DAppOperation.Bundler] = primaryBundler
-	}
-
-	// Retrieve dApp signatories, which are allowed bundlers
-	signatories, relayErr := s.getDAppSignatories(bundleOps.DAppOperation.Control)
-	if relayErr != nil {
-		log.Info("failed to get dApp signatories", "control", bundleOps.DAppOperation.Control.Hex(), "err", relayErr.Message)
-		if !primaryOnline {
-			return ErrBundlerOffline
+	if bundlingRequest.multiBundler {
+		for _, conn := range s.bundlers {
+			bundlingRequest.candidatesBundlers[conn.bundler] = conn
+			bundlingRequest.multiBundlerDoneChans[conn.bundler] = make(chan struct{})
 		}
-	}
-
-	for _, signatory := range signatories {
-		conn, online := s.bundlers[signatory]
-		if online {
-			bundlingRequest.candidatesBundlers[signatory] = conn
+	} else {
+		primaryBundler, primaryOnline := s.bundlers[bundleOps.DAppOperation.Bundler]
+		if primaryOnline {
+			firstCandidate = primaryBundler
+			bundlingRequest.candidatesBundlers[bundleOps.DAppOperation.Bundler] = primaryBundler
 		}
-		if firstCandidate == nil {
-			firstCandidate = conn
+
+		// Retrieve dApp signatories, which are allowed bundlers
+		signatories, relayErr := s.getDAppSignatories(bundleOps.DAppOperation.Control)
+		if relayErr != nil {
+			log.Info("failed to get dApp signatories", "control", bundleOps.DAppOperation.Control.Hex(), "err", relayErr.Message)
+			if !primaryOnline {
+				return ErrBundlerOffline
+			}
+		}
+
+		for _, signatory := range signatories {
+			conn, online := s.bundlers[signatory]
+			if online {
+				bundlingRequest.candidatesBundlers[signatory] = conn
+			}
+			if firstCandidate == nil {
+				firstCandidate = conn
+			}
 		}
 	}
 
@@ -511,12 +525,57 @@ func (s *Server) runBundlingRequest(id string, bundleReq *BundleRequest, firstCa
 		return nil
 	}
 
+	deleteBundlingRequest := func() {
+		s.mu.Lock()
+		delete(s.bundlingRequests, id)
+		s.mu.Unlock()
+	}
+
+	if bundlingRequest.multiBundler {
+		var (
+			responseReceived bool
+			wg               sync.WaitGroup
+		)
+
+		// Contacting all candidates simultaneously
+		for _, candidate := range bundlingRequest.candidatesBundlers {
+			wg.Add(1)
+			go func(candidate *Conn) {
+				if relayErr := candidate.send(bundleReq); relayErr != nil {
+					log.Info("failed to send bundle request", "bundler", nextCandidate.bundler.Hex(), "err", relayErr.Message)
+					return
+				}
+
+				select {
+				case <-time.After(BundlerTimeout):
+					log.Info("bundler timed out", "bundler", nextCandidate.bundler.Hex())
+
+				case <-bundlingRequest.multiBundlerDoneChans[candidate.bundler]:
+					// Got a response
+					responseReceived = true
+				}
+			}(candidate)
+		}
+
+		wg.Wait()
+
+		deleteBundlingRequest()
+
+		if !responseReceived {
+			// All candidates failed
+			bundlingRequest.setRelayError(ErrBundlerOffline)
+			return
+		}
+
+		bundlingRequest.notifyCompletionSubs()
+		return
+	}
+
+	// Not multi-bundler
 	for {
 		if nextCandidate == nil {
 			// No more candidates
-			s.mu.Lock()
-			delete(s.bundlingRequests, id)
-			s.mu.Unlock()
+			deleteBundlingRequest()
 			bundlingRequest.setRelayError(ErrBundlerOffline)
 			return
 		}
@@ -690,7 +749,7 @@ func (s *Server) processSolverMessage(conn *Conn, msg []byte) {
 	conn.send(resp)
 }
 
-func (s *Server) processBundlerMessage(msg []byte) {
+func (s *Server) processBundlerMessage(msg []byte, bundler common.Address) {
 	var resp *BundleResponse
 	if err := json.Unmarshal(msg, &resp); err != nil {
 		log.Info("failed to unmarshal bundler message", "err", err)
@@ -722,10 +781,19 @@ func (s *Server) processBundlerMessage(msg []byte) {
 		return
 	}
 
-	close(bundlingRequest.doneChan)
-	delete(s.bundlingRequests, resp.Id)
+	bundlingRequest.setAtlasTxHash(resp.Result, bundlingRequest.multiBundler)
 
-	bundlingRequest.setAtlasTxHash(resp.Result)
+	if bundlingRequest.multiBundler {
+		doneChan, exist := bundlingRequest.multiBundlerDoneChans[bundler]
+		if !exist {
+			log.Info("unexpected bundler response", "id", resp.Id, "bundler", bundler.Hex(), "message", string(msg))
+			return
+		}
+		close(doneChan)
+	} else {
+		close(bundlingRequest.doneChan)
+		delete(s.bundlingRequests, resp.Id)
+	}
 }
 
 func (s *Server) processSignatoryMessage(msg []byte) {
@@ -906,7 +974,7 @@ func (s *Server) readPump(conn *Conn, doneChan chan<- struct{}) {
 		}
 
 		if conn.isBundler() {
-			s.processBundlerMessage(msg)
+			s.processBundlerMessage(msg, conn.bundler)
 		} else if conn.isSignatory() {
 			s.processSignatoryMessage(msg)
 		} else {
