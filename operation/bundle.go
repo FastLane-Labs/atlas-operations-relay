@@ -69,7 +69,7 @@ func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash comm
 	)
 
 	if utils.FlagVerifyCallChainHash(dAppConfig.CallConfig) {
-		callChainHash, err = b.CallChainHash(dAppConfig.CallConfig, dAppConfig.To)
+		callChainHash, err = b.CallChainHash()
 		if err != nil {
 			log.Info("failed to compute call chain hash", "err", err)
 			return relayerror.ErrServerInternal
@@ -83,13 +83,7 @@ func (b *BundleOperations) Validate(ethClient *ethclient.Client, userOpHash comm
 	return nil
 }
 
-func (b *BundleOperations) CallChainHash(callConfig uint32, dAppControl common.Address) (common.Hash, error) {
-	callSequence := []byte{}
-
-	if utils.FlagRequirePreOps(callConfig) {
-		callSequence = append(callSequence, dAppControl.Bytes()...)
-	}
-
+func (b *BundleOperations) CallChainHash() (common.Hash, error) {
 	userOpAbiEncoded, err := b.UserOperation.AbiEncode()
 	if err != nil {
 		return common.Hash{}, err
@@ -100,8 +94,8 @@ func (b *BundleOperations) CallChainHash(callConfig uint32, dAppControl common.A
 		return common.Hash{}, err
 	}
 
-	callSequence = append(callSequence, userOpAbiEncoded...)
-	callSequence = append(callSequence, solverOpsAbiEncoded...)
-
-	return crypto.Keccak256Hash(callSequence), nil
+	return crypto.Keccak256Hash(
+		userOpAbiEncoded,
+		solverOpsAbiEncoded,
+	), nil
 }

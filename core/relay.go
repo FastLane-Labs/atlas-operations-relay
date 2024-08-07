@@ -123,7 +123,7 @@ func (r *Relay) auctionCompleteCallback(bundleOps *operation.BundleOperations) {
 		return
 	}
 
-	callChainHash, err := bundleOps.CallChainHash(dAppConfig.CallConfig, dAppConfig.To)
+	callChainHash, err := bundleOps.CallChainHash()
 	if err != nil {
 		log.Info("failed to compute call chain hash", "err", err)
 		return
