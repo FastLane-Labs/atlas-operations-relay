@@ -542,13 +542,13 @@ func (s *Server) runBundlingRequest(id string, bundleReq *BundleRequest, firstCa
 			wg.Add(1)
 			go func(candidate *Conn) {
 				if relayErr := candidate.send(bundleReq); relayErr != nil {
-					log.Info("failed to send bundle request", "bundler", nextCandidate.bundler.Hex(), "err", relayErr.Message)
+					log.Info("failed to send bundle request", "bundler", candidate.bundler.Hex(), "err", relayErr.Message)
 					return
 				}
 
 				select {
 				case <-time.After(BundlerTimeout):
-					log.Info("bundler timed out", "bundler", nextCandidate.bundler.Hex())
+					log.Info("bundler timed out", "bundler", candidate.bundler.Hex())
 
 				case <-bundlingRequest.multiBundlerDoneChans[candidate.bundler]:
 					// Got a response
