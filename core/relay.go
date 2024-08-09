@@ -123,7 +123,7 @@ func (r *Relay) auctionCompleteCallback(bundleOps *operation.BundleOperations) {
 		return
 	}
 
-	callChainHash, err := bundleOps.CallChainHash(dAppConfig.CallConfig, dAppConfig.To)
+	callChainHash, err := bundleOps.CallChainHash()
 	if err != nil {
 		log.Info("failed to compute call chain hash", "err", err)
 		return
@@ -184,7 +184,7 @@ func (r *Relay) submitBundleOperations(bundleOps *operation.BundleOperations) (s
 		return "", relayErr
 	}
 
-	if err := r.server.ForwardBundle(bundleOps, bundle.SetAtlasTxHash, bundle.SetRelayError); err != nil {
+	if err := r.server.ForwardBundle(bundleOps, bundle.SetAtlasTxHash, bundle.SetRelayError, bundle.NotifyCompletionSubs); err != nil {
 		r.bundleManager.UnregisterBundle(userOpHash)
 		return "", ErrForwardBundle.AddError(err)
 	}
@@ -192,7 +192,7 @@ func (r *Relay) submitBundleOperations(bundleOps *operation.BundleOperations) (s
 	return BundleSuccessfullySubmitted, nil
 }
 
-func (r *Relay) getBundleHash(userOpHash common.Hash, completionChan chan *bundle.Bundle) (common.Hash, *relayerror.Error) {
+func (r *Relay) getBundleHash(userOpHash common.Hash, completionChan chan *bundle.Bundle) (interface{}, *relayerror.Error) {
 	return r.bundleManager.GetBundleHash(userOpHash, completionChan)
 }
 

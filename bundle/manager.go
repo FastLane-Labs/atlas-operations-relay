@@ -59,7 +59,7 @@ func (bm *Manager) bundlesCleaner() {
 	for range time.Tick(10 * time.Minute) {
 		bm.mu.Lock()
 		for userOpHash, bundle := range bm.bundles {
-			if (bundle.atlasTxHash != (common.Hash{}) || bundle.relayErr != nil) && time.Since(bundle.createdAt) > time.Hour {
+			if (len(bundle.atlasTxHashes) > 0 || bundle.relayErr != nil) && time.Since(bundle.createdAt) > time.Hour {
 				delete(bm.bundles, userOpHash)
 			}
 		}
@@ -177,15 +177,15 @@ func (bm *Manager) UnregisterBundle(userOpHash common.Hash) {
 	delete(bm.bundles, userOpHash)
 }
 
-func (bm *Manager) GetBundleHash(userOpHash common.Hash, completionChan chan *Bundle) (common.Hash, *relayerror.Error) {
+func (bm *Manager) GetBundleHash(userOpHash common.Hash, completionChan chan *Bundle) (interface{}, *relayerror.Error) {
 	bm.mu.RLock()
 	defer bm.mu.RUnlock()
 
 	bundle, ok := bm.bundles[userOpHash]
 	if !ok {
 		log.Info("bundle not found", "userOpHash", userOpHash.Hex())
-		return common.Hash{}, ErrBundleNotFound
+		return nil, ErrBundleNotFound
 	}
 
-	return bundle.getAtlasTxHash(completionChan)
+	return bundle.getAtlasTxHashes(completionChan)
 }

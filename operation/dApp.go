@@ -79,7 +79,7 @@ func GenerateSimulationDAppOperation(userOpHash common.Hash, userOp *UserOperati
 	}
 
 	if utils.FlagVerifyCallChainHash(userOp.CallConfig) {
-		callChainHash, err := (&BundleOperations{UserOperation: userOp, SolverOperations: solverOps}).CallChainHash(userOp.CallConfig, userOp.Control)
+		callChainHash, err := (&BundleOperations{UserOperation: userOp, SolverOperations: solverOps}).CallChainHash()
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute call chain hash: %w", err)
 		}

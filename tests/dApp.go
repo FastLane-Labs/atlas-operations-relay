@@ -3,7 +3,6 @@ package tests
 import (
 	"math/big"
 
-	"github.com/FastLane-Labs/atlas-operations-relay/contract/dAppControl"
 	"github.com/FastLane-Labs/atlas-operations-relay/operation"
 	"github.com/FastLane-Labs/atlas-operations-relay/utils"
 )
@@ -11,17 +10,7 @@ import (
 func newDappOperation(userOp *operation.UserOperation, solverOps []*operation.SolverOperation) *operation.DAppOperation {
 	userOpHash, _ := userOp.Hash(utils.FlagTrustedOpHash(userOp.CallConfig), &conf.Relay.Eip712.Domain)
 
-	dAppControlContract, err := dAppControl.NewDAppControl(userOp.Control, ethClient)
-	if err != nil {
-		panic(err)
-	}
-
-	dAppConfig, err := dAppControlContract.GetDAppConfig(nil, dAppControl.UserOperation(*userOp))
-	if err != nil {
-		panic(err)
-	}
-
-	callChainHash, err := (&operation.BundleOperations{UserOperation: userOp, SolverOperations: solverOps}).CallChainHash(dAppConfig.CallConfig, dAppConfig.To)
+	callChainHash, err := (&operation.BundleOperations{UserOperation: userOp, SolverOperations: solverOps}).CallChainHash()
 	if err != nil {
 		panic(err)
 	}

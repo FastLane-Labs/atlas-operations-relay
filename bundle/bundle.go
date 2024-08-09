@@ -20,9 +20,10 @@ type Bundle struct {
 	userOpHash common.Hash
 	ops        *operation.BundleOperations
 
-	atlasTxHash common.Hash
-	relayErr    *relayerror.Error
+	atlasTxHashes []common.Hash
+	relayErr      *relayerror.Error
 
+	complete       bool
 	completionSubs []chan *Bundle
 
 	createdAt time.Time
@@ -34,28 +35,36 @@ func NewBundle(userOpHash common.Hash, bundleOps *operation.BundleOperations) *B
 	return &Bundle{
 		userOpHash:     userOpHash,
 		ops:            bundleOps,
+		atlasTxHashes:  make([]common.Hash, 0),
 		completionSubs: make([]chan *Bundle, 0),
 		createdAt:      time.Now(),
 	}
 }
 
-func (b *Bundle) GetResult() (common.Hash, *relayerror.Error) {
+func (b *Bundle) GetResult() (interface{}, *relayerror.Error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-	return b.atlasTxHash, b.relayErr
+	if b.isMultiBundler() {
+		return b.atlasTxHashes, nil
+	}
+
+	return b.atlasTxHashes[0], nil
 }
 
-func (b *Bundle) SetAtlasTxHash(txHash common.Hash) *relayerror.Error {
+func (b *Bundle) SetAtlasTxHash(txHash common.Hash, multiBundler bool) *relayerror.Error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	if b.atlasTxHash != (common.Hash{}) {
-		log.Info("bundle has already been bundled", "bundledTxHash", b.atlasTxHash.Hex(), "newTxHash", txHash.Hex())
+	if !multiBundler && len(b.atlasTxHashes) == 1 {
+		log.Info("bundle has already been bundled", "bundledTxHash", b.atlasTxHashes[0].Hex(), "newTxHash", txHash.Hex())
 		return ErrAlreadyBundled
 	}
 
-	b.atlasTxHash = txHash
-	b.notifyCompletionSubs()
+	b.atlasTxHashes = append(b.atlasTxHashes, txHash)
+
+	if !multiBundler {
+		b.notifyCompletionSubs()
+	}
 
 	return nil
 }
@@ -75,7 +84,12 @@ func (b *Bundle) SetRelayError(relayErr *relayerror.Error) *relayerror.Error {
 	return nil
 }
 
+func (b *Bundle) NotifyCompletionSubs() {
+	b.notifyCompletionSubs()
+}
+
 func (b *Bundle) notifyCompletionSubs() {
+	b.complete = true
 	for _, subChan := range b.completionSubs {
 		select {
 		case subChan <- b:
@@ -92,22 +106,26 @@ func (b *Bundle) addCompletionSub(subChan chan *Bundle) {
 	b.completionSubs = append(b.completionSubs, subChan)
 }
 
-func (b *Bundle) getAtlasTxHash(completionChan chan *Bundle) (common.Hash, *relayerror.Error) {
-	atlasTxHash, relayErr := b.GetResult()
+// Return an array of hashes if the bundle is multi-bundler, otherwise return a single hash
+func (b *Bundle) getAtlasTxHashes(completionChan chan *Bundle) (interface{}, *relayerror.Error) {
+	atlasTxHashes, relayErr := b.GetResult()
 	if relayErr != nil {
-		return common.Hash{}, relayErr
+		return nil, relayErr
 	}
 
-	bundled := atlasTxHash != (common.Hash{})
-	if completionChan != nil && !bundled {
+	if completionChan != nil && !b.complete {
 		b.addCompletionSub(completionChan)
-		return common.Hash{}, nil
+		return nil, nil
 	}
 
-	if !bundled {
-		log.Info("bundle has not been bundled yet", "userOpHash", b.userOpHash.Hex())
-		return common.Hash{}, ErrNotBundledYet
+	if !b.complete {
+		log.Info("bundle has not been completed yet", "userOpHash", b.userOpHash.Hex())
+		return nil, ErrNotBundledYet
 	}
 
-	return atlasTxHash, nil
+	return atlasTxHashes, nil
+}
+
+func (b *Bundle) isMultiBundler() bool {
+	return b.ops.DAppOperation.Bundler == common.Address{}
 }
