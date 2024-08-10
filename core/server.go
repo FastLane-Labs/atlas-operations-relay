@@ -541,6 +541,8 @@ func (s *Server) runBundlingRequest(id string, bundleReq *BundleRequest, firstCa
 		for _, candidate := range bundlingRequest.candidatesBundlers {
 			wg.Add(1)
 			go func(candidate *Conn) {
+				defer wg.Done()
+
 				if relayErr := candidate.send(bundleReq); relayErr != nil {
 					log.Info("failed to send bundle request", "bundler", candidate.bundler.Hex(), "err", relayErr.Message)
 					return
