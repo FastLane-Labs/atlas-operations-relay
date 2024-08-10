@@ -187,7 +187,7 @@ func (api *Api) GetBundleHash(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if retrieveReq.Wait && atlasTxHash == (common.Hash{}) {
+	if retrieveReq.Wait && atlasTxHash == nil {
 		bundle := <-completionChan
 		atlasTxHash, relayErr = bundle.GetResult()
 		if relayErr != nil {
