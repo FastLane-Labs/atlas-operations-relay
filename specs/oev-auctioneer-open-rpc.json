@@ -21,7 +21,7 @@
       ],
       "result": {
         "name": "bundle",
-        "summary": "Resulting bundle of Atlas operations",
+        "summary": "Resulting bundle of Atlas operations and metacall information",
         "description": "A bundle consists of a user operation, solver operations and a dApp operation. All fields are hex encoded.",
         "schema": {
           "type": "object",
@@ -38,8 +38,17 @@
             "dAppOperation": {
               "$ref": "#/components/schemas/DAppOperation"
             },
+            "metacallDestination": {
+              "$ref": "#/components/schemas/Address"
+            },
             "metacallGasLimit": {
               "$ref": "#/components/schemas/Uint256"
+            },
+            "metacallMaxFeePerGas": {
+              "$ref": "#/components/schemas/Uint256"
+            },
+            "metacallCallData": {
+              "$ref": "#/components/schemas/Bytes"
             }
           }
         }
@@ -70,8 +79,16 @@
           "message": "invalid signature"
         },
         {
+          "code": 10011,
+          "message": "invalid bundler address"
+        },
+        {
           "code": 10013,
           "message": "unsupported chain ID"
+        },
+        {
+          "code": 10020,
+          "message": "missing bundler EOA"
         },
         {
           "code": 12004,
@@ -121,7 +138,7 @@
                   "to": "0x72A12CAEFC60eD89b87c2efCbce700e4A3Fa9775",
                   "value": "0x0",
                   "gas": "0x7836f1",
-                  "maxFeePerGas": "0xd44bd455",
+                  "maxFeePerGas": "0x24409add",
                   "deadline": "0x377deaa4",
                   "solver": "0x73632B875d37e12670c03e8CA17F471134b872FB",
                   "control": "0x5003676390dfe662Af408Eb0bf13e182aDcaCE0a",
@@ -143,7 +160,10 @@
                 "callChainHash": "0xbda47c70fd8795944c24b2d1000e8d234322055fe390156421b796b058755b5f",
                 "signature": "0x77bdc345000008787dec2454545dd789400000baa"
               },
-              "metacallGasLimit": "0x31bbe7f5"
+              "metacallDestination": "0x72A12CAEFC60eD89b87c2efCbce700e4A3Fa9775",
+              "metacallGasLimit": "0x31bbe7f5",
+              "metacallMaxFeePerGas": "0x24409add",
+              "metacallCallData": "0x44df40cc0000000000000000000054ccadd4e90456878deaa223400000000000000058489bbdca45ee4859"
             }
           }
         }
