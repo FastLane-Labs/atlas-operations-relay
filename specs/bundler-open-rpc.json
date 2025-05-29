@@ -1,0 +1,483 @@
+{
+  "openrpc": "1.0.0-rc1",
+  "info": {
+    "version": "1.0.0",
+    "title": "Atlas Bundler Specifications"
+  },
+  "methods": [
+    {
+      "name": "atlas_acquireBundler",
+      "summary": "Reserve a bundler EOA",
+      "description": "Reservation is held for 5 seconds. If no call to atlas_sendBundle referencing the reservation ID is made within 5 seconds, the reservation is cancelled and the attached EOA released.",
+      "params": [
+        {
+          "name": "chainId",
+          "summary": "Target chain ID, hex encoded",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Uint256"
+          }
+        }
+      ],
+      "result": {
+        "name": "bundlerReservation",
+        "summary": "Reservation details",
+        "schema": {
+          "$ref": "#/components/schemas/BundlerReservation"
+        }
+      },
+      "errors": [
+        {
+          "code": -32000,
+          "message": "malformed request"
+        },
+        {
+          "code": -32000,
+          "message": "eoa reservation failed"
+        },
+        {
+          "code": -32000,
+          "message": "no transactor for chain id"
+        },
+        {
+          "code": -32000,
+          "message": "no transactor available"
+        }
+      ],
+      "examples": [
+        {
+          "name": "Successful call to atlas_acquireBundler",
+          "params": [
+            {
+              "name": "chainId",
+              "value": "0x1"
+            }
+          ],
+          "result": {
+            "name": "bundlerReservation",
+            "value": {
+              "transactor": "0xCACe8D78269ba00f1C4D5Fc3B1228C7DF0a7C8BA",
+              "reservationId": "9c22a508-d0bd-49de-b6b7-314517424e2f"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "atlas_sendBundle",
+      "summary": "Submit an Atlas bundle of operations",
+      "description": "An Atlas bundle consist of a user operation, solver operations and a dApp operation.",
+      "params": [
+        {
+          "name": "bundleRequest",
+          "summary": "Bundling request details",
+          "required": true,
+          "schema": {
+            "type": "object",
+            "properties": {
+              "chainId": {
+                "$ref": "#/components/schemas/Uint256"
+              },
+              "atlasVersion": {
+                "type": "string",
+                "description": "The Atlas version the bundler should target."
+              },
+              "userOperation": {
+                "$ref": "#/components/schemas/UserOperation"
+              },
+              "solverOperations": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SolverOperation"
+                }
+              },
+              "dAppOperation": {
+                "$ref": "#/components/schemas/DAppOperation"
+              },
+              "requestOptions": {
+                "type": "object",
+                "properties": {
+                  "strictUserOperationGasPrice": {
+                    "type": "boolean"
+                  },
+                  "gasRefundBeneficiary": {
+                    "$ref": "#/components/schemas/Address"
+                  },
+                  "skipSimulation": {
+                    "type": "boolean"
+                  },
+                  "abortOnNotWonSimulation": {
+                    "type": "boolean"
+                  },
+                  "reservationId": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "required": [
+              "chainId",
+              "atlasVersion",
+              "userOperation",
+              "solverOperations",
+              "dAppOperation"
+            ]
+          }
+        }
+      ],
+      "result": {
+        "name": "rawTransaction",
+        "summary": "The resulting raw transaction, hex encoded",
+        "schema": {
+          "$ref": "#/components/schemas/Bytes"
+        }
+      },
+      "errors": [
+        {
+          "code": -32000,
+          "message": "malformed request"
+        },
+        {
+          "code": -32000,
+          "message": "chain id not supported"
+        },
+        {
+          "code": -32000,
+          "message": "invalid parameter"
+        },
+        {
+          "code": -32000,
+          "message": "bundling failure"
+        },
+        {
+          "code": -32000,
+          "message": "atlas version not supported for this chain id"
+        },
+        {
+          "code": -32000,
+          "message": "no transactor for chain id"
+        },
+        {
+          "code": -32000,
+          "message": "no transactor available"
+        },
+        {
+          "code": -32000,
+          "message": "invalid reservation id"
+        }
+      ],
+      "examples": [
+        {
+          "name": "Successful call to atlas_sendBundle",
+          "params": [
+            {
+              "name": "chainId",
+              "value": "0x1"
+            },
+            {
+              "name": "atlasVersion",
+              "value": "1.6"
+            },
+            {
+              "name": "userOperation",
+              "value": {
+                "from": "0xCACe8D78269ba00f1C4D5Fc3B1228C7DF0a7C8BA",
+                "to": "0x72A12CAEFC60eD89b87c2efCbce700e4A3Fa9775",
+                "value": "0x7836f1",
+                "gas": "0x7bb3d1",
+                "maxFeePerGas": "0x24409add",
+                "nonce": "0x32",
+                "deadline": "0x377deaa4",
+                "dapp": "0x73632B875d37e12670c03e8CA17F471134b872FB",
+                "control": "0x950467aF223a5095848c5ff618ff49CDAd67db49",
+                "callConfig": "0x244d5",
+                "dappGasLimit": "0x220c",
+                "solverGasLimit": "0x3a22",
+                "bundlerSurchargeRate": "0x0a",
+                "sessionKey": "0x0000000000000000000000000000000000000000",
+                "data": "0x567ac3209900000000000000cc56ae288832109b4cccd56479",
+                "signature": "0x44bcaa1683dcee4090577bbcdeff333"
+              }
+            },
+            {
+              "name": "solverOperations",
+              "value": [
+                {
+                  "from": "0xa8B52F02108AA5F4B675bDcC973760022D7C6020",
+                  "to": "0x72A12CAEFC60eD89b87c2efCbce700e4A3Fa9775",
+                  "value": "0x0",
+                  "gas": "0x7836f1",
+                  "maxFeePerGas": "0xd44bd455",
+                  "deadline": "0x377deaa4",
+                  "solver": "0x73632B875d37e12670c03e8CA17F471134b872FB",
+                  "control": "0x5003676390dfe662Af408Eb0bf13e182aDcaCE0a",
+                  "userOpHash": "0xd7f13073164089361301cac071186341c2853356ce3d74d90b5dc3d25a4928b4",
+                  "bidToken": "0x0000000000000000000000000000000000000000",
+                  "bidAmount": "0x88dc093d",
+                  "data": "0x435fcc5800000000000000000000034dcbbb121d74a",
+                  "signature": "0x774dc332deab90000086957fdee"
+                }
+              ]
+            },
+            {
+              "name": "dAppOperation",
+              "value": {
+                "from": "0x406c3FEf5969b36231bd573AdfC34e16f54d23E0",
+                "to": "0x72A12CAEFC60eD89b87c2efCbce700e4A3Fa9775",
+                "nonce": "0x0",
+                "deadline": "0x377deaa4",
+                "control": "0x5003676390dfe662Af408Eb0bf13e182aDcaCE0a",
+                "bundler": "0xCACe8D78269ba00f1C4D5Fc3B1228C7DF0a7C8BA",
+                "userOpHash": "0xd7f13073164089361301cac071186341c2853356ce3d74d90b5dc3d25a4928b4",
+                "callChainHash": "0xbda47c70fd8795944c24b2d1000e8d234322055fe390156421b796b058755b5f",
+                "signature": "0x77bdc345000008787dec2454545dd789400000baa"
+              }
+            },
+            {
+              "name": "requestOptions",
+              "value": {
+                "strictUserOperationGasPrice": true,
+                "reservationId": "9c22a508-d0bd-49de-b6b7-314517424e2f"
+              }
+            }
+          ],
+          "result": {
+            "name": "rawTransaction",
+            "value": "0x02f90d36818982115f8506fc23ac008506fc24d9b9830af0cf946a000f20005980200259b80c510200304000106880b90cc4e3ead59e00000000000000000000000000c600b30fb0400701010f4b080409018b9006e0000000000000000000000000c2132d05d31c914a87c6611c10748aeb04b58e8f0000000000000000000000003809dcdd5dde24b37abe64a5a339784c3323c44f0000000000000000000000000000000000000000000000000000000004c4b40000000000000000000000000000000000000000000000003639b39b19c6bd26090000000000000000000000000000000000000000000000364798e0f52850af6e9e2a0192e69f41e0855efa196f14f419000000000000000000000000044c2df1000000000000000000000000000000000000000000000000000000000000000008a3c2a819e3de7aca384c798269b3ce1cd0e4379000000000000000000000000000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b2000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000b200000000000000000000000000000080000000000000001c000000000000020d00000000000000000000000000000000000000000000006a00644018f000a000b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000016000000000000001200000000000002622e592427a0aece92de3edee1f18e0157c0586156400000140008400000000000300000000000000000000000000000000000000000000000000000000c04b8d59000000000000000"
+          }
+        }
+      ]
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Uint24": {
+        "type": "string",
+        "description": "Solidity type uint24",
+        "pattern": "^0x[0-9a-f]{1,6}$"
+      },
+
+      "Uint32": {
+        "type": "string",
+        "description": "Solidity type uint32",
+        "pattern": "^0x[0-9a-f]{1,8}$"
+      },
+
+      "Uint256": {
+        "type": "string",
+        "description": "Solidity type uint256",
+        "pattern": "^0x[0-9a-f]{1,64}$"
+      },
+
+      "Address": {
+        "type": "string",
+        "description": "Solidity type address",
+        "pattern": "^0x[0-9a-f]{40}$"
+      },
+
+      "Bytes": {
+        "type": "string",
+        "description": "Solidity type bytes",
+        "pattern": "^0x([0-9a-f][0-9a-f])*$"
+      },
+
+      "Bytes32": {
+        "type": "string",
+        "description": "Solidity type bytes32",
+        "pattern": "^0x[0-9a-f]{64}$"
+      },
+
+      "BundlerReservation": {
+        "type": "object",
+        "properties": {
+          "transactor": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "reservationId": {
+            "type": "string"
+          }
+        },
+        "required": ["transactor", "reservationId"]
+      },
+
+      "UserOperation": {
+        "type": "object",
+        "description": "Atlas user operation with all fields hex encoded",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "value": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "gas": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "maxFeePerGas": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "nonce": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "deadline": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "dapp": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "control": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "callConfig": {
+            "$ref": "#/components/schemas/Uint32"
+          },
+          "dappGasLimit": {
+            "$ref": "#/components/schemas/Uint32"
+          },
+          "solverGasLimit": {
+            "$ref": "#/components/schemas/Uint32"
+          },
+          "bundlerSurchargeRate": {
+            "$ref": "#/components/schemas/Uint24"
+          },
+          "sessionKey": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Bytes"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/Bytes"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "value",
+          "gas",
+          "maxFeePerGas",
+          "nonce",
+          "deadline",
+          "dapp",
+          "control",
+          "callConfig",
+          "dappGasLimit",
+          "solverGasLimit",
+          "bundlerSurchargeRate",
+          "sessionKey",
+          "data",
+          "signature"
+        ]
+      },
+
+      "SolverOperation": {
+        "type": "object",
+        "description": "Atlas solver operation with all fields hex encoded",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "value": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "gas": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "maxFeePerGas": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "deadline": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "solver": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "control": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "userOpHash": {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          "bidToken": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "bidAmount": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Bytes"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/Bytes"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "value",
+          "gas",
+          "maxFeePerGas",
+          "deadline",
+          "solver",
+          "control",
+          "userOpHash",
+          "bidToken",
+          "bidAmount",
+          "data",
+          "signature"
+        ]
+      },
+
+      "DAppOperation": {
+        "type": "object",
+        "description": "Atlas dApp operation with all fields hex encoded",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "nonce": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "deadline": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "control": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "bundler": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "userOpHash": {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          "callChainHash": {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/Bytes"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "nonce",
+          "deadline",
+          "control",
+          "bundler",
+          "userOpHash",
+          "callChainHash",
+          "signature"
+        ]
+      }
+    }
+  }
+}
