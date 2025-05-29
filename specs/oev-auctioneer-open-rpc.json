@@ -1,0 +1,404 @@
+{
+  "openrpc": "1.0.0-rc1",
+  "info": {
+    "version": "1.0.0",
+    "title": "Atlas OEV Auctioneer"
+  },
+  "methods": [
+    {
+      "name": "atlas_oevAuction",
+      "summary": "Start an Atlas OEV auction",
+      "params": [
+        {
+          "name": "auctionParameters",
+          "summary": "Parameters object",
+          "description": "The signed auction parameters object",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/AuctionParameters"
+          }
+        }
+      ],
+      "result": {
+        "name": "bundle",
+        "summary": "Resulting bundle of Atlas operations",
+        "description": "A bundle consists of a user operation, solver operations and a dApp operation. All fields are hex encoded.",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "userOperation": {
+              "$ref": "#/components/schemas/UserOperation"
+            },
+            "solverOperations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/SolverOperation"
+              }
+            },
+            "dAppOperation": {
+              "$ref": "#/components/schemas/DAppOperation"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "code": 10001,
+          "message": "missing chain ID"
+        },
+        {
+          "code": 10002,
+          "message": "missing adapter"
+        },
+        {
+          "code": 10003,
+          "message": "missing payload"
+        },
+        {
+          "code": 10004,
+          "message": "missing signature"
+        },
+        {
+          "code": 10005,
+          "message": "invalid chain ID"
+        },
+        {
+          "code": 10006,
+          "message": "invalid signature"
+        },
+        {
+          "code": 10013,
+          "message": "unsupported chain ID"
+        },
+        {
+          "code": 12004,
+          "message": "no solver operations received"
+        }
+      ],
+      "examples": [
+        {
+          "name": "Successful call to atlas_oevAuction",
+          "params": [
+            {
+              "name": "auctionParameters",
+              "value": {
+                "chainId": "0x1",
+                "atlasVersion": "1.6",
+                "adapter": "0xCACe8D78269ba00f1C4D5Fc3B1228C7DF0a7C8BA",
+                "updatePayload": "0xb7a1625100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001455448000000000000000000000000000000000000000000000000000000000045544800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003d0a8384cb019710c38ae0000000200000019b435f3c9e37e550689668151082ec20fc627c323c70aac4644e9ff0fb87032e553d02030a05a3556ea670ce7a26837ff3ab0e8fa7fe16038fb65b124831a9681c45544800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003d0a8384cb019710c38ae000000020000001ce5567f6cc6d774b5a696afea8220e5943df856463a451a689cf8ccf35f69918343780df2cd7d4553307049dbe389f878bc9278331bb0d4751e8720a474eaea61c45544800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003d0a8384cb019710c38ae00000002000000150eff10fa605e50f2c6bd46fc868df953de12171f1c238ddab6bc1cd6e678cf87cf8fc4388562a4cdcba29692fcc8a56a9a6cadf667360ad22614ef57cef58b61c00033137343833333239343338333323302e382e3023646174612d7061636b616765732d77726170706572000029000002ed57011e0000",
+                "earlyReturn": true,
+                "bundlerEoa": "0xCACe8D78269ba00f1C4D5Fc3B1228C7DF0a7C8BA",
+                "signature": "0xf9eeb2ffb7d49f573244e0a5a0af4365a69fcf6e391eec53e8cd2aa66820f3b02869b8805507eed0e2a0da5b2268fbbd1f964c876701356dae044a66ca419b7d1b"
+              }
+            }
+          ],
+          "result": {
+            "name": "bundle",
+            "value": {
+              "userOperation": {
+                "from": "0xCACe8D78269ba00f1C4D5Fc3B1228C7DF0a7C8BA",
+                "to": "0x72A12CAEFC60eD89b87c2efCbce700e4A3Fa9775",
+                "value": "0x7836f1",
+                "gas": "0x7bb3d1",
+                "maxFeePerGas": "0x24409add",
+                "nonce": "0x32",
+                "deadline": "0x377deaa4",
+                "dapp": "0x73632B875d37e12670c03e8CA17F471134b872FB",
+                "control": "0x950467aF223a5095848c5ff618ff49CDAd67db49",
+                "callConfig": "0x244d5",
+                "dappGasLimit": "0x220c",
+                "solverGasLimit": "0x3a22",
+                "bundlerSurchargeRate": "0x0a",
+                "sessionKey": "0x0000000000000000000000000000000000000000",
+                "data": "0x567ac3209900000000000000cc56ae288832109b4cccd56479",
+                "signature": "0x44bcaa1683dcee4090577bbcdeff333"
+              },
+              "solverOperations": [
+                {
+                  "from": "0xa8B52F02108AA5F4B675bDcC973760022D7C6020",
+                  "to": "0x72A12CAEFC60eD89b87c2efCbce700e4A3Fa9775",
+                  "value": "0x0",
+                  "gas": "0x7836f1",
+                  "maxFeePerGas": "0xd44bd455",
+                  "deadline": "0x377deaa4",
+                  "solver": "0x73632B875d37e12670c03e8CA17F471134b872FB",
+                  "control": "0x5003676390dfe662Af408Eb0bf13e182aDcaCE0a",
+                  "userOpHash": "0xd7f13073164089361301cac071186341c2853356ce3d74d90b5dc3d25a4928b4",
+                  "bidToken": "0x0000000000000000000000000000000000000000",
+                  "bidAmount": "0x88dc093d",
+                  "data": "0x435fcc5800000000000000000000034dcbbb121d74a",
+                  "signature": "0x774dc332deab90000086957fdee"
+                }
+              ],
+              "dAppOperation": {
+                "from": "0x406c3FEf5969b36231bd573AdfC34e16f54d23E0",
+                "to": "0x72A12CAEFC60eD89b87c2efCbce700e4A3Fa9775",
+                "nonce": "0x0",
+                "deadline": "0x377deaa4",
+                "control": "0x5003676390dfe662Af408Eb0bf13e182aDcaCE0a",
+                "bundler": "0xCACe8D78269ba00f1C4D5Fc3B1228C7DF0a7C8BA",
+                "userOpHash": "0xd7f13073164089361301cac071186341c2853356ce3d74d90b5dc3d25a4928b4",
+                "callChainHash": "0xbda47c70fd8795944c24b2d1000e8d234322055fe390156421b796b058755b5f",
+                "signature": "0x77bdc345000008787dec2454545dd789400000baa"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Uint24": {
+        "type": "string",
+        "description": "Solidity type uint24",
+        "pattern": "^0x[0-9a-f]{1,6}$"
+      },
+
+      "Uint32": {
+        "type": "string",
+        "description": "Solidity type uint32",
+        "pattern": "^0x[0-9a-f]{1,8}$"
+      },
+
+      "Uint256": {
+        "type": "string",
+        "description": "Solidity type uint256",
+        "pattern": "^0x[0-9a-f]{1,64}$"
+      },
+
+      "Address": {
+        "type": "string",
+        "description": "Solidity type address",
+        "pattern": "^0x[0-9a-f]{40}$"
+      },
+
+      "Bytes": {
+        "type": "string",
+        "description": "Solidity type bytes",
+        "pattern": "^0x([0-9a-f][0-9a-f])*$"
+      },
+
+      "Bytes32": {
+        "type": "string",
+        "description": "Solidity type bytes32",
+        "pattern": "^0x[0-9a-f]{64}$"
+      },
+
+      "AuctionParameters": {
+        "type": "object",
+        "properties": {
+          "chainId": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "atlasVersion": {
+            "type": "string",
+            "description": "The Atlas version the auctioneer should target."
+          },
+          "adapter": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "updatePayload": {
+            "$ref": "#/components/schemas/Bytes"
+          },
+          "earlyReturn": {
+            "type": "boolean"
+          },
+          "bundlerEoa": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/Bytes"
+          }
+        },
+        "required": [
+          "chainId",
+          "atlasVersion",
+          "adapter",
+          "updatePayload",
+          "bundlerEoa",
+          "signature"
+        ]
+      },
+
+      "UserOperation": {
+        "type": "object",
+        "description": "Atlas user operation with all fields hex encoded",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "value": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "gas": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "maxFeePerGas": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "nonce": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "deadline": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "dapp": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "control": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "callConfig": {
+            "$ref": "#/components/schemas/Uint32"
+          },
+          "dappGasLimit": {
+            "$ref": "#/components/schemas/Uint32"
+          },
+          "solverGasLimit": {
+            "$ref": "#/components/schemas/Uint32"
+          },
+          "bundlerSurchargeRate": {
+            "$ref": "#/components/schemas/Uint24"
+          },
+          "sessionKey": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Bytes"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/Bytes"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "value",
+          "gas",
+          "maxFeePerGas",
+          "nonce",
+          "deadline",
+          "dapp",
+          "control",
+          "callConfig",
+          "dappGasLimit",
+          "solverGasLimit",
+          "bundlerSurchargeRate",
+          "sessionKey",
+          "data",
+          "signature"
+        ]
+      },
+
+      "SolverOperation": {
+        "type": "object",
+        "description": "Atlas solver operation with all fields hex encoded",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "value": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "gas": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "maxFeePerGas": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "deadline": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "solver": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "control": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "userOpHash": {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          "bidToken": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "bidAmount": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Bytes"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/Bytes"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "value",
+          "gas",
+          "maxFeePerGas",
+          "deadline",
+          "solver",
+          "control",
+          "userOpHash",
+          "bidToken",
+          "bidAmount",
+          "data",
+          "signature"
+        ]
+      },
+
+      "DAppOperation": {
+        "type": "object",
+        "description": "Atlas dApp operation with all fields hex encoded",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "nonce": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "deadline": {
+            "$ref": "#/components/schemas/Uint256"
+          },
+          "control": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "bundler": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "userOpHash": {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          "callChainHash": {
+            "$ref": "#/components/schemas/Bytes32"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/Bytes"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "nonce",
+          "deadline",
+          "control",
+          "bundler",
+          "userOpHash",
+          "callChainHash",
+          "signature"
+        ]
+      }
+    }
+  }
+}
