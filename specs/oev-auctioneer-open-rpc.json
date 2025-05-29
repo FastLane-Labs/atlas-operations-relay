@@ -37,6 +37,9 @@
             },
             "dAppOperation": {
               "$ref": "#/components/schemas/DAppOperation"
+            },
+            "metacallGasLimit": {
+              "$ref": "#/components/schemas/Uint256"
             }
           }
         }
@@ -83,7 +86,6 @@
               "name": "auctionParameters",
               "value": {
                 "chainId": "0x1",
-                "atlasVersion": "1.6",
                 "adapter": "0xCACe8D78269ba00f1C4D5Fc3B1228C7DF0a7C8BA",
                 "updatePayload": "0xb7a1625100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001455448000000000000000000000000000000000000000000000000000000000045544800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003d0a8384cb019710c38ae0000000200000019b435f3c9e37e550689668151082ec20fc627c323c70aac4644e9ff0fb87032e553d02030a05a3556ea670ce7a26837ff3ab0e8fa7fe16038fb65b124831a9681c45544800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003d0a8384cb019710c38ae000000020000001ce5567f6cc6d774b5a696afea8220e5943df856463a451a689cf8ccf35f69918343780df2cd7d4553307049dbe389f878bc9278331bb0d4751e8720a474eaea61c45544800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003d0a8384cb019710c38ae00000002000000150eff10fa605e50f2c6bd46fc868df953de12171f1c238ddab6bc1cd6e678cf87cf8fc4388562a4cdcba29692fcc8a56a9a6cadf667360ad22614ef57cef58b61c00033137343833333239343338333323302e382e3023646174612d7061636b616765732d77726170706572000029000002ed57011e0000",
                 "earlyReturn": true,
@@ -140,7 +142,8 @@
                 "userOpHash": "0xd7f13073164089361301cac071186341c2853356ce3d74d90b5dc3d25a4928b4",
                 "callChainHash": "0xbda47c70fd8795944c24b2d1000e8d234322055fe390156421b796b058755b5f",
                 "signature": "0x77bdc345000008787dec2454545dd789400000baa"
-              }
+              },
+              "metacallGasLimit": "0x31bbe7f5"
             }
           }
         }
@@ -191,10 +194,6 @@
           "chainId": {
             "$ref": "#/components/schemas/Uint256"
           },
-          "atlasVersion": {
-            "type": "string",
-            "description": "The Atlas version the auctioneer should target."
-          },
           "adapter": {
             "$ref": "#/components/schemas/Address"
           },
@@ -213,7 +212,6 @@
         },
         "required": [
           "chainId",
-          "atlasVersion",
           "adapter",
           "updatePayload",
           "bundlerEoa",
