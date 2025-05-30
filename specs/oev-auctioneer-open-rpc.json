@@ -22,7 +22,7 @@
       "result": {
         "name": "bundle",
         "summary": "Resulting bundle of Atlas operations and metacall information",
-        "description": "A bundle consists of a user operation, solver operations and a dApp operation. All fields are hex encoded.",
+        "description": "A bundle consists of a user operation, solver operations and a dApp operation, along with key metacall information. All fields are hex encoded.",
         "schema": {
           "type": "object",
           "properties": {
